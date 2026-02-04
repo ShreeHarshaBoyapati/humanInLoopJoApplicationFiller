@@ -3,14 +3,16 @@ import eslintConfigPrettier from 'eslint-config-prettier';
 import tseslint from 'typescript-eslint';
 import pluginReactHooks from 'eslint-plugin-react-hooks';
 import pluginReact from 'eslint-plugin-react';
+import pluginReactRefresh from 'eslint-plugin-react-refresh';
 import globals from 'globals';
 import { config as baseConfig } from './base.js';
 
 /**
- * A custom ESLint configuration for libraries that use React.
+ * A custom ESLint configuration for Vite + React applications.
  *
- * @type {import("eslint").Linter.Config[]} */
-export const config = [
+ * @type {import("eslint").Linter.Config[]}
+ */
+export const viteReactConfig = [
   ...baseConfig,
   js.configs.recommended,
   eslintConfigPrettier,
@@ -20,7 +22,6 @@ export const config = [
     languageOptions: {
       ...pluginReact.configs.flat.recommended.languageOptions,
       globals: {
-        ...globals.serviceworker,
         ...globals.browser,
       },
     },
@@ -28,12 +29,17 @@ export const config = [
   {
     plugins: {
       'react-hooks': pluginReactHooks,
+      'react-refresh': pluginReactRefresh,
     },
     settings: { react: { version: 'detect' } },
     rules: {
       ...pluginReactHooks.configs.recommended.rules,
-      // React scope no longer necessary with new JSX transform.
+      'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
+      // React scope no longer necessary with new JSX transform
       'react/react-in-jsx-scope': 'off',
     },
+  },
+  {
+    ignores: ['dist/**'],
   },
 ];
