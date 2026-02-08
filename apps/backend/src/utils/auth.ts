@@ -13,30 +13,7 @@
 import bcrypt from 'bcrypt';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import staticConfig from '../static-config.json' with { type: 'json' };
-import type { PasswordValidationResult, TokenPayload, DecodedToken } from '../types/index.js';
-
-export function validatePassword(password: string): PasswordValidationResult {
-  const errors: string[] = [];
-
-  if (!password || password.length < 8) {
-    errors.push('Password must be at least 8 characters long');
-  }
-
-  if (!/\d/.test(password)) {
-    errors.push('Password must contain at least 1 number');
-  }
-
-  if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(password)) {
-    errors.push(
-      'Password must contain at least 1 special character (!@#$%^&*()_+-=[]{};\':"|,.<>/?)'
-    );
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors,
-  };
-}
+import type { TokenPayload, DecodedToken } from '../types/index.js';
 
 export async function hashPassword(password: string): Promise<string> {
   const salt = await bcrypt.genSalt(staticConfig.auth.saltRounds);
