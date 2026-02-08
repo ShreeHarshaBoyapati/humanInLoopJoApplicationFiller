@@ -1,6 +1,19 @@
 import type { Request, Response, NextFunction, AuthenticatedRequest } from '../types/index.js';
 import { verifyToken } from '../utils/auth.js';
 import { getUserRepository } from '../database/repositories/index.js';
+import * as z from 'zod';
+
+const UserObj = z.object({
+  email: z.email(),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters long')
+    .regex(/\d/, 'Password must contain at least 1 number')
+    .regex(
+      /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/,
+      'Password must contain at least 1 special character'
+    ),
+});
 
 export async function authMiddleware(
   req: Request,
@@ -13,7 +26,7 @@ export async function authMiddleware(
     if (!token) {
       res.status(401).json({
         success: false,
-        error: 'No token provided',
+        message: 'No token provided',
       });
       return;
     }
@@ -28,7 +41,7 @@ export async function authMiddleware(
     if (!user || user.sessionId !== decoded.sessionId) {
       res.status(401).json({
         success: false,
-        error: 'Session expired or invalid',
+        message: 'Session expired or invalid',
       });
       return;
     }
@@ -41,46 +54,50 @@ export async function authMiddleware(
     if (error instanceof Error) {
       res.status(401).json({
         success: false,
-        error: error.message,
+        message: error.message,
       });
       return;
     }
 
     res.status(401).json({
       success: false,
-      error: 'Authentication failed',
+      message: 'Authentication failed',
     });
   }
 }
 
-export async function optionalAuthMiddleware(
-  req: Request,
-  _res: Response,
-  next: NextFunction
-): Promise<void> {
+export function registerInputValidation(req: Request, res: Response, next: NextFunction) {
   try {
-    const authHeader = req.headers.authorization;
-
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      const token = authHeader.split(' ')[1];
-
-      if (token) {
-        const decoded = verifyToken(token);
-        const userRepository = getUserRepository();
-
-        const user = await userRepository.findOne({
-          where: { id: decoded.userId },
-        });
-
-        if (user && user.sessionId === decoded.sessionId) {
-          (req as AuthenticatedRequest).userId = decoded.userId;
-          (req as AuthenticatedRequest).sessionId = decoded.sessionId;
-        }
-      }
+    req.body = UserObj.parse(req.body);
+    next();
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const errors = z.flattenError(error);
+      res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors,
+      });
+      return;
     }
-  } catch {
-    // Silently ignore auth errors for optional auth
-  }
 
-  next();
+    res.status(400).json({
+      success: false,
+      message: 'Invalid input',
+    });
+    return;
+  }
+}
+
+export function loginInputValidation(req: Request, res: Response, next: NextFunction) {
+  try {
+    req.body = UserObj.parse(req.body);
+    next();
+  } catch {
+    res.status(400).json({
+      success: false,
+      message: 'Invalid email or password',
+    });
+    return;
+  }
 }
