@@ -1,60 +1,105 @@
+import dotenv from 'dotenv';
+dotenv.config();
 import express from 'express';
-import type { Request, Response } from './types.js';
+import type { Request, Response, NextFunction } from './types/index.js';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import cors from 'cors';
+import morgan from 'morgan';
+import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import initializeDataSource from './database/data-source.js';
+import routes from './routes/index.js';
 
-const app = express();
-const PORT = process.env.PORT || 3001;
+let app: express.Application | null = null;
+const PORT = process.env.NODE_PORT;
 const isProduction = process.env.NODE_ENV === 'production';
 
-// Get __dirname equivalent in ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+async function initializeApp() {
+  app = express();
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = path.dirname(__filename);
+  const FRONTEND_ORIGIN = process.env.NODE_CORS_ORIGIN || 'http://localhost:3000';
 
-// ===== API Routes =====
+  const appDataSource = initializeDataSource();
 
-// Health check endpoint
-app.get('/health', (_req: Request, res: Response) => {
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    environment: isProduction ? 'production' : 'development',
-  });
-});
+  if (!appDataSource.isInitialized) {
+    try {
+      await appDataSource.initialize();
+      console.log('Database connected successfully');
+    } catch (error) {
+      console.log('Failed to connect to Database');
+      throw error;
+    }
+  }
 
-// Sample API endpoint
-app.get('/api/hello', (_req: Request, res: Response) => {
-  res.json({ message: 'Hello from the API!' });
-});
-
-// ===== Production: Serve Frontend =====
-if (isProduction) {
-  // Path to the built frontend files
-  const frontendPath = path.join(__dirname, '../../web/dist');
-
-  // Serve static files from the frontend build
-  app.use(express.static(frontendPath));
-
-  // For any other route, serve the frontend's index.html (SPA support)
-  // Express 5 uses {*splat} syntax instead of *
-  app.get('{*splat}', (_req: Request, res: Response) => {
-    res.sendFile(path.join(frontendPath, 'index.html'));
+  const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: parseInt(process.env.NODE_RATE_LIMIT_MAX || '100'),
+    message: 'Too many requests from this IP, please try again after 15 minutes',
+    standardHeaders: true,
+    legacyHeaders: false,
   });
 
-  console.log(`📦 Serving frontend from: ${frontendPath}`);
+  app.use(helmet());
+  app.use(limiter);
+  app.use(cookieParser());
+  app.use(
+    cors({
+      origin: FRONTEND_ORIGIN,
+      credentials: true,
+    })
+  );
+  app.use(morgan(isProduction ? 'combined' : 'dev'));
+  app.use(express.json());
+
+  // ===== API Routes =====
+
+  // Health check endpoint
+  app.get('/health', (_req: Request, res: Response) => {
+    res.json({
+      status: 'ok',
+      timestamp: new Date().toISOString(),
+      environment: isProduction ? 'production' : 'development',
+    });
+  });
+
+  // Mount all API routes
+  app.use('/api', routes);
+
+  // ===== Production: Serve Frontend =====
+  if (isProduction) {
+    // Path to the built frontend files
+    const frontendPath = path.join(__dirname, '../../web/dist');
+
+    // Serve static files from the frontend build
+    app.use(express.static(frontendPath));
+    // TODO: all remain apart from /api.
+    app.get('{*splat}', (_req: Request, res: Response) => {
+      res.sendFile(path.join(frontendPath, 'index.html'));
+    });
+
+    console.log(`📦 Serving frontend from: ${frontendPath}`);
+  }
+
+  app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
+    console.error(err.stack);
+    res.status(500).send({
+      message: 'Internal Server Error',
+      error: isProduction ? 'Internal Server Error' : err.message,
+    });
+  });
 }
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
-  if (isProduction) {
-    console.log(`🌐 Frontend available at http://localhost:${PORT}`);
-  } else {
-    console.log(`🔧 Development mode - Frontend runs separately on http://localhost:3000`);
-  }
-});
+initializeApp()
+  .then(() => {
+    app?.listen(PORT, () => {
+      console.log(`🚀 Server running on http://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

@@ -1,24 +1,30 @@
 /**
- * Central types file for the backend
- * Import commonly used types from here instead of directly from packages
+ * API related types and interfaces
  */
 
-// Re-export Express types
-export type { Request, Response, NextFunction, Application } from 'express';
-
-// You can also create custom types here
+/**
+ * Standard API response wrapper
+ */
 export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
+  message?: string;
+  details?: string[];
 }
 
+/**
+ * Health check response
+ */
 export interface HealthCheckResponse {
   status: string;
   timestamp: string;
   environment: string;
 }
 
+/**
+ * Hello endpoint response
+ */
 export interface HelloResponse {
   message: string;
 }
