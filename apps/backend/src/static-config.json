@@ -1,0 +1,11 @@
+{
+  "auth": {
+    "saltRounds": 12
+  },
+  "cookie": {
+    "httpOnly": true,
+    "secure": false,
+    "sameSite": "lax",
+    "path": "/"
+  }
+}
