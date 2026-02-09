@@ -6,7 +6,7 @@ import { hashPassword, comparePassword, generateToken, staticConfig } from '../u
 class UserController {
   /**
    * Register a new user
-   * POST /api/user/register
+   * POST /api/user
    * Body: { email: string, password: string }
    */
   async register(req: Request, res: Response) {
@@ -124,6 +124,87 @@ class UserController {
     res.status(200).json({
       success: true,
       message: 'Logged out successfully',
+    });
+  }
+
+  /**
+   * Update user profile
+   * PUT /api/user
+   * Body: { email?: string, password?: string }
+   */
+  async update(req: Request, res: Response) {
+    const userId = (req as Request & { userId: string }).userId;
+    const { email, password } = req.body;
+    const userRepository = getUserRepository();
+
+    const user = await userRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+      return;
+    }
+
+    if (email && email !== user.email) {
+      const existingUser = await userRepository.findOne({ where: { email } });
+      if (existingUser) {
+        res.status(400).json({
+          success: false,
+          message: 'Email is already in use',
+        });
+        return;
+      }
+      user.email = email;
+    }
+
+    if (password) {
+      user.password = await hashPassword(password);
+    }
+
+    await userRepository.save(user);
+
+    res.status(200).json({
+      success: true,
+      message: 'User updated successfully',
+      data: {
+        id: user.id,
+        email: user.email,
+      },
+    });
+  }
+
+  /**
+   * Delete user account
+   * DELETE /api/user
+   */
+  async delete(req: Request, res: Response) {
+    const userId = (req as Request & { userId: string }).userId;
+    const userRepository = getUserRepository();
+
+    const user = await userRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+      return;
+    }
+
+    await userRepository.remove(user);
+
+    res.clearCookie('token', {
+      httpOnly: staticConfig.cookie.httpOnly,
+      secure: staticConfig.cookie.secure,
+      sameSite: staticConfig.cookie.sameSite as 'lax' | 'strict' | 'none',
+      path: staticConfig.cookie.path,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'User deleted successfully',
     });
   }
 }

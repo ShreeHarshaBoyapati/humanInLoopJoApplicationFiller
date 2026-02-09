@@ -4,7 +4,9 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
+import Job from './job.js';
 
 @Entity()
 export default class User {
@@ -19,6 +21,12 @@ export default class User {
 
   @Column('varchar', { nullable: true })
   sessionId!: string | null;
+
+  @Column('simple-array', { default: [] })
+  persona!: string[];
+
+  @OneToMany(() => Job, (job) => job.user)
+  jobs!: Job[];
 
   @CreateDateColumn()
   createdAt!: Date;
