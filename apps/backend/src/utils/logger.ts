@@ -2,7 +2,7 @@ import pino from 'pino';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-const redactPaths = [...(isProduction ? ['err.stack', 'error.stack'] : [])];
+const redactPaths = [...(isProduction ? ['error.stack'] : [])];
 
 export const logger = pino({
   level: isProduction ? 'info' : 'debug',
