@@ -1,0 +1,54 @@
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  ManyToOne,
+} from 'typeorm';
+import User from './user.js';
+
+@Entity()
+export default class Job {
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
+
+  @Column('varchar')
+  title!: string;
+
+  @Column('simple-array', { default: [] })
+  tags!: string[];
+
+  @Column('varchar', { default: 'default' })
+  persona!: string;
+
+  @Column('varchar', { default: 'draft' })
+  status!: string;
+
+  @Column('int', { default: 0 })
+  acceptanceLevel!: number;
+
+  @Column('varchar', { default: '' })
+  companyName!: string;
+
+  @Column('simple-json', { default: {} })
+  metaData!: object;
+
+  @Column('simple-json', { default: {} })
+  description!: object;
+
+  @Column('simple-json', { default: {} })
+  highlights!: object;
+
+  @Column('simple-array', { default: [] })
+  keySkills!: string[];
+
+  @ManyToOne(() => User, (user) => user.jobs, { onDelete: 'CASCADE' })
+  user!: User;
+
+  @CreateDateColumn()
+  createdAt!: Date;
+
+  @UpdateDateColumn()
+  updatedAt!: Date;
+}

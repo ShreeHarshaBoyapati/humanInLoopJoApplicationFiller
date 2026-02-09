@@ -15,6 +15,23 @@ const UserObj = z.object({
     ),
 });
 
+const UpdateUserObj = z
+  .object({
+    email: z.email().optional(),
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters long')
+      .regex(/\d/, 'Password must contain at least 1 number')
+      .regex(
+        /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/,
+        'Password must contain at least 1 special character'
+      )
+      .optional(),
+  })
+  .refine((data) => data.email || data.password, {
+    message: 'At least one of email or password must be provided',
+  });
+
 export async function authMiddleware(
   req: Request,
   res: Response,
@@ -97,6 +114,29 @@ export function loginInputValidation(req: Request, res: Response, next: NextFunc
     res.status(400).json({
       success: false,
       message: 'Invalid email or password',
+    });
+    return;
+  }
+}
+
+export function updateUserValidation(req: Request, res: Response, next: NextFunction) {
+  try {
+    req.body = UpdateUserObj.parse(req.body);
+    next();
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const errors = z.flattenError(error);
+      res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors,
+      });
+      return;
+    }
+
+    res.status(400).json({
+      success: false,
+      message: 'Invalid input',
     });
     return;
   }
