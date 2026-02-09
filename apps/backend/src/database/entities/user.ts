@@ -6,7 +6,7 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from 'typeorm';
-import Job from './job.js';
+import type Job from './job.js';
 
 @Entity()
 export default class User {
@@ -25,7 +25,7 @@ export default class User {
   @Column('simple-array', { default: [] })
   persona!: string[];
 
-  @OneToMany(() => Job, (job) => job.user)
+  @OneToMany('Job', 'user')
   jobs!: Job[];
 
   @CreateDateColumn()
