@@ -5,12 +5,12 @@ import type { Request, Response, NextFunction } from './types/index.js';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import cors from 'cors';
-import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import initializeDataSource from './database/data-source.js';
 import routes from './routes/index.js';
+import { logger, httpLogger } from './utils/index.js';
 
 let app: express.Application | null = null;
 const PORT = process.env.NODE_PORT;
@@ -28,9 +28,9 @@ async function initializeApp() {
   if (!appDataSource.isInitialized) {
     try {
       await appDataSource.initialize();
-      console.log('Database connected successfully');
+      logger.info('Database connected successfully');
     } catch (error) {
-      console.log('Failed to connect to Database');
+      logger.error({ err: error }, 'Failed to connect to Database');
       throw error;
     }
   }
@@ -52,7 +52,7 @@ async function initializeApp() {
       credentials: true,
     })
   );
-  app.use(morgan(isProduction ? 'combined' : 'dev'));
+  app.use(httpLogger);
   app.use(express.json());
 
   // ===== API Routes =====
@@ -81,11 +81,11 @@ async function initializeApp() {
       res.sendFile(path.join(frontendPath, 'index.html'));
     });
 
-    console.log(`📦 Serving frontend from: ${frontendPath}`);
+    logger.info({ path: frontendPath }, 'Serving frontend');
   }
 
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-    console.error(err.stack);
+    logger.error({ err }, 'Unhandled error');
     res.status(500).send({
       message: 'Internal Server Error',
       error: isProduction ? 'Internal Server Error' : err.message,
@@ -96,10 +96,10 @@ async function initializeApp() {
 initializeApp()
   .then(() => {
     app?.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
+      logger.info({ port: PORT }, 'Server started');
     });
   })
   .catch((err) => {
-    console.error(err);
+    logger.error({ err }, 'Failed to initialize app');
     process.exit(1);
   });

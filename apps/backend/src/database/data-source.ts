@@ -1,4 +1,5 @@
 import { DataSource } from 'typeorm';
+import entities from './entities/index.js';
 
 let appDataSource: DataSource | null = null;
 // TODO: need to use encryted password
@@ -15,7 +16,7 @@ const initializeDataSource = () => {
     type: 'postgres',
     synchronize: true,
     logging: false,
-    entities: ['./entities/**/*.js'],
+    entities: entities,
     subscribers: [],
     migrations: [],
     host: dbConfig.host || 'localhost',
