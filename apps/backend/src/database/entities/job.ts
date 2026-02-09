@@ -6,7 +6,7 @@ import {
   UpdateDateColumn,
   ManyToOne,
 } from 'typeorm';
-import User from './user.js';
+import type User from './user.js';
 
 @Entity()
 export default class Job {
@@ -43,7 +43,7 @@ export default class Job {
   @Column('simple-array', { default: [] })
   keySkills!: string[];
 
-  @ManyToOne(() => User, (user) => user.jobs, { onDelete: 'CASCADE' })
+  @ManyToOne('User', 'jobs', { onDelete: 'CASCADE' })
   user!: User;
 
   @CreateDateColumn()
