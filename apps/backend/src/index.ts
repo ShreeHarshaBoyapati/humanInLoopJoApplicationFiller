@@ -13,7 +13,7 @@ import routes from './routes/index.js';
 import { logger, httpLogger } from './utils/index.js';
 
 let app: express.Application | null = null;
-const PORT = process.env.NODE_PORT;
+const PORT = parseInt(process.env.NODE_PORT || '0');
 const isProduction = process.env.NODE_ENV === 'production';
 
 async function initializeApp() {
@@ -94,7 +94,7 @@ async function initializeApp() {
 
 initializeApp()
   .then(() => {
-    app?.listen(PORT, () => {
+    app?.listen(PORT, '0.0.0.0', () => {
       logger.info({ port: PORT }, 'Server started');
     });
   })
