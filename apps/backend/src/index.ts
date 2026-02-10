@@ -49,7 +49,6 @@ async function initializeApp() {
   app.use(
     cors({
       origin: FRONTEND_ORIGIN,
-      credentials: true,
     })
   );
   app.use(httpLogger);
