@@ -19,11 +19,7 @@ const initializeDataSource = () => {
     entities: entities,
     subscribers: [],
     migrations: [],
-    host: dbConfig.host || 'localhost',
-    port: typeof dbConfig.port === 'number' ? dbConfig.port : parseInt(dbConfig.port, 10) || 5432,
-    username: dbConfig.username || 'postgres',
-    password: String(dbConfig.password || ''),
-    database: dbConfig.database || 'jfp',
+    ...dbConfig,
   });
   return appDataSource;
 };
