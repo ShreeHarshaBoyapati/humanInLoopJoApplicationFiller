@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import dotenv from 'dotenv';
-dotenv.config();
+dotenv.config({ path: '../../.env' });
 import express from 'express';
 import type { Request, Response, NextFunction } from './types/index.js';
 import helmet from 'helmet';
