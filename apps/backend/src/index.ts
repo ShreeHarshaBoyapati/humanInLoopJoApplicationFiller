@@ -22,7 +22,7 @@ async function initializeApp() {
 
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
-  const FRONTEND_ORIGIN = process.env.NODE_CORS_ORIGIN || 'http://localhost:3000';
+  const FRONTEND_ORIGIN = process.env.NODE_CORS_ORIGIN || '*';
 
   const appDataSource = initializeDataSource();
 

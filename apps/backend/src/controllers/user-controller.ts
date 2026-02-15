@@ -95,6 +95,7 @@ class UserController {
       success: true,
       message: 'Login successful',
       data: {
+        token,
         user: {
           id: user.id,
           email: user.email,
