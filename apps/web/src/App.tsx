@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import reactLogo from './assets/react.svg';
+import { SampleIcon } from '@repo/assets';
 import viteLogo from '/vite.svg';
 import './App.css';
 import { Button } from '@repo/ui/button';
@@ -56,6 +57,7 @@ function App() {
         </a>
       </div>
       <h1>Vite + React + Express</h1>
+      <SampleIcon />
 
       {/* Backend Connection Status */}
       <div className="card">
