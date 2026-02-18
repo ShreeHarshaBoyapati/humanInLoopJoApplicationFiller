@@ -64,12 +64,17 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 
   if (message.action === 'LOGOUT') {
-    api.post('/user/logout').finally(() => {
-      // Always remove token even if server request fails
-      chrome.storage.local.remove('token', () => {
-        sendResponse({ success: true });
+    api
+      .post('/user/logout')
+      .then(() => {
+        chrome.storage.local.remove('token', () => {
+          sendResponse({ success: true });
+        });
+      })
+      .catch((error) => {
+        console.error('Logout error:', error);
+        sendResponse({ success: false, error: error.message || 'Logout failed' });
       });
-    });
 
     return true;
   }

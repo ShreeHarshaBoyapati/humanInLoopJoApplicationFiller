@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { useState } from 'react';
+import { SyntheticEvent, useState } from 'react';
 import styles from './style/login.module.css';
 
 interface LoginResponse {
@@ -18,7 +18,7 @@ function LoginComponent() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: SyntheticEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
