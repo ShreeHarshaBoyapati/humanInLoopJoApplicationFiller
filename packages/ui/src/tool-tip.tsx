@@ -90,9 +90,13 @@ const StyledTooltipScrollableContent = styled(Box)({
   marginRight: '-4px',
 });
 
-interface EnhancedTooltipWithTextProps extends Omit<TooltipProps, 'title'> {
+export interface EnhancedTooltipWithTextProps extends Omit<
+  TooltipProps,
+  'title' | 'children' | 'ref'
+> {
   description: string;
-  showIcon: boolean;
+  showIcon?: boolean;
+  children?: React.ReactElement;
   customProps?: {
     props?: Partial<CustomWidthTooltipProps>;
     childProps?: {
@@ -107,7 +111,7 @@ interface EnhancedTooltipWithTextProps extends Omit<TooltipProps, 'title'> {
   };
 }
 
-const EnhancedTooltipWithText = forwardRef<HTMLDivElement, EnhancedTooltipWithTextProps>(
+export const EnhancedTooltipWithText = forwardRef<HTMLDivElement, EnhancedTooltipWithTextProps>(
   (
     {
       placement = 'top',
@@ -144,7 +148,6 @@ const EnhancedTooltipWithText = forwardRef<HTMLDivElement, EnhancedTooltipWithTe
         <CustomWidthTooltip
           title={tooltipTitle}
           placement={placement}
-          open={true}
           arrow
           {...(customProps?.props || {})}
         >
@@ -162,5 +165,3 @@ const EnhancedTooltipWithText = forwardRef<HTMLDivElement, EnhancedTooltipWithTe
 );
 
 EnhancedTooltipWithText.displayName = 'EnhancedTooltipWithText';
-
-export default EnhancedTooltipWithText;

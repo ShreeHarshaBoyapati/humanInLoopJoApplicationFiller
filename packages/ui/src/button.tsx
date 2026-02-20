@@ -120,7 +120,6 @@ const sizeStyles = {
     width: 'fit-content',
     fontWeight: 500,
     maxWidth: '100px',
-    lineHeight: '1em',
   },
   medium: {
     minHeight: '32px',
@@ -131,7 +130,6 @@ const sizeStyles = {
     width: 'fit-content',
     fontWeight: 500,
     maxWidth: '144px',
-    lineHeight: '1em',
   },
   large: {
     minHeight: '36px',
@@ -142,7 +140,6 @@ const sizeStyles = {
     width: 'fit-content',
     fontWeight: 500,
     maxWidth: '144px',
-    lineHeight: '1em',
   },
 } satisfies Record<string, CSSObject>;
 
@@ -169,7 +166,7 @@ const StyledButton = styled(Button, {
     ...sizeStyle,
     boxShadow: 'none',
     textTransform: 'none' as const,
-    lineHeight: 1.5,
+    lineHeight: 1.2,
     fontFamily: styleConstants.secondaryFont,
     minWidth: 'auto',
     transition: 'scale 0.5s ease',
@@ -233,13 +230,13 @@ const EnhancedButton = forwardRef<HTMLButtonElement, EnhancedButtonProps>(
         {...(customProps?.props || {})}
       >
         <span
+          {...(customProps?.childProps?.span || {})}
           style={{
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
             ...(customProps?.childProps?.span?.style || {}),
           }}
-          {...(customProps?.childProps?.span || {})}
         >
           {label}
         </span>
