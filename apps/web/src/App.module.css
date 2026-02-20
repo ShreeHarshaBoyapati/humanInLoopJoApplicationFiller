@@ -1,0 +1,72 @@
+/* App.module.css */
+
+.container {
+  align-items: flex-start;
+  background-color: var(--black-700);
+  color: var(--white-900);
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+  min-height: 100vh;
+  padding: 20px;
+  text-align: left;
+  width: 100%;
+}
+
+.header {
+  align-self: center;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.card {
+  background-color: #f9f9f9;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  margin-top: 1rem;
+  padding: 2em;
+}
+
+.section {
+  width: 100%;
+}
+
+.sectionTitle {
+  border-bottom: 1px solid #ccc;
+  font-size: 1.5rem;
+  font-weight: 500;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  text-transform: capitalize;
+}
+
+.grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+.variantContainer {
+  align-items: center;
+  border: 1px dashed #eee;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 15px;
+  transition: border-color 0.2s;
+}
+
+.variantContainer:hover {
+  border-color: var(--blue-500);
+}
+
+.variantContainerDisabled {
+  opacity: 0.7;
+}
+
+.variantLabel {
+  color: #888;
+  font-family: monospace;
+  font-size: 12px;
+}
