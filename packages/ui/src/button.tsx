@@ -116,7 +116,7 @@ const sizeStyles = {
     height: '2em',
     maxHeight: '32px',
     padding: '0.5em 1em',
-    fontSize: '0.625rem',
+    fontSize: '0.75rem',
     width: 'fit-content',
     fontWeight: 500,
     maxWidth: '144px',
@@ -182,7 +182,7 @@ const StyledButton = styled(Button, {
   };
 });
 
-interface EnhancedButtonProps extends Omit<ButtonProps, 'color' | 'variant'> {
+export interface EnhancedButtonProps extends Omit<ButtonProps, 'color' | 'variant'> {
   label?: string;
   testId?: string;
   colorTheme: ColorTheme;
@@ -197,7 +197,7 @@ interface EnhancedButtonProps extends Omit<ButtonProps, 'color' | 'variant'> {
   };
 }
 
-const EnhancedButton = forwardRef<HTMLButtonElement, EnhancedButtonProps>(
+export const EnhancedButton = forwardRef<HTMLButtonElement, EnhancedButtonProps>(
   (
     {
       id = '',
@@ -249,5 +249,3 @@ const EnhancedButton = forwardRef<HTMLButtonElement, EnhancedButtonProps>(
 );
 
 EnhancedButton.displayName = 'EnhancedButton';
-
-export default EnhancedButton;
