@@ -112,19 +112,19 @@ type ColorTheme = keyof typeof colorThemeStyles;
 
 const sizeStyles = {
   small: {
-    minHeight: '24px',
-    height: '2.4em',
-    maxHeight: '28px',
+    minHeight: '28px',
+    height: '2em',
+    maxHeight: '32px',
     padding: '0.5em 1em',
     fontSize: '0.625rem',
     width: 'fit-content',
     fontWeight: 500,
-    maxWidth: '100px',
+    maxWidth: '144px',
   },
   medium: {
-    minHeight: '32px',
-    height: '2em',
-    maxHeight: '36px',
+    minHeight: '38px',
+    maxHeight: '42px',
+    height: '2.3em',
     padding: '0.5em 1em',
     fontSize: '1rem',
     width: 'fit-content',
@@ -132,9 +132,9 @@ const sizeStyles = {
     maxWidth: '144px',
   },
   large: {
-    minHeight: '36px',
-    maxHeight: '42px',
-    height: '2.5em',
+    minHeight: '42px',
+    maxHeight: '46px',
+    height: '2.3em',
     padding: '0.5em 1em',
     fontSize: '1.125rem',
     width: 'fit-content',
@@ -184,6 +184,7 @@ const StyledButton = styled(Button, {
 
 interface EnhancedButtonProps extends Omit<ButtonProps, 'color' | 'variant'> {
   label?: string;
+  testId?: string;
   colorTheme: ColorTheme;
   customProps?: {
     props?: Omit<
@@ -200,6 +201,7 @@ const EnhancedButton = forwardRef<HTMLButtonElement, EnhancedButtonProps>(
   (
     {
       id = '',
+      testId = '',
       label,
       onClick,
       size = 'medium',
@@ -227,6 +229,7 @@ const EnhancedButton = forwardRef<HTMLButtonElement, EnhancedButtonProps>(
         endIcon={endIcon}
         colorTheme={colorTheme}
         className={className}
+        data-testId={testId}
         {...(customProps?.props || {})}
       >
         <span

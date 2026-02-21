@@ -1,6 +1,6 @@
-import { Typography, styled, Box, TypographyProps, BoxProps } from '@mui/material';
+import { Typography, styled, Box, type TypographyProps, type BoxProps } from '@mui/material';
 import styleConstants from './constants/style-constants';
-import { EnhancedTooltipWithText, EnhancedTooltipWithTextProps } from './tool-tip';
+import { EnhancedTooltipWithText, type EnhancedTooltipWithTextProps } from './tool-tip';
 
 interface LabelProps {
   thin?: boolean;

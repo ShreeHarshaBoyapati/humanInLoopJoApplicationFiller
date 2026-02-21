@@ -4,6 +4,7 @@ const colorPaletteConfig = {
   black800: '#14121a', // component background
   white900: '#FFF',
   white700: 'color-mix(in oklab, #fff 70%, transparent)',
+  grey300: '#65758529',
   grey500: '#98989f', //text and icons
   grey700: '#3B3440',
   blue500: '#06B6D4',

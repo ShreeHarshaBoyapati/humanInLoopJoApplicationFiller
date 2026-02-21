@@ -1,15 +1,15 @@
-import { forwardRef, SVGProps } from 'react';
+import { forwardRef, type SVGProps } from 'react';
 import {
   Box,
-  BoxProps,
+  type BoxProps,
   Tooltip,
-  TooltipProps,
+  type TooltipProps,
   IconButton,
   Typography,
-  TypographyProps,
+  type TypographyProps,
   tooltipClasses,
-  SxProps,
-  ButtonProps,
+  type SxProps,
+  type ButtonProps,
 } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import styleConstants from './constants/style-constants';
