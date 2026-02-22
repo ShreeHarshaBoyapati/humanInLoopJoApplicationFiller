@@ -1,7 +1,9 @@
-import type { Request, Response } from '../types/index.js';
+import type { Response, TypedRequest, AuthenticatedTypedRequest } from '../types/index.js';
+import type { ApiResponse, UserPublic } from '@repo/shared-types';
 import { v4 as uuidv4 } from 'uuid';
 import { getUserRepository } from '../database/repositories/index.js';
 import { hashPassword, comparePassword, generateToken, staticConfig } from '../utils/index.js';
+import { LoginInputType, RegisterInputType, UpdateUserInputType } from '../middlewares/user.js';
 
 class UserController {
   /**
@@ -9,7 +11,7 @@ class UserController {
    * POST /api/user
    * Body: { email: string, password: string }
    */
-  async register(req: Request, res: Response) {
+  async register(req: TypedRequest<RegisterInputType>, res: Response) {
     const { email, password } = req.body;
     const userRepository = getUserRepository();
 
@@ -18,10 +20,11 @@ class UserController {
     });
 
     if (existingUser) {
-      res.status(400).json({
+      const errorResponse: ApiResponse = {
         success: false,
         message: 'User with this email already exists',
-      });
+      };
+      res.status(400).json(errorResponse);
       return;
     }
 
@@ -33,14 +36,15 @@ class UserController {
       sessionId: null,
     });
 
-    res.status(201).json({
+    const response: ApiResponse<UserPublic> = {
       success: true,
       message: 'User registered successfully. Please login to continue.',
       data: {
         id: user.id,
         email: user.email,
       },
-    });
+    };
+    res.status(201).json(response);
   }
 
   /**
@@ -48,29 +52,26 @@ class UserController {
    * POST /api/user/login
    * Body: { email: string, password: string }
    */
-  async login(req: Request, res: Response) {
+  async login(req: TypedRequest<LoginInputType>, res: Response) {
     const { email, password } = req.body;
     const userRepository = getUserRepository();
 
     const user = await userRepository.findOne({
       where: { email: email },
     });
-
+    const errData: ApiResponse = {
+      success: false,
+      message: 'Invalid email or password',
+    };
     if (!user) {
-      res.status(400).json({
-        success: false,
-        message: 'Invalid email or password',
-      });
+      res.status(400).json(errData);
       return;
     }
 
     const isPasswordValid = await comparePassword(password, user.password);
 
     if (!isPasswordValid) {
-      res.status(400).json({
-        success: false,
-        message: 'Invalid email or password',
-      });
+      res.status(400).json(errData);
       return;
     }
 
@@ -90,18 +91,16 @@ class UserController {
       sameSite: staticConfig.cookie.sameSite as 'lax' | 'strict' | 'none',
       path: staticConfig.cookie.path,
     });
-
-    res.status(200).json({
+    const data: ApiResponse<UserPublic> = {
       success: true,
       message: 'Login successful',
       data: {
         token,
-        user: {
-          id: user.id,
-          email: user.email,
-        },
+        id: user.id,
+        email: user.email,
       },
-    });
+    };
+    res.status(200).json(data);
   }
 
   /**
@@ -109,8 +108,8 @@ class UserController {
    * POST /api/user/logout
    * Headers: Authorization: Bearer <token>
    */
-  async logout(req: Request, res: Response) {
-    const userId = (req as Request & { userId: string }).userId;
+  async logout(req: AuthenticatedTypedRequest<null>, res: Response) {
+    const userId = req.userId!;
     const userRepository = getUserRepository();
 
     await userRepository.update(userId, { sessionId: null });
@@ -133,8 +132,8 @@ class UserController {
    * PUT /api/user
    * Body: { email?: string, password?: string }
    */
-  async update(req: Request, res: Response) {
-    const userId = (req as Request & { userId: string }).userId;
+  async update(req: AuthenticatedTypedRequest<UpdateUserInputType>, res: Response) {
+    const userId = req.userId!;
     const { email, password } = req.body;
     const userRepository = getUserRepository();
 
@@ -180,8 +179,8 @@ class UserController {
    * Delete user account
    * DELETE /api/user
    */
-  async delete(req: Request, res: Response) {
-    const userId = (req as Request & { userId: string }).userId;
+  async delete(req: AuthenticatedTypedRequest<null>, res: Response) {
+    const userId = req.userId!;
     const userRepository = getUserRepository();
 
     const user = await userRepository.findOne({ where: { id: userId } });

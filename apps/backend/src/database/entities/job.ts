@@ -32,13 +32,13 @@ export default class Job {
   companyName!: string;
 
   @Column('simple-json', { default: {} })
-  metaData!: object;
+  metaData!: Record<string, unknown>;
 
   @Column('simple-json', { default: {} })
-  description!: object;
+  description!: Record<string, unknown>;
 
   @Column('simple-json', { default: {} })
-  highlights!: object;
+  highlights!: Record<string, unknown>;
 
   @Column('simple-array', { default: [] })
   keySkills!: string[];

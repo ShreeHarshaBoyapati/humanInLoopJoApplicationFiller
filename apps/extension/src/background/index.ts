@@ -1,4 +1,7 @@
 import axios from 'axios';
+import type { ExtensionMessage } from '@repo/shared-types';
+import { handleUserMessage } from './handlers/user-handler.js';
+
 console.log('Background service worker started');
 
 // Listen for installation
@@ -28,78 +31,13 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// Listen for messages from the UI
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message.action === 'CHECK_AUTH') {
-    chrome.storage.local.get(['token'], (result: { token?: string }) => {
-      sendResponse({ isAuthenticated: !!result.token });
-    });
-    return true; // Indicates asynchronous response
-  }
+// Listen for messages from the UI — dispatch to entity handlers
+chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendResponse) => {
+  // User-related actions
+  const handled = handleUserMessage(message, sendResponse, api);
+  if (handled) return true;
 
-  if (message.action === 'NewUser') {
-    const { email, password } = message.payload;
-
-    api
-      .post('/user', {
-        email,
-        password,
-      })
-      .then((response) => {
-        const { data } = response;
-        if (data.success) {
-          sendResponse({ success: true });
-        } else {
-          sendResponse({ success: false, error: data.message || 'Registration failed' });
-        }
-      })
-      .catch((error) => {
-        console.error('Registration error:', error);
-        sendResponse({ success: false, error: error.response?.data?.message || error.message });
-      });
-
-    return true; // Keep channel open
-  }
-
-  if (message.action === 'LOGIN') {
-    const { email, password } = message.payload;
-
-    api
-      .post('/user/login', {
-        email,
-        password,
-      })
-      .then((response) => {
-        const { data } = response;
-        if (data.success && data.data?.token) {
-          chrome.storage.local.set({ token: data.data.token }, () => {
-            sendResponse({ success: true, token: data.data.token });
-          });
-        } else {
-          sendResponse({ success: false, error: data.message || 'Login failed' });
-        }
-      })
-      .catch((error) => {
-        console.error('Login error:', error);
-        sendResponse({ success: false, error: error.response?.data?.message || error.message });
-      });
-
-    return true; // Keep channel open
-  }
-
-  if (message.action === 'LOGOUT') {
-    api
-      .post('/user/logout')
-      .then(() => {
-        chrome.storage.local.remove('token', () => {
-          sendResponse({ success: true });
-        });
-      })
-      .catch((error) => {
-        console.error('Logout error:', error);
-        sendResponse({ success: false, error: error.message || 'Logout failed' });
-      });
-
-    return true;
-  }
+  // Future: add more handlers here
+  // const handled = handleJobMessage(message, sendResponse, api);
+  // if (handled) return true;
 });

@@ -3,7 +3,7 @@
  */
 
 import { JwtPayload } from 'jsonwebtoken';
-import { Request } from 'express';
+import { Request, ParamsDictionary } from 'express-serve-static-core';
 
 /**
  * Password validation result
@@ -32,7 +32,7 @@ export interface DecodedToken extends JwtPayload {
 /**
  * Extended Request with authenticated user information
  */
-export interface AuthenticatedRequest extends Request {
-  userId?: string;
-  sessionId?: string;
-}
+export type AuthenticatedTypedRequest<TBody> = Request<ParamsDictionary, never, TBody> & {
+  userId: string;
+  sessionId: string;
+};

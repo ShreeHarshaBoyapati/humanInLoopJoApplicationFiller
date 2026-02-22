@@ -6,13 +6,14 @@ import {
   updateUserValidation,
   authMiddleware,
 } from '../middlewares/user.js';
+import { asHandler } from '../types/api.js';
 
 const router: express.Router = express.Router();
 
-router.post('/', registerInputValidation, UserController.register);
-router.post('/login', loginInputValidation, UserController.login);
-router.post('/logout', authMiddleware, UserController.logout);
-router.put('/', authMiddleware, updateUserValidation, UserController.update);
-router.delete('/', authMiddleware, UserController.delete);
+router.post('/', registerInputValidation, asHandler(UserController.register));
+router.post('/login', loginInputValidation, asHandler(UserController.login));
+router.post('/logout', authMiddleware, asHandler(UserController.logout));
+router.put('/', authMiddleware, updateUserValidation, asHandler(UserController.update));
+router.delete('/', authMiddleware, asHandler(UserController.delete));
 
 export default router;

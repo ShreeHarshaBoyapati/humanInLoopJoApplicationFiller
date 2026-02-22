@@ -107,7 +107,13 @@ function NewUserComponent() {
             }}
           />
         </div>
-        {error && <div className={styles.error}>{error}</div>}
+        {error && (
+          <div className={styles.error}>
+            {error.split('. ').map((line, index) => (
+              <p key={index}>{line}</p>
+            ))}
+          </div>
+        )}
         <div className={styles.buttonGroup}>
           <EnhancedButton
             type="submit"

@@ -123,7 +123,13 @@ function LoginComponent() {
             }}
           />
         </div>
-        {error && <div className={styles.error}>{error}</div>}
+        {error && (
+          <div className={styles.error}>
+            {error.split('. ').map((line, index) => (
+              <p key={index}>{line}</p>
+            ))}
+          </div>
+        )}
         <EnhancedButton
           type="submit"
           disabled={loading}
