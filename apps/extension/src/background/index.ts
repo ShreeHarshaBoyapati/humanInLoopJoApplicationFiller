@@ -37,6 +37,30 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     return true; // Indicates asynchronous response
   }
 
+  if (message.action === 'NewUser') {
+    const { email, password } = message.payload;
+
+    api
+      .post('/user', {
+        email,
+        password,
+      })
+      .then((response) => {
+        const { data } = response;
+        if (data.success) {
+          sendResponse({ success: true });
+        } else {
+          sendResponse({ success: false, error: data.message || 'Registration failed' });
+        }
+      })
+      .catch((error) => {
+        console.error('Registration error:', error);
+        sendResponse({ success: false, error: error.response?.data?.message || error.message });
+      });
+
+    return true; // Keep channel open
+  }
+
   if (message.action === 'LOGIN') {
     const { email, password } = message.payload;
 

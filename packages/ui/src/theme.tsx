@@ -8,5 +8,4 @@ const theme = createTheme({
   },
 });
 
-export { ThemeProvider, CssBaseline };
-export default theme;
+export { theme, ThemeProvider, CssBaseline };

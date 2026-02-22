@@ -8,17 +8,16 @@ import LockIcon from '@mui/icons-material/Lock';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
-interface LoginResponse {
+interface NewUserResponse {
   success: boolean;
-  token?: string;
   error?: string;
 }
 
-export const Route = createFileRoute('/login')({
-  component: LoginComponent,
+export const Route = createFileRoute('/new-user')({
+  component: NewUserComponent,
 });
 
-function LoginComponent() {
+function NewUserComponent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passVisible, setPassVisible] = useState(false);
@@ -26,15 +25,15 @@ function LoginComponent() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = async (e: SyntheticEvent) => {
+  const handleRegister = async (e: SyntheticEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
       if (typeof chrome !== 'undefined' && chrome.runtime) {
-        const response = await new Promise<LoginResponse>((resolve) => {
-          chrome.runtime.sendMessage({ action: 'LOGIN', payload: { email, password } }, (res) => {
+        const response = await new Promise<NewUserResponse>((resolve) => {
+          chrome.runtime.sendMessage({ action: 'NewUser', payload: { email, password } }, (res) => {
             if (chrome.runtime.lastError) {
               resolve({ success: false, error: chrome.runtime.lastError.message });
             } else {
@@ -44,16 +43,17 @@ function LoginComponent() {
         });
 
         if (response.success) {
-          window.location.reload();
+          navigate({ to: '/login' });
         } else {
-          throw new Error(response.error || 'Login failed');
+          throw new Error(response.error || 'Registration failed');
         }
       } else {
-        console.warn('Chrome runtime not available, simulating login');
-        alert('Chrome runtime not available. Cannot login via background script.');
+        // Dev mode fallback
+        console.warn('Chrome runtime not available, simulating registration');
+        alert('Chrome runtime not available. Cannot register via background script.');
       }
     } catch (err: unknown) {
-      console.error('Login error:', err);
+      console.error('Registration error:', err);
       if (err instanceof Error) {
         setError(err.message);
       } else {
@@ -66,24 +66,8 @@ function LoginComponent() {
 
   return (
     <div className={styles.container}>
-      <h2 className={styles.heading}>Login</h2>
-      <div className={styles.signUp}>
-        <p>New to job filler?</p>
-        <EnhancedButton
-          type="button"
-          onClick={() => navigate({ to: '/new-user' })}
-          label="Create new user"
-          colorTheme="secondary"
-          size="medium"
-          customProps={{ props: { sx: { maxWidth: 'fit-content' } } }}
-        />
-        <div className={styles.orDiv}>
-          <div />
-          <span>OR</span>
-          <div />
-        </div>
-      </div>
-      <form onSubmit={handleLogin} className={styles.form}>
+      <h2 className={styles.heading}>Sign up</h2>
+      <form onSubmit={handleRegister} className={styles.form}>
         <div>
           <EnhancedTextField
             type="email"
@@ -124,14 +108,24 @@ function LoginComponent() {
           />
         </div>
         {error && <div className={styles.error}>{error}</div>}
-        <EnhancedButton
-          type="submit"
-          disabled={loading}
-          label={loading ? 'Logging in...' : 'Login'}
-          colorTheme="primary"
-          size="medium"
-          customProps={{ props: { sx: { width: '100%', maxWidth: '154px' } } }}
-        />
+        <div className={styles.buttonGroup}>
+          <EnhancedButton
+            type="submit"
+            disabled={loading}
+            label={loading ? 'Creating...' : 'Create User'}
+            colorTheme="primary"
+            size="medium"
+            customProps={{ props: { sx: { width: '100%' } } }}
+          />
+          <EnhancedButton
+            type="button"
+            onClick={() => navigate({ to: '/login' })}
+            label="Back to Login"
+            colorTheme="secondary"
+            size="medium"
+            customProps={{ props: { sx: { maxWidth: 'fit-content' } } }}
+          />
+        </div>
       </form>
     </div>
   );

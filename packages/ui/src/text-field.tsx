@@ -113,7 +113,7 @@ const StyledTextField = styled(TextField, {
   };
 });
 
-const renderStartAdornment = (startIcon: ReactNode, props: Record<string, unknown> = {}) => {
+const renderStartAdornment = (startIcon: ReactNode, props: BoxProps) => {
   if (!startIcon) return null;
   return (
     <Box
@@ -124,12 +124,43 @@ const renderStartAdornment = (startIcon: ReactNode, props: Record<string, unknow
         height: '100%',
         borderRight: `1px solid ${styleConstants.grey700}`,
         cursor: 'auto',
-        ...props,
       }}
+      {...(props || {})}
     >
       {startIcon}
     </Box>
   );
+};
+
+const renderEndAdornment = (endIcon: ReactNode, props: BoxProps = {}) => {
+  if (!endIcon) return null;
+  return (
+    <Box
+      {...(props || {})}
+      sx={{
+        display: 'flex',
+        alignItems: 'center',
+        paddingRight: '0.5em',
+        height: '100%',
+        cursor: 'auto',
+        ...(props?.sx || {}),
+      }}
+    >
+      {endIcon}
+    </Box>
+  );
+};
+
+type CustomProps = {
+  props?: Partial<Omit<TextFieldProps, 'size' | 'variant' | 'type' | 'slotProps'>>;
+  childProps?: {
+    parentBox?: Partial<BoxProps>;
+    fieldLabel?: Partial<Omit<EnhancedFieldLabelProps, 'label' | 'showTooltip' | 'tooltipText'>>;
+    textfieldBox?: Partial<BoxProps>;
+    slotProps?: Partial<TextFieldProps['slotProps']>;
+    startIconProps?: Partial<BoxProps>;
+    endIconProps?: Partial<BoxProps>;
+  };
 };
 
 interface EnhancedTextFieldProps extends Omit<TextFieldProps, 'size' | 'variant' | 'type'> {
@@ -142,15 +173,7 @@ interface EnhancedTextFieldProps extends Omit<TextFieldProps, 'size' | 'variant'
   tooltipText?: string;
   startIcon?: ReactNode;
   endIcon?: ReactNode;
-  customProps?: {
-    props: Partial<Omit<TextFieldProps, 'size' | 'variant' | 'type' | 'slotProps'>>;
-    childProps: {
-      parentBox: BoxProps;
-      fieldLabel: Partial<Omit<EnhancedFieldLabelProps, 'label' | 'showTooltip' | 'tooltipText'>>;
-      textfieldBox: BoxProps;
-      slotProps: TextFieldProps['slotProps'];
-    };
-  };
+  customProps?: Partial<CustomProps>;
 }
 
 export const EnhancedTextField = forwardRef<HTMLInputElement, EnhancedTextFieldProps>(
@@ -181,6 +204,8 @@ export const EnhancedTextField = forwardRef<HTMLInputElement, EnhancedTextFieldP
             htmlInput: {},
             input: {},
           },
+          startIconProps: {},
+          endIconProps: {},
         },
       },
     },
@@ -243,8 +268,11 @@ export const EnhancedTextField = forwardRef<HTMLInputElement, EnhancedTextFieldP
                 ...(customProps.childProps?.slotProps?.htmlInput || {}),
               },
               input: {
-                startAdornment: renderStartAdornment(startIcon),
-                endAdornment: endIcon,
+                startAdornment: renderStartAdornment(
+                  startIcon,
+                  customProps.childProps?.startIconProps || {}
+                ),
+                endAdornment: renderEndAdornment(endIcon, customProps.childProps?.endIconProps),
                 ...customProps?.childProps?.slotProps?.input,
               },
             }}

@@ -9,10 +9,16 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root';
+import { Route as NewUserRouteImport } from './routes/new-user';
 import { Route as LoginRouteImport } from './routes/login';
 import { Route as AboutRouteImport } from './routes/about';
 import { Route as IndexRouteImport } from './routes/index';
 
+const NewUserRoute = NewUserRouteImport.update({
+  id: '/new-user',
+  path: '/new-user',
+  getParentRoute: () => rootRouteImport,
+} as any);
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -33,34 +39,45 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute;
   '/about': typeof AboutRoute;
   '/login': typeof LoginRoute;
+  '/new-user': typeof NewUserRoute;
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute;
   '/about': typeof AboutRoute;
   '/login': typeof LoginRoute;
+  '/new-user': typeof NewUserRoute;
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
   '/': typeof IndexRoute;
   '/about': typeof AboutRoute;
   '/login': typeof LoginRoute;
+  '/new-user': typeof NewUserRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: '/' | '/about' | '/login';
+  fullPaths: '/' | '/about' | '/login' | '/new-user';
   fileRoutesByTo: FileRoutesByTo;
-  to: '/' | '/about' | '/login';
-  id: '__root__' | '/' | '/about' | '/login';
+  to: '/' | '/about' | '/login' | '/new-user';
+  id: '__root__' | '/' | '/about' | '/login' | '/new-user';
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute;
   AboutRoute: typeof AboutRoute;
   LoginRoute: typeof LoginRoute;
+  NewUserRoute: typeof NewUserRoute;
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/new-user': {
+      id: '/new-user';
+      path: '/new-user';
+      fullPath: '/new-user';
+      preLoaderRoute: typeof NewUserRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/login': {
       id: '/login';
       path: '/login';
@@ -89,6 +106,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   LoginRoute: LoginRoute,
+  NewUserRoute: NewUserRoute,
 };
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

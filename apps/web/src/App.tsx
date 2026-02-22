@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import styles from './App.module.css';
-import Button from '@repo/ui/button.tsx';
+import { EnhancedFieldLabel as FieldLabel } from '@repo/ui/field-label.tsx';
+import { EnhancedTextField as TextField } from '@repo/ui/text-field.tsx';
+import { EnhancedButton as Button } from '@repo/ui/button.tsx';
+import scrollbarStyles from '@repo/ui/scroll-bar.module.css';
 
 // API URL: In production, frontend and backend are on same origin
 // In development, backend runs on port 3001
@@ -14,17 +17,6 @@ interface HealthResponse {
   status: string;
   timestamp: string;
 }
-
-// Define all button theme variants available in the Button component
-const colorThemes = [
-  'primary',
-  'secondary',
-  'tertiary',
-  'negativeSecondary',
-  'hyperLinkTertiary',
-] as const;
-
-const sizes = ['small', 'medium', 'large'] as const;
 
 function App() {
   const [apiMessage, setApiMessage] = useState<string>('Loading...');
@@ -54,9 +46,9 @@ function App() {
   }, []);
 
   return (
-    <div className={styles.container}>
+    <div className={`${styles.container} ${scrollbarStyles.scrollbarVerticalContainer}`}>
       <header className={styles.header}>
-        <h1>Button Design System Gallery</h1>
+        <h1>Field Label Design System Gallery</h1>
         <div className={styles.card}>
           <p>
             <strong>Backend Status:</strong> {backendStatus} | <strong>API Message:</strong>{' '}
@@ -65,25 +57,306 @@ function App() {
         </div>
       </header>
 
-      {sizes.map((size) => (
-        <section key={size} className={styles.section}>
-          <h2 className={styles.sectionTitle}>{size} Size Variants</h2>
-          <div className={styles.grid}>
-            {colorThemes.map((theme) => (
-              <div key={`${size}-${theme}`} className={styles.variantContainer}>
-                <span className={styles.variantLabel}>{theme}</span>
-                <Button label="Button" size={size} colorTheme={theme} />
-              </div>
-            ))}
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Basic Label Variants</h2>
+        <div className={styles.grid}>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Default (Bold)</span>
+            <FieldLabel label="Username" />
+          </div>
 
-            {/* Disabled State Example */}
-            <div className={`${styles.variantContainer} ${styles.variantContainerDisabled}`}>
-              <span className={styles.variantLabel}>disabled</span>
-              <Button label="Disabled" size={size} colorTheme="primary" disabled />
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Thin Font Weight</span>
+            <FieldLabel label="Email Address" thin={true} />
+          </div>
+
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Large Font Size</span>
+            <FieldLabel label="Password" fontSize="12px" lineHeight="20px" />
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Labels with Tooltips</h2>
+        <div className={styles.grid}>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Icon Tooltip Next to Label</span>
+            <FieldLabel
+              label="API Key"
+              showTooltip={true}
+              tooltipText="Your secret key for authentication. Keep this private."
+            />
+          </div>
+
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Label as Tooltip Trigger (Truncation)</span>
+            <div
+              style={{
+                width: '150px',
+                border: '1px solid var(--black-500)',
+                padding: '8px',
+              }}
+            >
+              <FieldLabel
+                label="Extremely long label that should truncate and show a tooltip on hover to reveal the full text"
+                labelWithTooltip={true}
+                tooltipText="Extremely long label that should truncate and show a tooltip on hover to reveal the full text"
+              />
             </div>
           </div>
-        </section>
-      ))}
+
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Tooltip Trigger Placement Bottom</span>
+            <div
+              style={{
+                width: '150px',
+                border: '1px solid var(--black-500)',
+                padding: '8px',
+              }}
+            >
+              <FieldLabel
+                label="Another long label testing bottom placement"
+                labelWithTooltip={true}
+                placement="bottom"
+                tooltipText="Another long label testing bottom placement"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Text Field Variants & States</h2>
+        <div className={styles.grid}>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Default Variant</span>
+            <TextField
+              label="Username"
+              placeholder="Enter username"
+              id="getId"
+              testId="getIdTest"
+            />
+          </div>
+
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Disabled Variant</span>
+            <TextField
+              label="Email Address"
+              placeholder="Enter email"
+              variant="disabled"
+              value="disabled@example.com"
+            />
+          </div>
+
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Error Variant</span>
+            <TextField
+              label="Password"
+              placeholder="Enter password"
+              variant="error"
+              value="123"
+              helperText="Password must be at least 8 characters"
+            />
+          </div>
+
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>With Tooltip</span>
+            <TextField
+              label="API Key"
+              placeholder="Enter API Key"
+              showTooltip={true}
+              tooltipText="Find this in your developer dashboard"
+            />
+          </div>
+
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>With Start Icon</span>
+            <TextField
+              label="Search"
+              placeholder="Search..."
+              startIcon={<span style={{ fontSize: '12px' }}>🔍</span>}
+            />
+          </div>
+
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Small Size</span>
+            <TextField label="Small Input" placeholder="Small size..." size="small" />
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Text Field HTML Types</h2>
+        <div className={styles.grid}>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Type: Text</span>
+            <TextField label="Full Name" type="text" placeholder="John Doe" />
+          </div>
+
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Type: Password</span>
+            <TextField
+              label="Password"
+              type="password"
+              placeholder="Enter password"
+              value="secret123"
+            />
+          </div>
+
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Type: Email</span>
+            <TextField label="Email Address" type="email" placeholder="john@example.com" />
+          </div>
+
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Type: Number</span>
+            <TextField label="Age" type="number" placeholder="Enter your age" />
+          </div>
+
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Type: Tel</span>
+            <TextField label="Phone Number" type="tel" placeholder="+1 (555) 000-0000" />
+          </div>
+
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Type: URL</span>
+            <TextField label="Website" type="url" placeholder="https://example.com" />
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Buttons - Primary</h2>
+        <div className={styles.grid}>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Small</span>
+            <Button label="Primary Small" colorTheme="primary" size="small" />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Medium (Default)</span>
+            <Button
+              label="Primary Medium"
+              colorTheme="primary"
+              size="medium"
+              testId="buttonTestId"
+              id="testId"
+            />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Large</span>
+            <Button label="Primary Large" colorTheme="primary" size="large" />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Disabled</span>
+            <Button label="Primary Disabled" colorTheme="primary" disabled />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>With Start Icon</span>
+            <Button
+              label="Start Icon"
+              colorTheme="primary"
+              startIcon={<span style={{ fontSize: '16px' }}>⭐</span>}
+            />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>With End Icon</span>
+            <Button
+              label="End Icon"
+              colorTheme="primary"
+              endIcon={<span style={{ fontSize: '16px' }}>🚀</span>}
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Buttons - Secondary</h2>
+        <div className={styles.grid}>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Small</span>
+            <Button label="Secondary Small" colorTheme="secondary" size="small" />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Medium</span>
+            <Button label="Secondary Medium" colorTheme="secondary" size="medium" />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Large</span>
+            <Button label="Secondary Large" colorTheme="secondary" size="large" />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Disabled</span>
+            <Button label="Secondary Disabled" colorTheme="secondary" disabled />
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Buttons - Tertiary</h2>
+        <div className={styles.grid}>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Small</span>
+            <Button label="Tertiary Small" colorTheme="tertiary" size="small" />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Medium</span>
+            <Button label="Tertiary Medium" colorTheme="tertiary" size="medium" />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Large</span>
+            <Button label="Tertiary Large" colorTheme="tertiary" size="large" />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Disabled</span>
+            <Button label="Tertiary Disabled" colorTheme="tertiary" disabled />
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Buttons - Negative Secondary</h2>
+        <div className={styles.grid}>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Small</span>
+            <Button label="Negative Small" colorTheme="negativeSecondary" size="small" />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Medium</span>
+            <Button label="Negative Medium" colorTheme="negativeSecondary" size="medium" />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Large</span>
+            <Button label="Negative Large" colorTheme="negativeSecondary" size="large" />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Disabled</span>
+            <Button label="Negative Disabled" colorTheme="negativeSecondary" disabled />
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Buttons - Hyperlink Tertiary</h2>
+        <div className={styles.grid}>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Small</span>
+            <Button label="Hyperlink Small" colorTheme="hyperLinkTertiary" size="small" />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Medium</span>
+            <Button label="Hyperlink Medium" colorTheme="hyperLinkTertiary" size="medium" />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Large</span>
+            <Button label="Hyperlink Large" colorTheme="hyperLinkTertiary" size="large" />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Disabled</span>
+            <Button label="Hyperlink Disabled" colorTheme="hyperLinkTertiary" disabled />
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
