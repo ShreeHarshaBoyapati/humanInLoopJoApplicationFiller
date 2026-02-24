@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { ExtensionMessage } from '@repo/shared-types';
 import { handleUserMessage } from './handlers/user-handler.js';
+import { handleJobMessage } from './handlers/job-handler.js';
 
 console.log('Background service worker started');
 
@@ -37,7 +38,7 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
   const handled = handleUserMessage(message, sendResponse, api);
   if (handled) return true;
 
-  // Future: add more handlers here
-  // const handled = handleJobMessage(message, sendResponse, api);
-  // if (handled) return true;
+  // Job-related actions
+  const jobHandled = handleJobMessage(message, sendResponse, api);
+  if (jobHandled) return true;
 });

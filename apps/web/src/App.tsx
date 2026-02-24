@@ -3,6 +3,8 @@ import styles from './App.module.css';
 import { EnhancedFieldLabel as FieldLabel } from '@repo/ui/field-label.tsx';
 import { EnhancedTextField as TextField } from '@repo/ui/text-field.tsx';
 import { EnhancedButton as Button } from '@repo/ui/button.tsx';
+import { EnhancedChip as Chip } from '@repo/ui/chip.tsx';
+import { EnhancedSelectDropdown as SelectDropdown } from '@repo/ui/select-dropdown.tsx';
 import scrollbarStyles from '@repo/ui/scroll-bar.module.css';
 
 // API URL: In production, frontend and backend are on same origin
@@ -21,6 +23,15 @@ interface HealthResponse {
 function App() {
   const [apiMessage, setApiMessage] = useState<string>('Loading...');
   const [backendStatus, setBackendStatus] = useState<string>('Checking...');
+  const [selectedValue, setSelectedValue] = useState<string | number | readonly string[]>(
+    'option1'
+  );
+
+  const dropdownOptions = [
+    { dataId: 'opt-1', value: 'option1', label: 'Option 1' },
+    { dataId: 'opt-2', value: 'option2', label: 'Option 2' },
+    { dataId: 'opt-3', value: 'option3', label: 'Option 3' },
+  ];
 
   // Fetch data from backend on component mount
   useEffect(() => {
@@ -182,6 +193,63 @@ function App() {
           <div className={styles.variantContainer}>
             <span className={styles.variantLabel}>Small Size</span>
             <TextField label="Small Input" placeholder="Small size..." size="small" />
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Select Dropdowns</h2>
+        <div className={styles.grid}>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Default</span>
+            <SelectDropdown
+              id="select-1"
+              testId="select-1"
+              label="Choose an Option"
+              options={dropdownOptions}
+              value={selectedValue}
+              onChange={(e) => setSelectedValue(e.target.value)}
+            />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>With Tooltip & Supporting Text</span>
+            <SelectDropdown
+              id="select-2"
+              testId="select-2"
+              label="Select Item"
+              showTooltip={true}
+              tooltipText="Please select one of the available items from the list."
+              showSupportingText={true}
+              supportingText="This is some supporting help text."
+              options={dropdownOptions}
+              value={selectedValue}
+              onChange={(e) => setSelectedValue(e.target.value)}
+            />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Error State</span>
+            <SelectDropdown
+              id="select-3"
+              testId="select-3"
+              label="Required Field"
+              error={true}
+              showErrorMsg={true}
+              errorText="This selection is required."
+              options={dropdownOptions}
+              value={''}
+              displayEmpty
+            />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Disabled</span>
+            <SelectDropdown
+              id="select-4"
+              testId="select-4"
+              label="Disabled Dropdown"
+              disabled={true}
+              options={dropdownOptions}
+              value={'option2'}
+            />
           </div>
         </div>
       </section>
@@ -354,6 +422,47 @@ function App() {
           <div className={styles.variantContainer}>
             <span className={styles.variantLabel}>Disabled</span>
             <Button label="Hyperlink Disabled" colorTheme="hyperLinkTertiary" disabled />
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Chips</h2>
+        <div className={styles.grid}>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Basic (No Delete)</span>
+            <Chip label="Basic Chip" showDeleteIcon={false} id="check-1" testId="check-1" />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Deletable</span>
+            <Chip
+              label="Deletable Chip"
+              showDeleteIcon={true}
+              onDelete={() => console.log('Delete clicked')}
+              id="check-2"
+              testId="check-2"
+            />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Custom Delete Icon Color</span>
+            <Chip
+              label="Custom Icon"
+              showDeleteIcon={true}
+              onDelete={() => console.log('Delete clicked')}
+              customProps={{ deleteIconProps: { fill: 'red' } }}
+              id="check-3"
+              testId="check-3"
+            />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Disabled</span>
+            <Chip
+              label="Disabled Chip"
+              showDeleteIcon={true}
+              customProps={{ chipProps: { disabled: true } }}
+              id="check-4"
+              testId="check-4"
+            />
           </div>
         </div>
       </section>

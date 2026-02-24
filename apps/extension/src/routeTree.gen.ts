@@ -9,11 +9,18 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root';
+import { Route as RecentJobsRouteImport } from './routes/recent-jobs';
 import { Route as NewUserRouteImport } from './routes/new-user';
 import { Route as LoginRouteImport } from './routes/login';
+import { Route as JobRouteImport } from './routes/job';
 import { Route as AboutRouteImport } from './routes/about';
 import { Route as IndexRouteImport } from './routes/index';
 
+const RecentJobsRoute = RecentJobsRouteImport.update({
+  id: '/recent-jobs',
+  path: '/recent-jobs',
+  getParentRoute: () => rootRouteImport,
+} as any);
 const NewUserRoute = NewUserRouteImport.update({
   id: '/new-user',
   path: '/new-user',
@@ -22,6 +29,11 @@ const NewUserRoute = NewUserRouteImport.update({
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any);
+const JobRoute = JobRouteImport.update({
+  id: '/job',
+  path: '/job',
   getParentRoute: () => rootRouteImport,
 } as any);
 const AboutRoute = AboutRouteImport.update({
@@ -38,39 +50,54 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute;
   '/about': typeof AboutRoute;
+  '/job': typeof JobRoute;
   '/login': typeof LoginRoute;
   '/new-user': typeof NewUserRoute;
+  '/recent-jobs': typeof RecentJobsRoute;
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute;
   '/about': typeof AboutRoute;
+  '/job': typeof JobRoute;
   '/login': typeof LoginRoute;
   '/new-user': typeof NewUserRoute;
+  '/recent-jobs': typeof RecentJobsRoute;
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
   '/': typeof IndexRoute;
   '/about': typeof AboutRoute;
+  '/job': typeof JobRoute;
   '/login': typeof LoginRoute;
   '/new-user': typeof NewUserRoute;
+  '/recent-jobs': typeof RecentJobsRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: '/' | '/about' | '/login' | '/new-user';
+  fullPaths: '/' | '/about' | '/job' | '/login' | '/new-user' | '/recent-jobs';
   fileRoutesByTo: FileRoutesByTo;
-  to: '/' | '/about' | '/login' | '/new-user';
-  id: '__root__' | '/' | '/about' | '/login' | '/new-user';
+  to: '/' | '/about' | '/job' | '/login' | '/new-user' | '/recent-jobs';
+  id: '__root__' | '/' | '/about' | '/job' | '/login' | '/new-user' | '/recent-jobs';
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute;
   AboutRoute: typeof AboutRoute;
+  JobRoute: typeof JobRoute;
   LoginRoute: typeof LoginRoute;
   NewUserRoute: typeof NewUserRoute;
+  RecentJobsRoute: typeof RecentJobsRoute;
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/recent-jobs': {
+      id: '/recent-jobs';
+      path: '/recent-jobs';
+      fullPath: '/recent-jobs';
+      preLoaderRoute: typeof RecentJobsRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/new-user': {
       id: '/new-user';
       path: '/new-user';
@@ -83,6 +110,13 @@ declare module '@tanstack/react-router' {
       path: '/login';
       fullPath: '/login';
       preLoaderRoute: typeof LoginRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    '/job': {
+      id: '/job';
+      path: '/job';
+      fullPath: '/job';
+      preLoaderRoute: typeof JobRouteImport;
       parentRoute: typeof rootRouteImport;
     };
     '/about': {
@@ -105,8 +139,10 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  JobRoute: JobRoute,
   LoginRoute: LoginRoute,
   NewUserRoute: NewUserRoute,
+  RecentJobsRoute: RecentJobsRoute,
 };
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

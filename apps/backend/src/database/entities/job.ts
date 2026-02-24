@@ -23,13 +23,16 @@ export default class Job {
   persona!: string;
 
   @Column('varchar', { default: 'draft' })
-  status!: string;
+  status!: string; //need to create enum
 
   @Column('int', { default: 0 })
   acceptanceLevel!: number;
 
   @Column('varchar', { default: '' })
   companyName!: string;
+
+  @Column('text', { default: '' })
+  notes!: string;
 
   @Column('simple-json', { default: {} })
   metaData!: Record<string, unknown>;

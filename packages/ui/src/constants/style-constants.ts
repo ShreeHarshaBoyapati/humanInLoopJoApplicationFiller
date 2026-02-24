@@ -15,6 +15,7 @@ const colorPaletteConfig = {
 const layoutConfig = {
   borderRadius: '0.5em',
   gap: '0.5em',
+  spacing: '0.25em',
   headingFont: `'Space Grotesk',sans-serif`,
   secondaryFont: `Inter, sans-serif`,
 } as const;

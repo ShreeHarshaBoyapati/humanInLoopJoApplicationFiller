@@ -1,4 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
+import { Card } from '@repo/ui';
 import styles from './style/index.module.css';
 
 interface LogoutResponse {
@@ -33,7 +34,21 @@ function HomeComponent() {
           Logout
         </button>
       </div>
-      <p>You are logged in.</p>
+      <p>Manage your job applications easily.</p>
+
+      <div className={styles.cardsContainer}>
+        <Card title="Add New Job" href="#" className={styles.actionCard}>
+          <Link to="/job" className={styles.cardLink}>
+            Click here to save a new interesting job in your tracker.
+          </Link>
+        </Card>
+
+        <Card title="View Recent Jobs" href="#" className={styles.actionCard}>
+          <Link to="/recent-jobs" className={styles.cardLink}>
+            View and manage your 5 most recently tracked jobs.
+          </Link>
+        </Card>
+      </div>
     </div>
   );
 }
