@@ -1,14 +1,11 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
-// @ts-ignore
-import { useState, useEffect } from 'react';
-import { EnhancedTextField, EnhancedButton, EnhancedFieldLabel } from '@repo/ui';
-import { Accordion, AccordionSummary, AccordionDetails, MenuItem } from '@mui/material';
+import { createFileRoute, useNavigate, ErrorComponent } from '@tanstack/react-router';
+import { useState } from 'react';
+import { EnhancedTextField, EnhancedButton, EnhancedSelectDropdown, EnhancedChip } from '@repo/ui';
+import { Accordion, AccordionSummary, AccordionDetails, Box } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-// @ts-ignore
-import type { Job, JobPublic } from '@repo/shared-types';
+import type { Job, JobList, JobPublic } from '@repo/shared-types';
 import styles from './style/job.module.css';
-// @ts-ignore
-import scrollStyles from '../../../packages/ui/src/scroll-bar.module.css';
+import scrollStyles from '@repo/ui/scroll-bar.module.css';
 
 interface JobFormData {
   companyName: string;
@@ -24,8 +21,8 @@ interface JobFormData {
   notes: string;
   status: string;
   jobPostingUrl: string;
-  keySkills: string;
-  tags: string;
+  keySkills: string[];
+  tags: string[];
 }
 
 const initialFormData: JobFormData = {
@@ -34,7 +31,7 @@ const initialFormData: JobFormData = {
   location: '',
   minSalary: '',
   maxSalary: '',
-  currency: 'USD',
+  currency: 'IND',
   persona: 'default',
   acceptanceLevel: 0,
   jobType: 'Full-time',
@@ -42,89 +39,180 @@ const initialFormData: JobFormData = {
   notes: '',
   status: 'draft',
   jobPostingUrl: '',
-  keySkills: '',
-  tags: '',
+  keySkills: [],
+  tags: [],
 };
 
-export const Route = createFileRoute('/job' as any)({
+interface JobSearch {
+  jobId?: string;
+}
+
+type JobAddResponse =
+  | {
+      success: true;
+      data: JobPublic;
+    }
+  | {
+      success: false;
+      error: string;
+    };
+
+type JobFetchList =
+  | {
+      success: false;
+      error: string;
+    }
+  | {
+      success: true;
+      data: JobList;
+    };
+
+export const Route = createFileRoute('/job')({
+  validateSearch: (search: Record<string, unknown>): JobSearch => {
+    return {
+      jobId: search.jobId as string | undefined,
+    };
+  },
+  loaderDeps: ({ search: { jobId } }) => ({ jobId }),
+  loader: async ({ deps: { jobId } }) => {
+    if (!jobId || typeof chrome === 'undefined' || !chrome.runtime) {
+      return { jobData: null, isEditing: !!jobId, error: null };
+    }
+
+    return new Promise<{ jobData: Job | null; isEditing: boolean; error: string | null }>(
+      (resolve) => {
+        chrome.runtime.sendMessage(
+          { action: 'GET_JOBS', payload: { limit: 100 } },
+          (res: JobFetchList) => {
+            if (res?.success && res.data?.jobs) {
+              const job = res.data.jobs.find((j: Job) => j.id === jobId);
+              resolve({
+                jobData: job || null,
+                isEditing: true,
+                error: job ? null : 'Job not found',
+              });
+            } else if (!res?.success) {
+              resolve({
+                jobData: null,
+                isEditing: true,
+                error: res?.error || 'Failed to fetch job',
+              });
+            }
+          }
+        );
+      }
+    );
+  },
   component: JobComponent,
+  pendingComponent: () => <div style={{ color: '#fff', padding: '1rem' }}>Loading job data...</div>,
+  errorComponent: ErrorComponent,
 });
 
 function JobComponent() {
   const navigate = useNavigate();
-  // @ts-ignore
-  const search: { jobId?: string } = Route.useSearch();
-  const [formData, setFormData] = useState<JobFormData>(initialFormData);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { jobData, isEditing, error: loaderError } = Route.useLoaderData();
 
-  const isEditing = !!search.jobId;
-
-  useEffect(() => {
-    if (isEditing && typeof chrome !== 'undefined' && chrome.runtime) {
-      setLoading(true);
-      // Fetch existing job logic would go here via GET_JOBS + filter by ID
-      // Simulating a fetch failure/empty implementation for now since GET_JOBS returns list
-      // In a real scenario we might need a GET_JOB_BY_ID action, but for now we'll just show empty form
-      // or we can just fetch the list and find the job.
-      chrome.runtime.sendMessage({ action: 'GET_JOBS', payload: { limit: 100 } }, (res: any) => {
-        setLoading(false);
-        if (res?.success && res.data?.jobs) {
-          const job = res.data.jobs.find((j: Job) => j.id === search.jobId);
-          if (job) {
-            setFormData({
-              companyName: job.companyName || '',
-              title: job.title || '',
-              location: String(job.metaData?.location || ''),
-              minSalary: String(job.metaData?.minSalary || ''),
-              maxSalary: String(job.metaData?.maxSalary || ''),
-              currency: String(job.metaData?.currency || 'USD'),
-              persona: job.persona || 'default',
-              acceptanceLevel: job.acceptanceLevel || 0,
-              jobType: String(job.metaData?.jobType || 'Full-time'),
-              description: String(job.description?.text || ''),
-              notes: job.notes || '',
-              status: job.status || 'draft',
-              jobPostingUrl: String(job.metaData?.jobPostingUrl || ''),
-              keySkills: job.keySkills?.join(', ') || '',
-              tags: job.tags?.join(', ') || '',
-            });
-          }
-        }
-      });
+  const [formData, setFormData] = useState<JobFormData>(() => {
+    if (jobData) {
+      return {
+        companyName: jobData.companyName || '',
+        title: jobData.title || '',
+        location: String(jobData.metaData?.location || ''),
+        minSalary: String(jobData.metaData?.minSalary || ''),
+        maxSalary: String(jobData.metaData?.maxSalary || ''),
+        currency: String(jobData.metaData?.currency || 'IND'),
+        persona: jobData.persona || 'default',
+        acceptanceLevel: jobData.acceptanceLevel || 0,
+        jobType: String(jobData.metaData?.jobType || 'Full-time'),
+        description: String(jobData.description?.text || ''),
+        notes: jobData.notes || '',
+        status: jobData.status || 'draft',
+        jobPostingUrl: String(jobData.metaData?.jobPostingUrl || ''),
+        keySkills: jobData.keySkills || [],
+        tags: jobData.tags || [],
+      };
     }
-  }, [isEditing, search.jobId]);
+    return initialFormData;
+  });
 
-  const handleChange = (field: keyof JobFormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({ ...prev, [field]: e.target.value }));
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(loaderError);
+  const [formErrors, setFormErrors] = useState<Partial<Record<keyof JobFormData, string>>>({});
+
+  const validateField = (field: keyof JobFormData, value: string): string => {
+    switch (field) {
+      case 'companyName':
+        return !value.trim() ? 'Company Name is required' : '';
+      case 'title':
+        return !value.trim() ? 'Position Title is required' : '';
+      default:
+        return '';
+    }
+  };
+
+  const handleChange = (field: keyof JobFormData) => (e: { target: { value: unknown } }) => {
+    const value = String(e.target.value);
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    const errorMsg = validateField(field, value);
+    setFormErrors((prev) => ({ ...prev, [field]: errorMsg }));
+  };
+
+  const [tagInput, setTagInput] = useState('');
+  const [skillInput, setSkillInput] = useState('');
+
+  const handleAddChip = (
+    field: 'tags' | 'keySkills',
+    value: string,
+    setValue: (val: string) => void
+  ) => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+    setFormData((prev) => ({
+      ...prev,
+      [field]: [...prev[field], trimmed],
+    }));
+    setValue('');
+  };
+
+  const handleDeleteChip = (field: 'tags' | 'keySkills', index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: prev[field].filter((_, i) => i !== index),
+    }));
   };
 
   const handleSubmit = () => {
     setError(null);
     setLoading(true);
 
-    if (!formData.title || !formData.companyName) {
-      setError('Company Name and Position Title are required');
+    const newErrors: Partial<Record<keyof JobFormData, string>> = {};
+    let hasError = false;
+    (Object.keys(formData) as Array<keyof JobFormData>).forEach((key) => {
+      const msg = validateField(key, String(formData[key]));
+      if (msg) {
+        newErrors[key] = msg;
+        hasError = true;
+      }
+    });
+
+    setFormErrors(newErrors);
+
+    if (hasError) {
+      setError('Please fix the errors before saving.');
       setLoading(false);
       return;
     }
 
     const payload = {
-      ...(isEditing ? { id: search.jobId } : {}),
+      ...(isEditing && jobData?.id ? { id: jobData.id } : {}),
       title: formData.title,
       companyName: formData.companyName,
       persona: formData.persona,
       status: formData.status as 'draft' | 'active' | 'archived',
       acceptanceLevel: Number(formData.acceptanceLevel) || 0,
       notes: formData.notes,
-      keySkills: formData.keySkills
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean),
-      tags: formData.tags
-        .split(',')
-        .map((s) => s.trim())
-        .filter(Boolean),
+      keySkills: formData.keySkills,
+      tags: formData.tags,
       metaData: {
         location: formData.location,
         minSalary: formData.minSalary,
@@ -140,12 +228,13 @@ function JobComponent() {
 
     if (typeof chrome !== 'undefined' && chrome.runtime) {
       const action = isEditing ? 'UPDATE_JOB' : 'CREATE_JOB';
-      chrome.runtime.sendMessage({ action, payload }, (response: any) => {
+      chrome.runtime.sendMessage({ action, payload }, (res: JobAddResponse) => {
+        const response = res;
         setLoading(false);
         if (response?.success) {
           navigate({ to: '/' });
         } else {
-          setError(response?.error || 'Failed to save job');
+          setError(response.error);
         }
       });
     } else {
@@ -168,6 +257,8 @@ function JobComponent() {
             onChange={handleChange('companyName')}
             placeholder="e.g. Amazon"
             disabled={loading}
+            variant={formErrors.companyName ? 'error' : 'default'}
+            helperText={formErrors.companyName || 'Enter the company name.'}
           />
 
           <EnhancedTextField
@@ -176,6 +267,8 @@ function JobComponent() {
             onChange={handleChange('title')}
             placeholder="e.g. Software Development Engineer II"
             disabled={loading}
+            variant={formErrors.title ? 'error' : 'default'}
+            helperText={formErrors.title || 'Enter the position title.'}
           />
 
           <EnhancedTextField
@@ -184,6 +277,8 @@ function JobComponent() {
             onChange={handleChange('location')}
             placeholder="e.g. Bangalore, IN"
             disabled={loading}
+            variant={formErrors.location ? 'error' : 'default'}
+            helperText={formErrors.location}
           />
 
           <div className={styles.row}>
@@ -195,6 +290,8 @@ function JobComponent() {
                 placeholder="0"
                 type="number"
                 disabled={loading}
+                variant={formErrors.minSalary ? 'error' : 'default'}
+                helperText={formErrors.minSalary}
               />
             </div>
             <div className={styles.field}>
@@ -205,6 +302,8 @@ function JobComponent() {
                 placeholder="0"
                 type="number"
                 disabled={loading}
+                variant={formErrors.maxSalary ? 'error' : 'default'}
+                helperText={formErrors.maxSalary}
               />
             </div>
           </div>
@@ -217,6 +316,8 @@ function JobComponent() {
                 onChange={handleChange('currency')}
                 placeholder="USD"
                 disabled={loading}
+                variant={formErrors.currency ? 'error' : 'default'}
+                helperText={formErrors.currency}
               />
             </div>
             <div className={styles.field}>
@@ -226,25 +327,33 @@ function JobComponent() {
                 onChange={handleChange('jobType')}
                 placeholder="Full-time"
                 disabled={loading}
+                variant={formErrors.jobType ? 'error' : 'default'}
+                helperText={formErrors.jobType}
               />
             </div>
           </div>
 
           <div className={styles.row}>
             <div className={styles.field}>
-              <EnhancedTextField
+              <EnhancedSelectDropdown
                 label="Persona"
+                testId="persona-dropdown"
                 value={formData.persona}
-                onChange={handleChange('persona')}
-                customProps={{
-                  props: { select: true },
-                }}
+                onChange={handleChange('persona') as never}
                 disabled={loading}
-              >
-                <MenuItem value="default">Default</MenuItem>
-                <MenuItem value="software-engineer">Software Engineer</MenuItem>
-                <MenuItem value="product-manager">Product Manager</MenuItem>
-              </EnhancedTextField>
+                error={!!formErrors.persona}
+                showErrorMsg={!!formErrors.persona}
+                errorText={formErrors.persona}
+                options={[
+                  { value: 'default', label: 'Default', dataId: 'default' },
+                  {
+                    value: 'software-engineer',
+                    label: 'Software Engineer',
+                    dataId: 'software-engineer',
+                  },
+                  { value: 'product-manager', label: 'Product Manager', dataId: 'product-manager' },
+                ]}
+              />
             </div>
             <div className={styles.field}>
               <EnhancedTextField
@@ -253,6 +362,8 @@ function JobComponent() {
                 onChange={handleChange('acceptanceLevel')}
                 type="number"
                 disabled={loading}
+                variant={formErrors.acceptanceLevel ? 'error' : 'default'}
+                helperText={formErrors.acceptanceLevel}
                 customProps={{
                   childProps: {
                     slotProps: { htmlInput: { min: 0, max: 100 } },
@@ -278,6 +389,8 @@ function JobComponent() {
                 onChange={handleChange('description')}
                 placeholder="Paste job description here..."
                 disabled={loading}
+                variant={formErrors.description ? 'error' : 'default'}
+                helperText={formErrors.description}
               />
             </AccordionDetails>
           </Accordion>
@@ -298,23 +411,27 @@ function JobComponent() {
                 onChange={handleChange('notes')}
                 placeholder="Add your personal notes or markdown content here..."
                 disabled={loading}
+                variant={formErrors.notes ? 'error' : 'default'}
+                helperText={formErrors.notes}
               />
             </AccordionDetails>
           </Accordion>
 
-          <EnhancedTextField
+          <EnhancedSelectDropdown
             label="Application Status"
+            testId="status-dropdown"
             value={formData.status}
-            onChange={handleChange('status')}
-            customProps={{
-              props: { select: true },
-            }}
+            onChange={handleChange('status') as never}
             disabled={loading}
-          >
-            <MenuItem value="draft">Draft (Not yet applied)</MenuItem>
-            <MenuItem value="active">Active (Applied/Interviewing)</MenuItem>
-            <MenuItem value="archived">Archived (Rejected/Offer)</MenuItem>
-          </EnhancedTextField>
+            error={!!formErrors.status}
+            showErrorMsg={!!formErrors.status}
+            errorText={formErrors.status}
+            options={[
+              { value: 'draft', label: 'Draft (Not yet applied)', dataId: 'draft' },
+              { value: 'active', label: 'Active (Applied/Interviewing)', dataId: 'active' },
+              { value: 'archived', label: 'Archived (Rejected/Offer)', dataId: 'archived' },
+            ]}
+          />
 
           <EnhancedTextField
             label="Job Posting URL"
@@ -323,23 +440,69 @@ function JobComponent() {
             placeholder="https://..."
             type="url"
             disabled={loading}
+            variant={formErrors.jobPostingUrl ? 'error' : 'default'}
+            helperText={formErrors.jobPostingUrl}
           />
 
-          <EnhancedTextField
-            label="Key Skills (comma separated)"
-            value={formData.keySkills}
-            onChange={handleChange('keySkills')}
-            placeholder="React, Node.js, Typescript"
-            disabled={loading}
-          />
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              {formData.keySkills.map((skill, index) => (
+                <EnhancedChip
+                  id={`skill-chip-${index}`}
+                  key={index}
+                  testId={`skill-chip-${index}`}
+                  label={skill}
+                  showDeleteIcon={true}
+                  onDelete={() => handleDeleteChip('keySkills', index)}
+                />
+              ))}
+            </Box>
+            <EnhancedTextField
+              label="Key Skills"
+              value={skillInput}
+              onChange={(e) => setSkillInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddChip('keySkills', skillInput, setSkillInput);
+                }
+              }}
+              placeholder="Type a skill and press Enter"
+              disabled={loading}
+              variant={formErrors.keySkills ? 'error' : 'default'}
+              helperText={formErrors.keySkills || 'Press Enter to add'}
+            />
+          </Box>
 
-          <EnhancedTextField
-            label="Tags (comma separated)"
-            value={formData.tags}
-            onChange={handleChange('tags')}
-            placeholder="remote, faang, high-priority"
-            disabled={loading}
-          />
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              {formData.tags.map((tag, index) => (
+                <EnhancedChip
+                  id={`tag-chip-${index}`}
+                  key={index}
+                  testId={`tag-chip-${index}`}
+                  label={tag}
+                  showDeleteIcon={true}
+                  onDelete={() => handleDeleteChip('tags', index)}
+                />
+              ))}
+            </Box>
+            <EnhancedTextField
+              label="Tags"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleAddChip('tags', tagInput, setTagInput);
+                }
+              }}
+              placeholder="remote, faang (Press Enter to add)"
+              disabled={loading}
+              variant={formErrors.tags ? 'error' : 'default'}
+              helperText={formErrors.tags || 'Press Enter to add'}
+            />
+          </Box>
         </div>
 
         {error && (

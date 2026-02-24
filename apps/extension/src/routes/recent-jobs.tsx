@@ -1,59 +1,57 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-// @ts-ignore
-import { useState, useEffect } from 'react';
+import { createFileRoute, Link, useNavigate, ErrorComponent } from '@tanstack/react-router';
+import { useState } from 'react';
 import { EnhancedButton } from '@repo/ui';
-// @ts-ignore
-import type { Job } from '@repo/shared-types';
+import type { Job, JobList } from '@repo/shared-types';
 import styles from './style/recent-jobs.module.css';
 
-export const Route = createFileRoute('/recent-jobs' as any)({
+type JobFetchList = { success: false; error: string } | { success: true; data: JobList };
+
+export const Route = createFileRoute('/recent-jobs')({
+  loader: async () => {
+    if (typeof chrome === 'undefined' || !chrome.runtime) {
+      return { jobs: [], error: 'Chrome runtime not available' };
+    }
+
+    return new Promise<{ jobs: Job[]; error: string | null }>((resolve) => {
+      chrome.runtime.sendMessage(
+        { action: 'GET_JOBS', payload: { limit: 5, sortBy: 'createdAt', sortOrder: 'DESC' } },
+        (res: JobFetchList) => {
+          if (res?.success) {
+            resolve({ jobs: res.data?.jobs || [], error: null });
+          } else if (!res?.success) {
+            resolve({ jobs: [], error: res?.error || 'Failed to load jobs' });
+          }
+        }
+      );
+    });
+  },
   component: RecentJobsComponent,
+  pendingComponent: () => (
+    <div style={{ color: '#fff', padding: '1rem' }}>Loading recent jobs...</div>
+  ),
+  errorComponent: ErrorComponent,
 });
 
 function RecentJobsComponent() {
   const navigate = useNavigate();
-  const [jobs, setJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { jobs: initialJobs, error: loaderError } = Route.useLoaderData();
 
-  const fetchJobs = () => {
-    setLoading(true);
-    setError(null);
-    if (typeof chrome !== 'undefined' && chrome.runtime) {
-      chrome.runtime.sendMessage(
-        {
-          action: 'GET_JOBS',
-          payload: { limit: 5, sortBy: 'createdAt', sortOrder: 'DESC' },
-        },
-        (response: any) => {
-          setLoading(false);
-          if (response?.success) {
-            setJobs(response.data?.jobs || []);
-          } else {
-            setError(response?.error || 'Failed to load jobs');
-          }
-        }
-      );
-    } else {
-      setLoading(false);
-      setError('Chrome runtime not available');
-    }
-  };
-
-  useEffect(() => {
-    fetchJobs();
-  }, []);
+  const [jobs, setJobs] = useState<Job[]>(initialJobs);
+  const [error, setError] = useState<string | null>(loaderError);
 
   const handleDelete = (id: string) => {
     if (window.confirm('Are you sure you want to delete this job?')) {
       if (typeof chrome !== 'undefined' && chrome.runtime) {
-        chrome.runtime.sendMessage({ action: 'DELETE_JOB', payload: { id } }, (response: any) => {
-          if (response?.success) {
-            fetchJobs(); // Refresh the list
-          } else {
-            alert(response?.error || 'Failed to delete job');
+        chrome.runtime.sendMessage(
+          { action: 'DELETE_JOB', payload: { id } },
+          (res: { success: boolean; error?: string }) => {
+            if (res?.success) {
+              setJobs((prev) => prev.filter((j) => j.id !== id));
+            } else {
+              setError(res?.error || 'Failed to delete job');
+            }
           }
-        });
+        );
       }
     }
   };
@@ -68,12 +66,11 @@ function RecentJobsComponent() {
       </div>
 
       <div className={styles.listContainer}>
-        {loading && <p style={{ color: '#fff' }}>Loading jobs...</p>}
         {error && <div className={styles.error}>{error}</div>}
 
-        {!loading && jobs.length === 0 && !error && (
+        {jobs.length === 0 && !error && (
           <div className={styles.emptyState}>
-            You haven't tracked any jobs yet.
+            You haven&apos;t tracked any jobs yet.
             <br />
             <br />
             <EnhancedButton
@@ -84,39 +81,38 @@ function RecentJobsComponent() {
           </div>
         )}
 
-        {!loading &&
-          jobs.map((job) => (
-            <div key={job.id} className={styles.jobCard}>
-              <div className={styles.jobDetails}>
-                <h3 className={styles.jobTitle}>{job.title || 'Untitled Role'}</h3>
-                <p className={styles.jobCompany}>{job.companyName || 'Unknown Company'}</p>
+        {jobs.map((job) => (
+          <div key={job.id} className={styles.jobCard}>
+            <div className={styles.jobDetails}>
+              <h3 className={styles.jobTitle}>{job.title || 'Untitled Role'}</h3>
+              <p className={styles.jobCompany}>{job.companyName || 'Unknown Company'}</p>
 
-                <div className={styles.jobMeta}>
-                  <span className={styles.jobStatus}>{job.status || 'draft'}</span>
-                  {job.createdAt && (
-                    <span className={styles.jobDate}>
-                      {new Date(job.createdAt).toLocaleDateString()}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className={styles.jobActions}>
-                <EnhancedButton
-                  label="Edit"
-                  colorTheme="tertiary"
-                  size="small"
-                  onClick={() => navigate({ to: '/job', search: { jobId: job.id } as any })}
-                />
-                <EnhancedButton
-                  label="Delete"
-                  colorTheme="negativeSecondary"
-                  size="small"
-                  onClick={() => handleDelete(job.id)}
-                />
+              <div className={styles.jobMeta}>
+                <span className={styles.jobStatus}>{job.status || 'draft'}</span>
+                {job.createdAt && (
+                  <span className={styles.jobDate}>
+                    {new Date(job.createdAt).toLocaleDateString()}
+                  </span>
+                )}
               </div>
             </div>
-          ))}
+
+            <div className={styles.jobActions}>
+              <EnhancedButton
+                label="Edit"
+                colorTheme="tertiary"
+                size="small"
+                onClick={() => navigate({ to: '/job', search: { jobId: job.id } })}
+              />
+              <EnhancedButton
+                label="Delete"
+                colorTheme="negativeSecondary"
+                size="small"
+                onClick={() => handleDelete(job.id)}
+              />
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );

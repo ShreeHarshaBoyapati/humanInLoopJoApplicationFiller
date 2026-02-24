@@ -29,6 +29,7 @@ function HomeComponent() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
+        {/* need to move this into a common one */}
         <h3>Welcome Home!</h3>
         <button onClick={handleLogout} className={styles.logoutButton}>
           Logout

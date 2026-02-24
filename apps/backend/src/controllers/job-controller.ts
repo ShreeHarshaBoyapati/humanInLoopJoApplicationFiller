@@ -4,7 +4,7 @@ import type {
   CreateJobInput,
   UpdateJobInput,
   DeleteJobInput,
-  GetJobsInput,
+  GetJobsInfer,
 } from '../middlewares/job.js';
 import { ApiResponse, JobList, JobPublic } from '@repo/shared-types';
 
@@ -74,7 +74,6 @@ class JobController {
 
     const data: ApiResponse<JobPublic> = {
       success: true,
-      message: 'Job updated successfully',
       data: {
         id: job.id,
       },
@@ -130,7 +129,7 @@ class JobController {
     const userId = req.userId;
 
     const { page, limit, status, persona, search, sortBy, sortOrder, select } = (
-      req as AuthenticatedTypedRequest<null> & { parsedQuery: GetJobsInput }
+      req as AuthenticatedTypedRequest<null> & { parsedQuery: GetJobsInfer }
     ).parsedQuery;
 
     // Calculate skip for pagination

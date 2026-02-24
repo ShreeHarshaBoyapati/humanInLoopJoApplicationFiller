@@ -5,3 +5,5 @@ export * from './field-label';
 export * from './text-field';
 export * from './tool-tip';
 export * from './theme';
+export * from './select-dropdown';
+export * from './chip';

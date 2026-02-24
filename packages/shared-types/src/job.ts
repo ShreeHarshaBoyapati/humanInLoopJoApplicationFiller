@@ -14,6 +14,7 @@ export interface Job {
   description: Record<string, unknown>;
   highlights: Record<string, unknown>;
   keySkills: string[];
+  notes: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -32,4 +33,15 @@ export interface JobList {
     hasNextPage: boolean;
     hasPrevPage: boolean;
   };
+}
+
+export interface GetJobParams {
+  page?: number;
+  limit?: number;
+  status?: 'draft' | 'active' | 'archived';
+  persona?: string;
+  search?: string;
+  sortBy?: 'createdAt' | 'updatedAt' | 'acceptanceLevel';
+  sortOrder?: 'ASC' | 'DESC';
+  select?: string;
 }

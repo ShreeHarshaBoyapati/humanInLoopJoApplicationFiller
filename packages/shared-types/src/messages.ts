@@ -1,3 +1,5 @@
+import { GetJobParams, Job, JobPublic } from './job';
+
 /**
  * Chrome extension message contracts.
  * Discriminated union on the `action` field — ensures type-safe
@@ -9,4 +11,8 @@ export type ExtensionMessage =
   | { action: 'CHECK_AUTH' }
   | { action: 'LOGIN'; payload: { email: string; password: string } }
   | { action: 'NewUser'; payload: { email: string; password: string } }
-  | { action: 'LOGOUT' };
+  | { action: 'LOGOUT' }
+  | { action: 'CREATE_JOB'; payload: Job }
+  | { action: 'UPDATE_JOB'; payload: Job }
+  | { action: 'DELETE_JOB'; payload: JobPublic }
+  | { action: 'GET_JOBS'; payload: GetJobParams };

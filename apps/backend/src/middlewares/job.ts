@@ -87,7 +87,7 @@ const GetJobsSchema = z.object({
 });
 
 export type JobField = (typeof validJobFields)[number];
-export type CreateJobInput = z.infer<typeof CreateJobSchema>;
+export type CreateJobInput = z.input<typeof CreateJobSchema>;
 
 export function createJobValidation(req: Request, res: Response, next: NextFunction) {
   try {
@@ -112,7 +112,7 @@ export function createJobValidation(req: Request, res: Response, next: NextFunct
   }
 }
 
-export type UpdateJobInput = z.infer<typeof UpdateJobSchema>;
+export type UpdateJobInput = z.input<typeof UpdateJobSchema>;
 
 export function updateJobValidation(req: Request, res: Response, next: NextFunction) {
   try {
@@ -137,7 +137,7 @@ export function updateJobValidation(req: Request, res: Response, next: NextFunct
   }
 }
 
-export type DeleteJobInput = z.infer<typeof DeleteJobSchema>;
+export type DeleteJobInput = z.input<typeof DeleteJobSchema>;
 export function deleteJobValidation(req: Request, res: Response, next: NextFunction) {
   try {
     req.body = DeleteJobSchema.parse(req.body);
@@ -161,12 +161,12 @@ export function deleteJobValidation(req: Request, res: Response, next: NextFunct
   }
 }
 
-export type GetJobsInput = z.infer<typeof GetJobsSchema>;
-
+export type GetJobsInput = z.input<typeof GetJobsSchema>;
+export type GetJobsInfer = z.infer<typeof GetJobsSchema>;
 export function getJobsValidation(req: Request, res: Response, next: NextFunction) {
   try {
     const parsed = GetJobsSchema.parse(req.query);
-    (req as Request & { parsedQuery: GetJobsInput }).parsedQuery = parsed;
+    (req as Request & { parsedQuery: z.infer<typeof GetJobsSchema> }).parsedQuery = parsed;
     next();
   } catch (error) {
     if (error instanceof ZodError) {

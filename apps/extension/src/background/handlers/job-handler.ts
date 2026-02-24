@@ -26,7 +26,10 @@ export function handleJobMessage(
       })
       .catch((error) => {
         console.error('Job creation error:', error);
-        sendResponse({ success: false, error: error.response?.data?.message || error.message });
+        sendResponse({
+          success: false,
+          error: error.response?.data?.message || error.message,
+        });
       });
 
     return true;
