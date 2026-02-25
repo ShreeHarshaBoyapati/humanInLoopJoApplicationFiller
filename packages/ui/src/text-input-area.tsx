@@ -1,26 +1,24 @@
-import { forwardRef, type ReactNode } from 'react';
+import { forwardRef } from 'react';
 import type { TextFieldProps, BoxProps } from '@mui/material';
 import { TextField, Box } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { EnhancedFieldLabel, EnhancedFieldLabelProps } from './field-label';
 import styleConstants from './constants/style-constants';
 
-type TextFieldVariant = 'default' | 'disabled' | 'error';
-type TextFieldSize = 'small' | 'medium';
-type TextFieldType = 'text' | 'password' | 'email' | 'number' | 'tel' | 'url';
+type TextInputAreaVariant = 'default' | 'disabled' | 'error';
+type TextInputAreaSize = 'small' | 'medium';
 
-interface StyledTextFieldProps {
-  hasStartIcon?: boolean;
-  size?: TextFieldSize;
+interface StyledTextInputAreaProps {
+  size?: TextInputAreaSize;
 }
 
-const StyledTextField = styled(TextField, {
-  shouldForwardProp: (prop) => prop !== 'hasStartIcon' && prop !== 'size',
-})<StyledTextFieldProps>((prop) => {
+const StyledTextInputArea = styled(TextField, {
+  shouldForwardProp: (prop) => prop !== 'size',
+})<StyledTextInputAreaProps>((prop) => {
   const { size } = prop;
   return {
     width: '100%',
-    '& .MuiOutlinedInput-root input': {
+    '& .MuiOutlinedInput-root textarea': {
       '&::placeholder': {
         WebkitTextFillColor: styleConstants.grey500,
         color: styleConstants.grey500,
@@ -31,12 +29,9 @@ const StyledTextField = styled(TextField, {
       lineHeight: 1.2,
       borderRadius: styleConstants.borderRadius,
       backgroundColor: styleConstants.black800,
-      minHeight: size === 'small' ? '28px' : '38px',
-      height: '2em',
-      maxHeight: size === 'small' ? '32px' : '42px',
-      padding: '0px',
+      padding: '0.8em 0px',
       flex: 1,
-      alignItems: 'center',
+      alignItems: 'flex-start',
       '& fieldset,&:hover fieldset': {
         borderColor: styleConstants.grey700,
         borderWidth: '1px',
@@ -54,12 +49,38 @@ const StyledTextField = styled(TextField, {
         backgroundColor: styleConstants.black800,
       },
 
-      '& input': {
-        padding: '0em 1em',
+      '& textarea': {
+        padding: '0 1em',
         color: styleConstants.white900,
         WebkitTextFillColor: styleConstants.white900,
         fontSize: size === 'small' ? '0.8rem' : '1rem',
-        lineHeight: 1.2,
+        lineHeight: 1.5,
+        scrollbarGutter: 'stable',
+        overflowY: 'auto !important',
+        '&::-webkit-scrollbar': {
+          width: '4px',
+        },
+        '&::-webkit-scrollbar-track': {
+          backgroundColor: 'transparent !important',
+        },
+        '&::-webkit-scrollbar-thumb': {
+          backgroundColor: 'transparent !important',
+          borderRadius: '8px',
+        },
+        '&:hover': {
+          scrollbarWidth: 'auto',
+          '&::-webkit-scrollbar': {
+            width: '4px',
+          },
+          '&::-webkit-scrollbar-track:hover': {
+            backgroundColor: `${styleConstants.black800} !important`,
+            borderRadius: '8px',
+          },
+          '&::-webkit-scrollbar-thumb': {
+            backgroundColor: `${styleConstants.grey500} !important`,
+            borderRadius: '8px',
+          },
+        },
       },
 
       '&.Mui-disabled': {
@@ -75,7 +96,7 @@ const StyledTextField = styled(TextField, {
       '& .MuiOutlinedInput-notchedOutline,&:hover .MuiOutlinedInput-notchedOutline': {
         borderColor: styleConstants.red600,
       },
-      '& input,&:hover input': {
+      '& textarea,&:hover textarea': {
         color: styleConstants.red700,
         WebkitTextFillColor: styleConstants.red700,
       },
@@ -92,7 +113,7 @@ const StyledTextField = styled(TextField, {
       '&.Mui-focused .MuiOutlinedInput-root': {
         backgroundColor: styleConstants.black800,
       },
-      '&.Mui-focused input,&.Mui-focused:hover input': {
+      '&.Mui-focused textarea,&.Mui-focused:hover textarea': {
         color: styleConstants.white900,
         WebkitTextFillColor: styleConstants.white900,
       },
@@ -116,70 +137,27 @@ const StyledTextField = styled(TextField, {
   };
 });
 
-const renderStartAdornment = (startIcon: ReactNode, props: BoxProps) => {
-  if (!startIcon) return null;
-  return (
-    <Box
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        px: '0.5em',
-        height: '100%',
-        borderRight: `1px solid ${styleConstants.grey700}`,
-        cursor: 'auto',
-      }}
-      {...(props || {})}
-    >
-      {startIcon}
-    </Box>
-  );
-};
-
-const renderEndAdornment = (endIcon: ReactNode, props: BoxProps = {}) => {
-  if (!endIcon) return null;
-  return (
-    <Box
-      {...(props || {})}
-      sx={{
-        display: 'flex',
-        alignItems: 'center',
-        paddingRight: '0.5em',
-        height: '100%',
-        cursor: 'auto',
-        ...(props?.sx || {}),
-      }}
-    >
-      {endIcon}
-    </Box>
-  );
-};
-
 type CustomProps = {
-  props?: Partial<Omit<TextFieldProps, 'size' | 'variant' | 'type' | 'slotProps'>>;
+  props?: Partial<Omit<TextFieldProps, 'size' | 'variant'>>;
   childProps?: {
     parentBox?: Partial<BoxProps>;
     fieldLabel?: Partial<Omit<EnhancedFieldLabelProps, 'label' | 'showTooltip' | 'tooltipText'>>;
     textfieldBox?: Partial<BoxProps>;
     slotProps?: Partial<TextFieldProps['slotProps']>;
-    startIconProps?: Partial<BoxProps>;
-    endIconProps?: Partial<BoxProps>;
   };
 };
 
-interface EnhancedTextFieldProps extends Omit<TextFieldProps, 'size' | 'variant' | 'type'> {
+export interface EnhancedTextInputAreaProps extends Omit<TextFieldProps, 'size' | 'variant'> {
   label?: string;
   testId?: string;
-  variant?: TextFieldVariant;
-  size?: TextFieldSize;
-  type?: TextFieldType;
+  variant?: TextInputAreaVariant;
+  size?: TextInputAreaSize;
   showTooltip?: boolean;
   tooltipText?: string;
-  startIcon?: ReactNode;
-  endIcon?: ReactNode;
   customProps?: Partial<CustomProps>;
 }
 
-export const EnhancedTextField = forwardRef<HTMLInputElement, EnhancedTextFieldProps>(
+export const EnhancedTextInputArea = forwardRef<HTMLInputElement, EnhancedTextInputAreaProps>(
   (
     {
       id = '',
@@ -191,12 +169,11 @@ export const EnhancedTextField = forwardRef<HTMLInputElement, EnhancedTextFieldP
       onKeyDown,
       variant = 'default',
       size = 'medium',
-      type = 'text',
       helperText,
       showTooltip = false,
       tooltipText = 'How to use this component',
-      startIcon,
-      endIcon,
+      minRows = 3,
+      maxRows = 3,
       customProps = {
         props: {},
         childProps: {
@@ -205,12 +182,10 @@ export const EnhancedTextField = forwardRef<HTMLInputElement, EnhancedTextFieldP
           textfieldBox: {},
           slotProps: {
             htmlInput: {},
-            input: {},
           },
-          startIconProps: {},
-          endIconProps: {},
         },
       },
+      ...rest
     },
     ref
   ) => {
@@ -238,39 +213,33 @@ export const EnhancedTextField = forwardRef<HTMLInputElement, EnhancedTextFieldP
         <Box
           sx={{
             display: 'flex',
-            alignItems: 'center',
+            alignItems: 'flex-start',
             width: '100%',
           }}
           {...(customProps?.childProps?.textfieldBox || {})}
         >
-          <StyledTextField
+          <StyledTextInputArea
             id={id}
             inputRef={ref}
             placeholder={placeholder}
             value={value}
             onChange={onChange}
             onKeyDown={onKeyDown}
-            type={type}
             variant="outlined"
             size={size}
+            multiline
+            minRows={minRows}
+            maxRows={maxRows}
             disabled={variant === 'disabled'}
             error={Boolean(variant === 'error')}
             helperText={variant === 'error' ? helperText : undefined}
-            hasStartIcon={!!startIcon}
             {...customProps.props}
+            {...rest}
             slotProps={{
               ...customProps?.childProps?.slotProps,
               htmlInput: {
                 'data-testId': testId,
                 ...(customProps.childProps?.slotProps?.htmlInput || {}),
-              },
-              input: {
-                startAdornment: renderStartAdornment(
-                  startIcon,
-                  customProps.childProps?.startIconProps || {}
-                ),
-                endAdornment: renderEndAdornment(endIcon, customProps.childProps?.endIconProps),
-                ...customProps?.childProps?.slotProps?.input,
               },
             }}
           />
@@ -280,4 +249,6 @@ export const EnhancedTextField = forwardRef<HTMLInputElement, EnhancedTextFieldP
   }
 );
 
-EnhancedTextField.displayName = 'EnhancedTextField';
+EnhancedTextInputArea.displayName = 'EnhancedTextInputArea';
+
+export default EnhancedTextInputArea;

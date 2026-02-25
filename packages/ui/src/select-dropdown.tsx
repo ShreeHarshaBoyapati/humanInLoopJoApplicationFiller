@@ -14,7 +14,6 @@ import { forwardRef } from 'react';
 import styleConstants from './constants/style-constants';
 import { EnhancedFieldLabel, EnhancedFieldLabelProps } from './field-label.js';
 import ArrowDownIcon from './icons/arrow-down.js';
-// import ArrowDownIcon from './icons/arrow-down.js';
 
 const RootContainer = styled(Box)({
   display: 'flex',
@@ -110,6 +109,7 @@ export const StyledMenuItem = styled(MenuItem)({
   gap: `calc(${styleConstants.spacing} * 2)`,
   borderRadius: styleConstants.borderRadius,
   fontSize: '0.75rem',
+  minHeight: 'fit-content',
   '&:hover': {
     backgroundColor: styleConstants.grey300,
   },

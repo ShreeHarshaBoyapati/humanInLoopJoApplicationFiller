@@ -1,12 +1,15 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { RouterProvider, createRouter } from '@tanstack/react-router';
+import { RouterProvider, createRouter, createHashHistory } from '@tanstack/react-router';
 import { routeTree } from './routeTree.gen';
 import { theme, ThemeProvider, CssBaseline } from '@repo/ui';
 import '@repo/ui/constants/css-constants.css';
 
+const hashHistory = createHashHistory();
+
 const router = createRouter({
   routeTree,
+  history: hashHistory,
   defaultPreload: 'intent',
   scrollRestoration: true,
 });

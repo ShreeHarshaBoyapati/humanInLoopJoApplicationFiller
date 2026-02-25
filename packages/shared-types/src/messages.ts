@@ -12,7 +12,7 @@ export type ExtensionMessage =
   | { action: 'LOGIN'; payload: { email: string; password: string } }
   | { action: 'NewUser'; payload: { email: string; password: string } }
   | { action: 'LOGOUT' }
-  | { action: 'CREATE_JOB'; payload: Job }
+  | { action: 'CREATE_JOB'; payload: Omit<Job, 'id'> }
   | { action: 'UPDATE_JOB'; payload: Job }
   | { action: 'DELETE_JOB'; payload: JobPublic }
   | { action: 'GET_JOBS'; payload: GetJobParams };

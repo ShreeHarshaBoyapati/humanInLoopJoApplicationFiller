@@ -7,6 +7,7 @@ import styles from './style/recent-jobs.module.css';
 type JobFetchList = { success: false; error: string } | { success: true; data: JobList };
 
 export const Route = createFileRoute('/recent-jobs')({
+  shouldReload: true,
   loader: async () => {
     if (typeof chrome === 'undefined' || !chrome.runtime) {
       return { jobs: [], error: 'Chrome runtime not available' };
@@ -34,10 +35,14 @@ export const Route = createFileRoute('/recent-jobs')({
 
 function RecentJobsComponent() {
   const navigate = useNavigate();
-  const { jobs: initialJobs, error: loaderError } = Route.useLoaderData();
+  const { jobs: loaderJobs, error: loaderError } = Route.useLoaderData();
 
-  const [jobs, setJobs] = useState<Job[]>(initialJobs);
-  const [error, setError] = useState<string | null>(loaderError);
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+
+  // Filter out optimistically deleted jobs from the fresh loader data
+  const jobs = loaderJobs.filter((j) => !deletedIds.has(j.id));
+  const error = loaderError || deleteError;
 
   const handleDelete = (id: string) => {
     if (window.confirm('Are you sure you want to delete this job?')) {
@@ -46,9 +51,9 @@ function RecentJobsComponent() {
           { action: 'DELETE_JOB', payload: { id } },
           (res: { success: boolean; error?: string }) => {
             if (res?.success) {
-              setJobs((prev) => prev.filter((j) => j.id !== id));
+              setDeletedIds((prev) => new Set(prev).add(id));
             } else {
-              setError(res?.error || 'Failed to delete job');
+              setDeleteError(res?.error || 'Failed to delete job');
             }
           }
         );

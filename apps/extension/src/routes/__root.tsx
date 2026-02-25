@@ -11,7 +11,10 @@ export const Route = createRootRoute({
   loader: async ({ location }) => {
     // Check if chrome runtime is available (for dev/preview safety)
     if (typeof chrome === 'undefined' || !chrome.runtime) {
-      console.warn('Chrome runtime not detected, skipping auth check');
+      console.warn('Chrome runtime not detected, treating as unauthenticated');
+      if (location.pathname !== '/login' && location.pathname !== '/new-user') {
+        throw redirect({ to: '/login' });
+      }
       return;
     }
 
@@ -28,6 +31,7 @@ export const Route = createRootRoute({
     });
 
     const { isAuthenticated } = response;
+    console.log('isAuthenticated===========', isAuthenticated);
 
     if (isAuthenticated) {
       if (location.pathname === '/login' || location.pathname === '/new-user') {
@@ -35,6 +39,8 @@ export const Route = createRootRoute({
       }
     } else {
       if (location.pathname !== '/login' && location.pathname !== '/new-user') {
+        console.log('======got to final');
+
         throw redirect({ to: '/login' });
       }
     }
@@ -47,7 +53,7 @@ function RootComponent() {
     routerState.location.pathname === '/login' || routerState.location.pathname === '/new-user';
 
   return (
-    <>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
       {!isLoginPage && (
         <>
           <div className={styles.container}>
@@ -77,7 +83,7 @@ function RootComponent() {
       <main className={styles.mainContent}>
         <Outlet />
       </main>
-      <TanStackRouterDevtools position="bottom-right" />
-    </>
+      {/* <TanStackRouterDevtools position="bottom-right" /> */}
+    </div>
   );
 }

@@ -5,6 +5,7 @@ import { EnhancedTextField as TextField } from '@repo/ui/text-field.tsx';
 import { EnhancedButton as Button } from '@repo/ui/button.tsx';
 import { EnhancedChip as Chip } from '@repo/ui/chip.tsx';
 import { EnhancedSelectDropdown as SelectDropdown } from '@repo/ui/select-dropdown.tsx';
+import { EnhancedTextInputArea as TextInputArea } from '@repo/ui/text-input-area.tsx';
 import scrollbarStyles from '@repo/ui/scroll-bar.module.css';
 
 // API URL: In production, frontend and backend are on same origin
@@ -147,6 +148,19 @@ function App() {
               placeholder="Enter username"
               id="getId"
               testId="getIdTest"
+              customProps={{
+                props: {
+                  multiline: true,
+                  rows: 6,
+                  sx: {
+                    '& .MuiOutlinedInput-root': {
+                      height: 'auto',
+                      maxHeight: 'none',
+                      alignItems: 'flex-start',
+                    },
+                  },
+                },
+              }}
             />
           </div>
 
@@ -193,6 +207,64 @@ function App() {
           <div className={styles.variantContainer}>
             <span className={styles.variantLabel}>Small Size</span>
             <TextField label="Small Input" placeholder="Small size..." size="small" />
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Text Input Area Variants & States</h2>
+        <div className={styles.grid}>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Default Variant</span>
+            <TextInputArea
+              label="Description"
+              placeholder="Enter comprehensive description"
+              id="descId"
+              testId="descIdTest"
+              minRows={4}
+              maxRows={8}
+            />
+          </div>
+
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Disabled Variant</span>
+            <TextInputArea
+              label="Comments"
+              placeholder="Enter your comments"
+              variant="disabled"
+              value="This input is completely disabled and cannot be modified."
+            />
+          </div>
+
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Error Variant</span>
+            <TextInputArea
+              label="Bio"
+              placeholder="Enter biography"
+              variant="error"
+              value="I like to write short bios."
+              helperText="Biography must be at least 500 characters"
+            />
+          </div>
+
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>With Tooltip</span>
+            <TextInputArea
+              label="Custom Instructions"
+              placeholder="Add extra instructions here"
+              showTooltip={true}
+              tooltipText="Specify additional guidelines."
+            />
+          </div>
+
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>With Start Icon</span>
+            <TextInputArea label="Search Description" placeholder="Search..." />
+          </div>
+
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Small Size</span>
+            <TextInputArea label="Small Input Area" placeholder="Small size..." size="small" />
           </div>
         </div>
       </section>

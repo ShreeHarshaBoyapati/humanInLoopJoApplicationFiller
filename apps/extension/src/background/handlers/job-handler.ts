@@ -12,26 +12,32 @@ export function handleJobMessage(
   api: AxiosInstance
 ): boolean {
   if (message.action === 'CREATE_JOB') {
-    const payload = message.payload;
+    try {
+      const payload = message.payload;
+      console.log('Received CREATE_JOB. Payload:', Object.keys(payload));
 
-    api
-      .post<ApiResponse<JobPublic>>('/job', payload)
-      .then((response) => {
-        const { data } = response;
-        if (data.success) {
-          sendResponse({ success: true, data: data.data });
-        } else {
-          sendResponse({ success: false, error: data.message || 'Failed to create job' });
-        }
-      })
-      .catch((error) => {
-        console.error('Job creation error:', error);
-        sendResponse({
-          success: false,
-          error: error.response?.data?.message || error.message,
+      api
+        .post<ApiResponse<JobPublic>>('/job', payload)
+        .then((response) => {
+          console.log('CREATE_JOB success response:', response.status);
+          const { data } = response;
+          if (data.success) {
+            sendResponse({ success: true, data: data.data });
+          } else {
+            sendResponse({ success: false, error: data.message || 'Failed to create job' });
+          }
+        })
+        .catch((error) => {
+          console.error('Job creation error (catch):', error);
+          sendResponse({
+            success: false,
+            error: error.response?.data?.message || error.message || 'Unknown network error',
+          });
         });
-      });
-
+    } catch (err: any) {
+      console.error('Job creation synchronous error:', err);
+      sendResponse({ success: false, error: err.message || 'Synchronous error' });
+    }
     return true;
   }
 

@@ -12,6 +12,7 @@
     "check-types": "tsc --noEmit"
   },
   "devDependencies": {
+    "@mui/icons-material": "^7.3.8",
     "@repo/assets": "workspace:*",
     "@repo/eslint-config": "workspace:*",
     "@repo/typescript-config": "workspace:*",

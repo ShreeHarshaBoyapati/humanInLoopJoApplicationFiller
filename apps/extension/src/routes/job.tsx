@@ -1,8 +1,14 @@
 import { createFileRoute, useNavigate, ErrorComponent } from '@tanstack/react-router';
 import { useState } from 'react';
-import { EnhancedTextField, EnhancedButton, EnhancedSelectDropdown, EnhancedChip } from '@repo/ui';
-import { Accordion, AccordionSummary, AccordionDetails, Box } from '@mui/material';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import {
+  EnhancedTextField,
+  EnhancedButton,
+  EnhancedSelectDropdown,
+  EnhancedChip,
+  EnhancedTextInputArea,
+  EnhancedAccordion,
+} from '@repo/ui';
+import { Box } from '@mui/material';
 import type { Job, JobList, JobPublic } from '@repo/shared-types';
 import styles from './style/job.module.css';
 import scrollStyles from '@repo/ui/scroll-bar.module.css';
@@ -43,7 +49,7 @@ const initialFormData: JobFormData = {
   tags: [],
 };
 
-interface JobSearch {
+export interface JobSearch {
   jobId?: string;
 }
 
@@ -68,6 +74,7 @@ type JobFetchList =
     };
 
 export const Route = createFileRoute('/job')({
+  shouldReload: true,
   validateSearch: (search: Record<string, unknown>): JobSearch => {
     return {
       jobId: search.jobId as string | undefined,
@@ -181,7 +188,7 @@ function JobComponent() {
     }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setError(null);
     setLoading(true);
 
@@ -228,15 +235,32 @@ function JobComponent() {
 
     if (typeof chrome !== 'undefined' && chrome.runtime) {
       const action = isEditing ? 'UPDATE_JOB' : 'CREATE_JOB';
-      chrome.runtime.sendMessage({ action, payload }, (res: JobAddResponse) => {
-        const response = res;
+      try {
+        const res = await new Promise<JobAddResponse>((resolve, reject) => {
+          chrome.runtime.sendMessage({ action, payload }, (response: JobAddResponse) => {
+            if (chrome.runtime.lastError) {
+              reject(chrome.runtime.lastError);
+            } else {
+              resolve(response);
+            }
+          });
+        });
+
         setLoading(false);
-        if (response?.success) {
+        if (res?.success) {
           navigate({ to: '/' });
         } else {
-          setError(response.error);
+          setError(res?.error || 'An unexpected error occurred.');
         }
-      });
+      } catch (err) {
+        setLoading(false);
+        const errorMessage =
+          err instanceof Error
+            ? err.message
+            : (err as { message?: string })?.message ||
+              'Failed to communicate with background script';
+        setError(errorMessage);
+      }
     } else {
       setLoading(false);
       setError('Chrome runtime not available');
@@ -250,7 +274,7 @@ function JobComponent() {
       </div>
 
       <div className={styles.formContainer}>
-        <div className={`${styles.scrollArea} ${scrollStyles.scrollContainer}`}>
+        <div className={`${styles.scrollArea} ${scrollStyles.scrollbarVerticalContainer}`}>
           <EnhancedTextField
             label="Company"
             value={formData.companyName}
@@ -265,7 +289,7 @@ function JobComponent() {
             label="Position Title"
             value={formData.title}
             onChange={handleChange('title')}
-            placeholder="e.g. Software Development Engineer II"
+            placeholder="e.g. SDE II"
             disabled={loading}
             variant={formErrors.title ? 'error' : 'default'}
             helperText={formErrors.title || 'Enter the position title.'}
@@ -314,7 +338,7 @@ function JobComponent() {
                 label="Currency"
                 value={formData.currency}
                 onChange={handleChange('currency')}
-                placeholder="USD"
+                placeholder="IND"
                 disabled={loading}
                 variant={formErrors.currency ? 'error' : 'default'}
                 helperText={formErrors.currency}
@@ -357,7 +381,7 @@ function JobComponent() {
             </div>
             <div className={styles.field}>
               <EnhancedTextField
-                label="Acceptance Level (0-100)"
+                label="Acceptance Level"
                 value={String(formData.acceptanceLevel)}
                 onChange={handleChange('acceptanceLevel')}
                 type="number"
@@ -373,49 +397,27 @@ function JobComponent() {
             </div>
           </div>
 
-          <Accordion className={styles.accordionContainer} disableGutters>
-            <AccordionSummary
-              expandIcon={<ExpandMoreIcon sx={{ color: '#fff' }} />}
-              className={styles.accordionSummary}
-            >
-              <span className={styles.accordionTitle}>Job Description</span>
-            </AccordionSummary>
-            <AccordionDetails className={styles.accordionDetails}>
-              <EnhancedTextField
-                customProps={{
-                  props: { multiline: true, rows: 6 },
-                }}
-                value={formData.description}
-                onChange={handleChange('description')}
-                placeholder="Paste job description here..."
-                disabled={loading}
-                variant={formErrors.description ? 'error' : 'default'}
-                helperText={formErrors.description}
-              />
-            </AccordionDetails>
-          </Accordion>
+          <EnhancedAccordion title="Job Description">
+            <EnhancedTextInputArea
+              value={formData.description}
+              onChange={handleChange('description')}
+              placeholder="Paste job description here..."
+              disabled={loading}
+              variant={formErrors.description ? 'error' : 'default'}
+              helperText={formErrors.description}
+            />
+          </EnhancedAccordion>
 
-          <Accordion className={styles.accordionContainer} disableGutters>
-            <AccordionSummary
-              expandIcon={<ExpandMoreIcon sx={{ color: '#fff' }} />}
-              className={styles.accordionSummary}
-            >
-              <span className={styles.accordionTitle}>Notes (Markdown supported)</span>
-            </AccordionSummary>
-            <AccordionDetails className={styles.accordionDetails}>
-              <EnhancedTextField
-                customProps={{
-                  props: { multiline: true, rows: 4 },
-                }}
-                value={formData.notes}
-                onChange={handleChange('notes')}
-                placeholder="Add your personal notes or markdown content here..."
-                disabled={loading}
-                variant={formErrors.notes ? 'error' : 'default'}
-                helperText={formErrors.notes}
-              />
-            </AccordionDetails>
-          </Accordion>
+          <EnhancedAccordion title="Notes (Markdown supported)">
+            <EnhancedTextInputArea
+              value={formData.notes}
+              onChange={handleChange('notes')}
+              placeholder="Add your personal notes or markdown content here..."
+              disabled={loading}
+              variant={formErrors.notes ? 'error' : 'default'}
+              helperText={formErrors.notes}
+            />
+          </EnhancedAccordion>
 
           <EnhancedSelectDropdown
             label="Application Status"
@@ -445,6 +447,33 @@ function JobComponent() {
           />
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div className={styles.row} style={{ alignItems: 'flex-start' }}>
+              <div className={styles.field}>
+                <EnhancedTextField
+                  label="Key Skills"
+                  value={skillInput}
+                  onChange={(e) => setSkillInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddChip('keySkills', skillInput, setSkillInput);
+                    }
+                  }}
+                  placeholder="Type a skill and press Enter"
+                  disabled={loading}
+                  variant={formErrors.keySkills ? 'error' : 'default'}
+                  helperText={formErrors.keySkills || 'Press Enter to add'}
+                />
+              </div>
+              <div className={styles.addButtonContainer}>
+                <EnhancedButton
+                  label="Add"
+                  colorTheme="secondary"
+                  onClick={() => handleAddChip('keySkills', skillInput, setSkillInput)}
+                  disabled={loading || !skillInput.trim()}
+                />
+              </div>
+            </div>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
               {formData.keySkills.map((skill, index) => (
                 <EnhancedChip
@@ -457,24 +486,36 @@ function JobComponent() {
                 />
               ))}
             </Box>
-            <EnhancedTextField
-              label="Key Skills"
-              value={skillInput}
-              onChange={(e) => setSkillInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleAddChip('keySkills', skillInput, setSkillInput);
-                }
-              }}
-              placeholder="Type a skill and press Enter"
-              disabled={loading}
-              variant={formErrors.keySkills ? 'error' : 'default'}
-              helperText={formErrors.keySkills || 'Press Enter to add'}
-            />
           </Box>
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div className={styles.row} style={{ alignItems: 'flex-start' }}>
+              <div className={styles.field}>
+                <EnhancedTextField
+                  label="Tags"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddChip('tags', tagInput, setTagInput);
+                    }
+                  }}
+                  placeholder="remote, faang (Press Enter to add)"
+                  disabled={loading}
+                  variant={formErrors.tags ? 'error' : 'default'}
+                  helperText={formErrors.tags || 'Press Enter to add'}
+                />
+              </div>
+              <div className={styles.addButtonContainer}>
+                <EnhancedButton
+                  label="Add"
+                  colorTheme="secondary"
+                  onClick={() => handleAddChip('tags', tagInput, setTagInput)}
+                  disabled={loading || !tagInput.trim()}
+                />
+              </div>
+            </div>
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
               {formData.tags.map((tag, index) => (
                 <EnhancedChip
@@ -487,21 +528,6 @@ function JobComponent() {
                 />
               ))}
             </Box>
-            <EnhancedTextField
-              label="Tags"
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleAddChip('tags', tagInput, setTagInput);
-                }
-              }}
-              placeholder="remote, faang (Press Enter to add)"
-              disabled={loading}
-              variant={formErrors.tags ? 'error' : 'default'}
-              helperText={formErrors.tags || 'Press Enter to add'}
-            />
           </Box>
         </div>
 

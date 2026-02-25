@@ -37,6 +37,7 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendRe
   // User-related actions
   const handled = handleUserMessage(message, sendResponse, api);
   if (handled) return true;
+  console.log('==========got here======+>>>>>>');
 
   // Job-related actions
   const jobHandled = handleJobMessage(message, sendResponse, api);
