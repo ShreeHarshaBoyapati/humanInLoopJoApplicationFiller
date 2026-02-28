@@ -11,7 +11,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@mui/icons-material": "^7.3.8",
+    "@mui/material": "^7.3.8",
     "@repo/assets": "workspace:^",
+    "@repo/ui": "workspace:^",
     "@tanstack/react-router": "^1.159.14",
     "@tanstack/react-router-devtools": "^1.159.14",
     "axios": "^1.13.5",
@@ -21,6 +24,7 @@
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.3.0",
     "@repo/eslint-config": "workspace:*",
+    "@repo/shared-types": "workspace:^",
     "@repo/typescript-config": "workspace:*",
     "@tanstack/router-plugin": "^1.159.14",
     "@types/chrome": "^0.1.36",

@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import styles from './style/index.module.css';
 
 interface LogoutResponse {
@@ -28,12 +28,23 @@ function HomeComponent() {
   return (
     <div className={styles.container}>
       <div className={styles.header}>
+        {/* need to move this into a common one */}
         <h3>Welcome Home!</h3>
         <button onClick={handleLogout} className={styles.logoutButton}>
           Logout
         </button>
       </div>
-      <p>You are logged in.</p>
+      <p>Manage your job applications easily.</p>
+
+      <div className={styles.cardsContainer}>
+        <Link to="/job" className={styles.cardLink}>
+          Click here to save a new interesting job in your tracker.
+        </Link>
+
+        <Link to="/recent-jobs" className={styles.cardLink}>
+          View and manage your 5 most recently tracked jobs.
+        </Link>
+      </div>
     </div>
   );
 }

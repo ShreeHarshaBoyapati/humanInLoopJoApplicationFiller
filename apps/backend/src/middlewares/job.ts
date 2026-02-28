@@ -1,5 +1,7 @@
 import type { Request, Response, NextFunction } from '../types/index.js';
 import { z, ZodError } from 'zod';
+import { flattenZodErrorToString } from '../utils/validations.js';
+import { ApiResponse } from '@repo/shared-types';
 
 // Schema for creating a job
 const CreateJobSchema = z.object({
@@ -9,6 +11,7 @@ const CreateJobSchema = z.object({
   status: z.enum(['draft', 'active', 'archived']).default('draft'),
   acceptanceLevel: z.number().int().min(0).max(100).default(0),
   companyName: z.string().default(''),
+  notes: z.string().default(''),
   metaData: z.record(z.string(), z.unknown()).default({}),
   description: z.record(z.string(), z.unknown()).default({}),
   highlights: z.record(z.string(), z.unknown()).default({}),
@@ -24,6 +27,7 @@ const UpdateJobSchema = z.object({
   status: z.enum(['draft', 'active', 'archived']).optional(),
   acceptanceLevel: z.number().int().min(0).max(100).optional(),
   companyName: z.string().optional(),
+  notes: z.string().optional(),
   metaData: z.record(z.string(), z.unknown()).optional(),
   description: z.record(z.string(), z.unknown()).optional(),
   highlights: z.record(z.string(), z.unknown()).optional(),
@@ -44,6 +48,7 @@ const validJobFields = [
   'status',
   'acceptanceLevel',
   'companyName',
+  'notes',
   'metaData',
   'description',
   'highlights',
@@ -82,6 +87,7 @@ const GetJobsSchema = z.object({
 });
 
 export type JobField = (typeof validJobFields)[number];
+export type CreateJobInput = z.input<typeof CreateJobSchema>;
 
 export function createJobValidation(req: Request, res: Response, next: NextFunction) {
   try {
@@ -89,21 +95,24 @@ export function createJobValidation(req: Request, res: Response, next: NextFunct
     next();
   } catch (error) {
     if (error instanceof ZodError) {
-      res.status(400).json({
+      const data: ApiResponse = {
         success: false,
-        message: 'Validation failed',
-        errors: error.flatten(),
-      });
+        message: flattenZodErrorToString(error),
+      };
+      res.status(400).json(data);
       return;
     }
 
-    res.status(400).json({
+    const data: ApiResponse = {
       success: false,
       message: 'Invalid input',
-    });
+    };
+    res.status(400).json(data);
     return;
   }
 }
+
+export type UpdateJobInput = z.input<typeof UpdateJobSchema>;
 
 export function updateJobValidation(req: Request, res: Response, next: NextFunction) {
   try {
@@ -111,71 +120,69 @@ export function updateJobValidation(req: Request, res: Response, next: NextFunct
     next();
   } catch (error) {
     if (error instanceof ZodError) {
-      res.status(400).json({
+      const data: ApiResponse = {
         success: false,
-        message: 'Validation failed',
-        errors: error.flatten(),
-      });
+        message: flattenZodErrorToString(error),
+      };
+      res.status(400).json(data);
       return;
     }
 
-    res.status(400).json({
+    const data: ApiResponse = {
       success: false,
       message: 'Invalid input',
-    });
+    };
+    res.status(400).json(data);
     return;
   }
 }
 
+export type DeleteJobInput = z.input<typeof DeleteJobSchema>;
 export function deleteJobValidation(req: Request, res: Response, next: NextFunction) {
   try {
     req.body = DeleteJobSchema.parse(req.body);
     next();
   } catch (error) {
     if (error instanceof ZodError) {
-      res.status(400).json({
+      const data: ApiResponse = {
         success: false,
-        message: 'Validation failed',
-        errors: error.flatten(),
-      });
+        message: flattenZodErrorToString(error),
+      };
+      res.status(400).json(data);
       return;
     }
 
-    res.status(400).json({
+    const data: ApiResponse = {
       success: false,
       message: 'Invalid input',
-    });
+    };
+    res.status(400).json(data);
     return;
   }
 }
 
+export type GetJobsInput = z.input<typeof GetJobsSchema>;
+export type GetJobsInfer = z.infer<typeof GetJobsSchema>;
 export function getJobsValidation(req: Request, res: Response, next: NextFunction) {
   try {
-    // Store parsed values separately to avoid type conflicts with Express query
     const parsed = GetJobsSchema.parse(req.query);
-    // Attach parsed values to request object for use in controller
-    (req as Request & { parsedQuery: GetJobsInput }).parsedQuery = parsed;
+    (req as Request & { parsedQuery: z.infer<typeof GetJobsSchema> }).parsedQuery = parsed;
     next();
   } catch (error) {
     if (error instanceof ZodError) {
-      res.status(400).json({
+      const data: ApiResponse = {
         success: false,
-        message: 'Validation failed',
-        errors: error.flatten(),
-      });
+        message: flattenZodErrorToString(error),
+      };
+      res.status(400).json(data);
       return;
     }
 
-    res.status(400).json({
+    const data: ApiResponse = {
       success: false,
       message: 'Invalid query parameters',
-    });
+    };
+    res.status(400).json(data);
     return;
   }
 }
-
-// Export schemas for use in controller type inference
-export type CreateJobInput = z.infer<typeof CreateJobSchema>;
-export type UpdateJobInput = z.infer<typeof UpdateJobSchema>;
-export type DeleteJobInput = z.infer<typeof DeleteJobSchema>;
-export type GetJobsInput = z.infer<typeof GetJobsSchema>;

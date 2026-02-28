@@ -17,6 +17,7 @@
   "dependencies": {
     "@types/dotenv": "^8.2.3",
     "@types/express-rate-limit": "^6.0.2",
+    "@types/express-serve-static-core": "^5.1.1",
     "@types/helmet": "^4.0.0",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
@@ -37,6 +38,7 @@
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
+    "@repo/shared-types": "workspace:^",
     "@repo/typescript-config": "workspace:*",
     "@types/bcrypt": "^6.0.0",
     "@types/cookie-parser": "^1.4.10",

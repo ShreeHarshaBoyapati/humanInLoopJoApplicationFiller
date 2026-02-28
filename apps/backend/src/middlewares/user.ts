@@ -1,7 +1,9 @@
-import type { Request, Response, NextFunction, AuthenticatedRequest } from '../types/index.js';
+import type { Request, Response, NextFunction, AuthenticatedTypedRequest } from '../types/index.js';
 import { verifyToken } from '../utils/auth.js';
 import { getUserRepository } from '../database/repositories/index.js';
 import * as z from 'zod';
+import { ApiResponse } from '@repo/shared-types';
+import { flattenZodErrorToString } from '../utils/validations.js';
 
 const UserObj = z.object({
   email: z.email(),
@@ -63,81 +65,86 @@ export async function authMiddleware(
       return;
     }
 
-    (req as AuthenticatedRequest).userId = decoded.userId;
-    (req as AuthenticatedRequest).sessionId = decoded.sessionId;
+    (req as AuthenticatedTypedRequest<unknown>).userId = decoded.userId;
+    (req as AuthenticatedTypedRequest<unknown>).sessionId = decoded.sessionId;
 
     next();
   } catch (error) {
     if (error instanceof Error) {
-      res.status(401).json({
+      const data: ApiResponse = {
         success: false,
         message: error.message,
-      });
+      };
+      res.status(401).json(data);
       return;
     }
 
-    res.status(401).json({
+    const data: ApiResponse = {
       success: false,
       message: 'Authentication failed',
-    });
+    };
+    res.status(401).json(data);
   }
 }
-
+export type RegisterInputType = z.infer<typeof UserObj>;
 export function registerInputValidation(req: Request, res: Response, next: NextFunction) {
   try {
     req.body = UserObj.parse(req.body);
     next();
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const errors = z.flattenError(error);
-      res.status(400).json({
+      const data: ApiResponse = {
         success: false,
-        message: 'Validation failed',
-        errors,
-      });
+        message: flattenZodErrorToString(error),
+      };
+      res.status(400).json(data);
       return;
     }
-
-    res.status(400).json({
+    const data: ApiResponse = {
       success: false,
       message: 'Invalid input',
-    });
+    };
+    res.status(400).json(data);
     return;
   }
 }
 
+export type LoginInputType = z.infer<typeof UserObj>;
 export function loginInputValidation(req: Request, res: Response, next: NextFunction) {
   try {
     req.body = UserObj.parse(req.body);
     next();
   } catch {
-    res.status(400).json({
+    const data: ApiResponse = {
       success: false,
       message: 'Invalid email or password',
-    });
+    };
+    res.status(400).json(data);
     return;
   }
 }
 
+export type UpdateUserInputType = z.infer<typeof UpdateUserObj>;
 export function updateUserValidation(req: Request, res: Response, next: NextFunction) {
   try {
     req.body = UpdateUserObj.parse(req.body);
     next();
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const errors = z.flattenError(error);
-      res.status(400).json({
+      const data: ApiResponse = {
         success: false,
-        message: 'Validation failed',
-        errors,
-      });
+        message: flattenZodErrorToString(error),
+      };
+      res.status(400).json(data);
       return;
     }
 
-    res.status(400).json({
+    const data: ApiResponse = {
       success: false,
       message: 'Invalid input',
-    });
+    };
+
+    res.status(400).json(data);
     return;
   }
 }

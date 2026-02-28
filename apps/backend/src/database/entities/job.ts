@@ -23,7 +23,7 @@ export default class Job {
   persona!: string;
 
   @Column('varchar', { default: 'draft' })
-  status!: string;
+  status!: string; //need to create enum
 
   @Column('int', { default: 0 })
   acceptanceLevel!: number;
@@ -31,14 +31,17 @@ export default class Job {
   @Column('varchar', { default: '' })
   companyName!: string;
 
-  @Column('simple-json', { default: {} })
-  metaData!: object;
+  @Column('text', { default: '' })
+  notes!: string;
 
   @Column('simple-json', { default: {} })
-  description!: object;
+  metaData!: Record<string, unknown>;
 
   @Column('simple-json', { default: {} })
-  highlights!: object;
+  description!: Record<string, unknown>;
+
+  @Column('simple-json', { default: {} })
+  highlights!: Record<string, unknown>;
 
   @Column('simple-array', { default: [] })
   keySkills!: string[];

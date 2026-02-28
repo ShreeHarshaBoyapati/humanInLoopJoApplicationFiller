@@ -7,12 +7,13 @@ import {
   deleteJobValidation,
   getJobsValidation,
 } from '../middlewares/job.js';
+import { asHandler } from '../types/api.js';
 
 const router: express.Router = express.Router();
 
-router.post('/', authMiddleware, createJobValidation, JobController.create);
-router.put('/', authMiddleware, updateJobValidation, JobController.update);
-router.delete('/', authMiddleware, deleteJobValidation, JobController.delete);
-router.get('/', authMiddleware, getJobsValidation, JobController.get);
+router.post('/', authMiddleware, createJobValidation, asHandler(JobController.create));
+router.put('/', authMiddleware, updateJobValidation, asHandler(JobController.update));
+router.delete('/', authMiddleware, deleteJobValidation, asHandler(JobController.delete));
+router.get('/', authMiddleware, getJobsValidation, asHandler(JobController.get));
 
 export default router;

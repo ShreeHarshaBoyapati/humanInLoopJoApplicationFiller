@@ -24,3 +24,9 @@
 .logoutButton:hover {
   background-color: #dc2626;
 }
+
+.cardsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}

@@ -1,4 +1,8 @@
 import axios from 'axios';
+import type { ExtensionMessage } from '@repo/shared-types';
+import { handleUserMessage } from './handlers/user-handler.js';
+import { handleJobMessage } from './handlers/job-handler.js';
+
 console.log('Background service worker started');
 
 // Listen for installation
@@ -28,54 +32,34 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// Listen for messages from the UI
-chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  if (message.action === 'CHECK_AUTH') {
-    chrome.storage.local.get(['token'], (result: { token?: string }) => {
-      sendResponse({ isAuthenticated: !!result.token });
-    });
-    return true; // Indicates asynchronous response
-  }
-
-  if (message.action === 'LOGIN') {
-    const { email, password } = message.payload;
-
-    api
-      .post('/user/login', {
-        email,
-        password,
-      })
-      .then((response) => {
-        const { data } = response;
-        if (data.success && data.data?.token) {
-          chrome.storage.local.set({ token: data.data.token }, () => {
-            sendResponse({ success: true, token: data.data.token });
+// Listen for messages from the UI and content scripts — dispatch to entity handlers
+chrome.runtime.onMessage.addListener((message: ExtensionMessage, sender, sendResponse) => {
+  // Quick Save from content script
+  if (message.action === 'OPEN_SIDE_PANEL') {
+    const url = message.payload?.url || '';
+    chrome.storage.local.set({ quickSaveUrl: url }, () => {
+      const tabId = sender.tab?.id;
+      if (tabId) {
+        chrome.sidePanel
+          .open({ tabId })
+          .then(() => sendResponse({ success: true }))
+          .catch((err) => {
+            console.error('Failed to open side panel:', err);
+            sendResponse({ success: false, error: String(err) });
           });
-        } else {
-          sendResponse({ success: false, error: data.message || 'Login failed' });
-        }
-      })
-      .catch((error) => {
-        console.error('Login error:', error);
-        sendResponse({ success: false, error: error.response?.data?.message || error.message });
-      });
-
-    return true; // Keep channel open
-  }
-
-  if (message.action === 'LOGOUT') {
-    api
-      .post('/user/logout')
-      .then(() => {
-        chrome.storage.local.remove('token', () => {
-          sendResponse({ success: true });
-        });
-      })
-      .catch((error) => {
-        console.error('Logout error:', error);
-        sendResponse({ success: false, error: error.message || 'Logout failed' });
-      });
-
+      } else {
+        sendResponse({ success: false, error: 'No tab id' });
+      }
+    });
     return true;
   }
+
+  // User-related actions
+  const handled = handleUserMessage(message, sendResponse, api);
+  if (handled) return true;
+  console.log('==========got here======+>>>>>>>');
+
+  // Job-related actions
+  const jobHandled = handleJobMessage(message, sendResponse, api);
+  if (jobHandled) return true;
 });

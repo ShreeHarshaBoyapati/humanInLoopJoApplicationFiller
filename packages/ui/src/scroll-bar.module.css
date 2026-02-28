@@ -1,0 +1,163 @@
+.scrollbarVerticalContainer {
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: auto;
+}
+
+.scrollbarVerticalContainer:global(::-webkit-scrollbar) {
+  width: 8px;
+}
+
+.scrollbarVerticalContainer:global(::-webkit-scrollbar-track) {
+  background-color: transparent !important;
+}
+
+.scrollbarVerticalContainer:global(::-webkit-scrollbar-thumb) {
+  background-color: transparent !important;
+  border-radius: 8px;
+}
+
+.scrollbarVerticalContainer:hover {
+  scrollbar-width: auto;
+}
+
+.scrollbarVerticalContainer:hover:global(::-webkit-scrollbar) {
+  width: 8px;
+}
+
+.scrollbarVerticalContainer:hover:global(::-webkit-scrollbar-thumb) {
+  background-color: var(--grey-500) !important;
+  border-radius: 8px;
+}
+
+.scrollbarVerticalContainer:hover:global(::-webkit-scrollbar-track:hover) {
+  background-color: var(--black-800) !important;
+  border-radius: 8px;
+}
+
+.scrollbarHorizontalContainer {
+  overflow-x: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: auto;
+}
+
+.scrollbarHorizontalContainer:global(::-webkit-scrollbar) {
+  height: 8px;
+}
+
+.scrollbarHorizontalContainer:global(::-webkit-scrollbar-track) {
+  background-color: transparent !important;
+}
+
+.scrollbarHorizontalContainer:global(::-webkit-scrollbar-thumb) {
+  background-color: transparent !important;
+  border-radius: 8px;
+}
+
+.scrollbarHorizontalContainer:hover {
+  scrollbar-width: auto;
+}
+
+.scrollbarHorizontalContainer:hover:global(::-webkit-scrollbar) {
+  height: 8px;
+}
+
+.scrollbarHorizontalContainer:hover:global(::-webkit-scrollbar-thumb) {
+  background-color: var(--grey-500) !important;
+  border-radius: 8px;
+}
+
+.scrollbarHorizontalContainer:hover:global(::-webkit-scrollbar-track:hover) {
+  background-color: var(--black-800) !important;
+  border-radius: 8px;
+}
+
+.scrollbarVerticalThinContainer {
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: auto;
+}
+
+.scrollbarVerticalThinContainer:global(::-webkit-scrollbar) {
+  width: 4px;
+}
+
+.scrollbarVerticalThinContainer:global(::-webkit-scrollbar-track) {
+  background-color: transparent !important;
+}
+
+.scrollbarVerticalThinContainer:global(::-webkit-scrollbar-thumb) {
+  background-color: transparent !important;
+  border-radius: 8px;
+}
+
+.scrollbarVerticalThinContainer:hover {
+  scrollbar-width: auto;
+}
+
+.scrollbarVerticalThinContainer:hover:global(::-webkit-scrollbar) {
+  width: 4px;
+}
+
+.scrollbarVerticalThinContainer:hover:global(::-webkit-scrollbar-thumb) {
+  background-color: var(--grey-500) !important;
+  border-radius: 8px;
+}
+
+.scrollbarVerticalThinContainer:hover:global(::-webkit-scrollbar-track:hover) {
+  background-color: var(--black-800) !important;
+  border-radius: 8px;
+}
+
+.scrollbarHorizontalThinContainer {
+  overflow-x: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: auto;
+}
+
+.scrollbarHorizontalThinContainer:global(::-webkit-scrollbar) {
+  height: 4px;
+}
+
+.scrollbarHorizontalThinContainer:global(::-webkit-scrollbar-track) {
+  background-color: transparent !important;
+}
+
+.scrollbarHorizontalThinContainer:global(::-webkit-scrollbar-thumb) {
+  background-color: transparent !important;
+  border-radius: 8px;
+}
+
+.scrollbarHorizontalThinContainer:hover {
+  scrollbar-width: auto;
+}
+
+.scrollbarHorizontalThinContainer:hover:global(::-webkit-scrollbar) {
+  height: 4px;
+}
+
+.scrollbarHorizontalThinContainer:hover:global(::-webkit-scrollbar-thumb) {
+  background-color: var(--grey-500) !important;
+  border-radius: 8px;
+}
+
+.scrollbarHorizontalThinContainer:hover:global(::-webkit-scrollbar-track:hover) {
+  background-color: var(--black-800) !important;
+  border-radius: 8px;
+}
+
+.scrollbarVerticalContainer::-webkit-scrollbar:vertical {
+  width: 8px;
+}
+
+.scrollbarVerticalContainer::-webkit-scrollbar:horizontal {
+  height: 8px;
+}
+
+.scrollbarVerticalThinContainer::-webkit-scrollbar:vertical {
+  width: 4px;
+}
+
+.scrollbarHorizontalThinContainer::-webkit-scrollbar:horizontal {
+  height: 4px;
+}

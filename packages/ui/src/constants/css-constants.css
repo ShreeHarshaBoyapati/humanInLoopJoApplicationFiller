@@ -1,0 +1,26 @@
+:root {
+  --black-200: #2e2e32;
+  --black-700: #16171d;
+  --black-800: #14121a;
+  --white-900: #fff;
+  --white-700: rgb(255 255 255 / 70%);
+  /* stylelint-disable-next-line declaration-block-no-duplicate-custom-properties */
+  --white-700: color-mix(in oklab, #fff 70%, transparent);
+  --grey-300: #65758529;
+  --grey-500: #98989f;
+  --grey-700: #3b3440;
+  --blue-500: #06b6d4;
+  --red-600: #f14158;
+  --red-700: #b00d22;
+  --border-radius: 0.5rem;
+  --spacing: 0.25rem;
+  --heading-font: 'Space Grotesk', sans-serif;
+  --secondary-font: 'Inter', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: var(--secondary-font);
+  margin: 0;
+  padding: 0;
+}

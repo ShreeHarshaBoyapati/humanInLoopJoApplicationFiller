@@ -1,0 +1,118 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  margin: 0;
+  padding: 1rem;
+}
+
+.header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.title {
+  color: #fff;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.link {
+  color: #fff;
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.listContainer {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1rem;
+  overflow-y: auto;
+}
+
+.jobCard {
+  align-items: stretch;
+  background-color: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  padding: 1.25rem;
+  transition: border-color 0.2s;
+}
+
+.jobCard:hover {
+  border-color: #4b5563;
+}
+
+.jobDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.jobTitle {
+  color: #fff;
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.jobCompany {
+  color: #9ca3af;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.jobMeta {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+}
+
+.jobStatus {
+  background-color: #374151;
+  border-radius: 9999px;
+  color: #d1d5db;
+  font-size: 0.75rem;
+  padding: 0.125rem 0.5rem;
+  text-transform: capitalize;
+}
+
+.jobDate {
+  color: #6b7280;
+  font-size: 0.75rem;
+}
+
+.jobActions {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.jobCard:hover .jobActions {
+  opacity: 1;
+}
+
+.error {
+  color: #ef4444;
+  font-size: 0.875rem;
+  margin-top: 1rem;
+}
+
+.emptyState {
+  color: #9ca3af;
+  font-size: 0.875rem;
+  margin-top: 2rem;
+  text-align: center;
+}

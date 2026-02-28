@@ -1,14 +1,15 @@
-import type { Response, AuthenticatedRequest } from '../types/index.js';
+import type { Response, AuthenticatedTypedRequest } from '../types/index.js';
 import { getJobRepository, getUserRepository } from '../database/repositories/index.js';
 import type {
   CreateJobInput,
   UpdateJobInput,
   DeleteJobInput,
-  GetJobsInput,
+  GetJobsInfer,
 } from '../middlewares/job.js';
+import { ApiResponse, JobList, JobPublic } from '@repo/shared-types';
 
 class JobController {
-  async create(req: AuthenticatedRequest, res: Response) {
+  async create(req: AuthenticatedTypedRequest<CreateJobInput>, res: Response) {
     const jobRepository = getJobRepository();
     const userRepository = getUserRepository();
 
@@ -19,7 +20,7 @@ class JobController {
       throw new Error('User not found');
     }
 
-    const jobData: CreateJobInput = req.body;
+    const jobData = req.body;
 
     const job = jobRepository.create({
       ...jobData,
@@ -27,22 +28,22 @@ class JobController {
     });
 
     await jobRepository.save(job);
-
-    res.status(201).json({
+    const data: ApiResponse<JobPublic> = {
       success: true,
       message: 'Job created successfully',
       data: {
         id: job.id,
       },
-    });
+    };
+    res.status(201).json(data);
   }
 
-  async update(req: AuthenticatedRequest, res: Response) {
+  async update(req: AuthenticatedTypedRequest<UpdateJobInput>, res: Response) {
     const jobRepository = getJobRepository();
 
     const userId = req.userId;
 
-    const { id, ...updateData }: UpdateJobInput = req.body;
+    const { id, ...updateData } = req.body;
 
     const job = await jobRepository.findOne({
       where: { id },
@@ -50,18 +51,20 @@ class JobController {
     });
 
     if (!job) {
-      res.status(404).json({
+      const data: ApiResponse = {
         success: false,
         message: 'Job not found',
-      });
+      };
+      res.status(404).json(data);
       return;
     }
 
     if (job.user.id !== userId) {
-      res.status(403).json({
+      const data: ApiResponse = {
         success: false,
         message: 'You are not authorized to update this job',
-      });
+      };
+      res.status(403).json(data);
       return;
     }
 
@@ -69,21 +72,21 @@ class JobController {
 
     await jobRepository.save(job);
 
-    res.status(200).json({
+    const data: ApiResponse<JobPublic> = {
       success: true,
-      message: 'Job updated successfully',
       data: {
         id: job.id,
       },
-    });
+    };
+    res.status(200).json(data);
   }
 
-  async delete(req: AuthenticatedRequest, res: Response) {
+  async delete(req: AuthenticatedTypedRequest<DeleteJobInput>, res: Response) {
     const jobRepository = getJobRepository();
 
     const userId = req.userId;
 
-    const { id }: DeleteJobInput = req.body;
+    const { id } = req.body;
 
     const job = await jobRepository.findOne({
       where: { id },
@@ -91,38 +94,42 @@ class JobController {
     });
 
     if (!job) {
-      res.status(404).json({
+      const data: ApiResponse = {
         success: false,
         message: 'Job not found',
-      });
+      };
+      res.status(404).json(data);
       return;
     }
 
     if (job.user.id !== userId) {
-      res.status(403).json({
+      const data: ApiResponse = {
         success: false,
         message: 'You are not authorized to delete this job',
-      });
+      };
+      res.status(403).json(data);
       return;
     }
 
     await jobRepository.remove(job);
 
-    res.status(200).json({
+    const data: ApiResponse = {
       success: true,
       message: 'Job deleted successfully',
-    });
+    };
+
+    res.status(200).json(data);
   }
 
   // Pagination, filtering by status/persona, searching by title/companyName/keySkills/tags,
   // sorting by createdAt/updatedAt/acceptanceLevel, field selection
-  async get(req: AuthenticatedRequest, res: Response) {
+  async get(req: AuthenticatedTypedRequest<null>, res: Response) {
     const jobRepository = getJobRepository();
 
     const userId = req.userId;
 
     const { page, limit, status, persona, search, sortBy, sortOrder, select } = (
-      req as AuthenticatedRequest & { parsedQuery: GetJobsInput }
+      req as AuthenticatedTypedRequest<null> & { parsedQuery: GetJobsInfer }
     ).parsedQuery;
 
     // Calculate skip for pagination
@@ -176,7 +183,7 @@ class JobController {
 
     const totalPages = Math.ceil(total / limit);
 
-    res.status(200).json({
+    const data: ApiResponse<JobList> = {
       success: true,
       data: {
         jobs,
@@ -189,7 +196,8 @@ class JobController {
           hasPrevPage: page > 1,
         },
       },
-    });
+    };
+    res.status(200).json(data);
   }
 }
 

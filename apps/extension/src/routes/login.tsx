@@ -1,6 +1,12 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { SyntheticEvent, useState } from 'react';
+import { EnhancedTextField, EnhancedButton } from '@repo/ui';
+import PersonIcon from '@mui/icons-material/Person';
 import styles from './style/login.module.css';
+import styleConstants from '@repo/ui/constants/style-constants.js';
+import LockIcon from '@mui/icons-material/Lock';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
 interface LoginResponse {
   success: boolean;
@@ -15,8 +21,10 @@ export const Route = createFileRoute('/login')({
 function LoginComponent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passVisible, setPassVisible] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
 
   const handleLogin = async (e: SyntheticEvent) => {
     e.preventDefault();
@@ -41,7 +49,6 @@ function LoginComponent() {
           throw new Error(response.error || 'Login failed');
         }
       } else {
-        // Dev mode fallback (if running outside extension context)
         console.warn('Chrome runtime not available, simulating login');
         alert('Chrome runtime not available. Cannot login via background script.');
       }
@@ -60,33 +67,77 @@ function LoginComponent() {
   return (
     <div className={styles.container}>
       <h2 className={styles.heading}>Login</h2>
-      {error && <div className={styles.error}>{error}</div>}
+      <div className={styles.signUp}>
+        <p>New to job filler?</p>
+        <EnhancedButton
+          type="button"
+          onClick={() => navigate({ to: '/new-user' })}
+          label="Create new user"
+          colorTheme="secondary"
+          size="medium"
+          customProps={{ props: { sx: { maxWidth: 'fit-content' } } }}
+        />
+        <div className={styles.orDiv}>
+          <div />
+          <span>OR</span>
+          <div />
+        </div>
+      </div>
       <form onSubmit={handleLogin} className={styles.form}>
-        <div className={styles.inputGroup}>
-          <label className={styles.label}>Email</label>
-          <input
+        <div>
+          <EnhancedTextField
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={styles.input}
-            required
+            startIcon={<PersonIcon sx={{ color: styleConstants.white900 }} />}
+            onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+              setEmail(e.target.value)
+            }
             placeholder="Enter your email"
           />
-        </div>
-        <div className={styles.inputGroup}>
-          <label className={styles.label}>Password</label>
-          <input
-            type="password"
+          <EnhancedTextField
+            type={!passVisible ? 'password' : 'text'}
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className={styles.input}
-            required
+            startIcon={<LockIcon sx={{ color: styleConstants.white900 }} />}
+            endIcon={
+              !passVisible ? (
+                <VisibilityIcon sx={{ color: styleConstants.white900 }} />
+              ) : (
+                <VisibilityOffIcon sx={{ color: styleConstants.white900 }} />
+              )
+            }
+            onChange={(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+              setPassword(e.target.value)
+            }
             placeholder="Enter your password"
+            customProps={{
+              childProps: {
+                endIconProps: {
+                  onClick: () => {
+                    setPassVisible((prev) => !prev);
+                  },
+                  sx: {
+                    cursor: 'pointer',
+                  },
+                },
+              },
+            }}
           />
         </div>
-        <button type="submit" disabled={loading} className={styles.button}>
-          {loading ? 'Logging in...' : 'Login'}
-        </button>
+        {error && (
+          <div className={styles.error}>
+            {error.split('. ').map((line, index) => (
+              <p key={index}>{line}</p>
+            ))}
+          </div>
+        )}
+        <EnhancedButton
+          type="submit"
+          disabled={loading}
+          label={loading ? 'Logging in...' : 'Login'}
+          colorTheme="primary"
+          size="medium"
+          customProps={{ props: { sx: { width: '100%', maxWidth: '154px' } } }}
+        />
       </form>
     </div>
   );
