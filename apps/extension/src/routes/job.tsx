@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, ErrorComponent } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   EnhancedTextField,
   EnhancedButton,
@@ -145,6 +145,21 @@ function JobComponent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(loaderError);
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof JobFormData, string>>>({});
+
+  // Pre-fill jobPostingUrl from Quick Save button (content script)
+  useEffect(() => {
+    if (isEditing) return; // don't overwrite URL when editing an existing job
+    if (typeof chrome === 'undefined' || !chrome.storage) return;
+
+    chrome.storage.local.get(['quickSaveUrl'], (result) => {
+      const url = result.quickSaveUrl;
+      if (url && typeof url === 'string') {
+        setFormData((prev) => ({ ...prev, jobPostingUrl: url }));
+        // Clear after reading so it doesn't persist to future form visits
+        chrome.storage.local.remove('quickSaveUrl');
+      }
+    });
+  }, [isEditing]);
 
   const validateField = (field: keyof JobFormData, value: string): string => {
     switch (field) {

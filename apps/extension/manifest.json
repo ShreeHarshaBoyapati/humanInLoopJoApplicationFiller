@@ -18,6 +18,21 @@
     "service_worker": "./src/background/index.ts",
     "type": "module"
   },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.linkedin.com/jobs/*",
+        "*://*.indeed.com/*",
+        "*://*.glassdoor.com/job-listing/*",
+        "*://*.glassdoor.co.in/job-listing/*",
+        "*://*.naukri.com/*",
+        "*://*.lever.co/*",
+        "*://*.greenhouse.io/*"
+      ],
+      "js": ["./src/content/quick-save.ts"],
+      "run_at": "document_idle"
+    }
+  ],
   "permissions": ["storage", "activeTab", "tabs", "contextMenus", "notifications", "sidePanel"],
   "icons": {
     "16": "public/icon-16.png",
@@ -25,5 +40,28 @@
     "48": "public/icon-48.png",
     "128": "public/icon-128.png"
   },
-  "host_permissions": ["http://localhost/*"]
+  "host_permissions": [
+    "http://localhost/*",
+    "*://*.linkedin.com/*",
+    "*://*.indeed.com/*",
+    "*://*.glassdoor.com/*",
+    "*://*.glassdoor.co.in/*",
+    "*://*.naukri.com/*",
+    "*://*.lever.co/*",
+    "*://*.greenhouse.io/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["public/icon-48.png"],
+      "matches": [
+        "*://*.linkedin.com/*",
+        "*://*.indeed.com/*",
+        "*://*.glassdoor.com/*",
+        "*://*.glassdoor.co.in/*",
+        "*://*.naukri.com/*",
+        "*://*.lever.co/*",
+        "*://*.greenhouse.io/*"
+      ]
+    }
+  ]
 }

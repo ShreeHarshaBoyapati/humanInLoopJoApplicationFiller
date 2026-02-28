@@ -32,12 +32,32 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// Listen for messages from the UI — dispatch to entity handlers
-chrome.runtime.onMessage.addListener((message: ExtensionMessage, _sender, sendResponse) => {
+// Listen for messages from the UI and content scripts — dispatch to entity handlers
+chrome.runtime.onMessage.addListener((message: ExtensionMessage, sender, sendResponse) => {
+  // Quick Save from content script
+  if (message.action === 'OPEN_SIDE_PANEL') {
+    const url = message.payload?.url || '';
+    chrome.storage.local.set({ quickSaveUrl: url }, () => {
+      const tabId = sender.tab?.id;
+      if (tabId) {
+        chrome.sidePanel
+          .open({ tabId })
+          .then(() => sendResponse({ success: true }))
+          .catch((err) => {
+            console.error('Failed to open side panel:', err);
+            sendResponse({ success: false, error: String(err) });
+          });
+      } else {
+        sendResponse({ success: false, error: 'No tab id' });
+      }
+    });
+    return true;
+  }
+
   // User-related actions
   const handled = handleUserMessage(message, sendResponse, api);
   if (handled) return true;
-  console.log('==========got here======+>>>>>>');
+  console.log('==========got here======+>>>>>>>');
 
   // Job-related actions
   const jobHandled = handleJobMessage(message, sendResponse, api);

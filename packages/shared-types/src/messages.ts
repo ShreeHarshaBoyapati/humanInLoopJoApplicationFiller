@@ -15,4 +15,5 @@ export type ExtensionMessage =
   | { action: 'CREATE_JOB'; payload: Omit<Job, 'id'> }
   | { action: 'UPDATE_JOB'; payload: Job }
   | { action: 'DELETE_JOB'; payload: JobPublic }
-  | { action: 'GET_JOBS'; payload: GetJobParams };
+  | { action: 'GET_JOBS'; payload: GetJobParams }
+  | { action: 'OPEN_SIDE_PANEL'; payload: { url: string } };
