@@ -146,6 +146,7 @@ class JobController {
       'companyName',
       'metaData',
       'description',
+      'requirements',
       'highlights',
       'keySkills',
       'createdAt',

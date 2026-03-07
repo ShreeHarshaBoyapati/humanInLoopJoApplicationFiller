@@ -1,16 +1,73 @@
 /**
  * Content script: Injects a floating "Quick Save" button on job posting pages.
  * Uses Shadow DOM for style isolation from the host page.
+ *
+ * Features:
+ * - Shows only on pages that match a known job board URL pattern
+ * - Hides/shows dynamically on SPAs as the URL changes
+ * - Shows a loading spinner while scraping + storing data
  */
 
 import cssText from './quick-save.css?inline';
+import { scrapeCurrentPage, isProbablyJobPage } from './scrapers/scraper-registry';
+
+// --- DOM refs (module-level so event handlers can access them) ---
+let host: HTMLDivElement | null = null;
+let btn: HTMLButtonElement | null = null;
+let tooltip: HTMLSpanElement | null = null;
+
+// ----------------------------------------------------------------
+// Visibility helpers
+// ----------------------------------------------------------------
+
+function showButton(): void {
+  if (host) host.classList.remove('jfpHidden');
+}
+
+function hideButton(): void {
+  if (host) host.classList.add('jfpHidden');
+}
+
+function updateVisibility(): void {
+  try {
+    const url = new URL(window.location.href);
+    if (isProbablyJobPage(url)) {
+      showButton();
+    } else {
+      hideButton();
+    }
+  } catch {
+    hideButton();
+  }
+}
+
+// ----------------------------------------------------------------
+// Loading state helpers
+// ----------------------------------------------------------------
+
+function setLoading(isLoading: boolean): void {
+  if (!btn || !tooltip) return;
+  if (isLoading) {
+    btn.classList.add('jfpLoading');
+    btn.disabled = true;
+    tooltip.textContent = 'Saving…';
+  } else {
+    btn.classList.remove('jfpLoading');
+    btn.disabled = false;
+    tooltip.textContent = 'Quick Save Job';
+  }
+}
+
+// ----------------------------------------------------------------
+// Main injection
+// ----------------------------------------------------------------
 
 function injectQuickSaveButton(): void {
   // Guard against double-injection
   if (document.getElementById('jfp-quick-save-root')) return;
 
-  // --- Host element ---
-  const host = document.createElement('div');
+  // --- Host element (visibility class lives here so :host() CSS selector works) ---
+  host = document.createElement('div');
   host.id = 'jfp-quick-save-root';
   const shadow = host.attachShadow({ mode: 'closed' });
 
@@ -19,14 +76,14 @@ function injectQuickSaveButton(): void {
   style.textContent = cssText;
   shadow.appendChild(style);
 
-  // --- Wrapper (positioning handled by :host) ---
+  // --- Wrapper ---
   const wrapper = document.createElement('div');
   wrapper.style.position = 'relative';
   wrapper.style.display = 'inline-flex';
   wrapper.style.alignItems = 'center';
 
   // --- Button ---
-  const btn = document.createElement('button');
+  btn = document.createElement('button');
   btn.className = 'jfpQuickSaveBtn';
   btn.setAttribute('aria-label', 'Quick Save Job');
 
@@ -36,7 +93,7 @@ function injectQuickSaveButton(): void {
   btn.appendChild(icon);
 
   // --- Tooltip ---
-  const tooltip = document.createElement('span');
+  tooltip = document.createElement('span');
   tooltip.className = 'jfpTooltip';
   tooltip.textContent = 'Quick Save Job';
 
@@ -54,27 +111,54 @@ function injectQuickSaveButton(): void {
   btn.addEventListener('click', () => {
     const currentUrl = window.location.href;
 
-    chrome.runtime.sendMessage(
-      { action: 'OPEN_SIDE_PANEL', payload: { url: currentUrl } },
-      (response) => {
+    setLoading(true);
+    let scrapedData;
+    try {
+      scrapedData = scrapeCurrentPage(document, new URL(currentUrl));
+    } catch (err) {
+      console.error('[Job Filler] Scrape error:', err);
+      setLoading(false);
+      return;
+    }
+
+    chrome.storage.local.set({ scrapedJobData: scrapedData, quickSaveActive: true }, () => {
+      chrome.runtime.sendMessage({ action: 'OPEN_SIDE_PANEL' }, (response) => {
+        setLoading(false);
         if (chrome.runtime.lastError) {
           console.error('[Job Filler] Quick save error:', chrome.runtime.lastError.message);
         } else if (response?.success) {
-          // Brief visual feedback
-          btn.style.transform = 'scale(0.9)';
+          // Brief visual feedback — scale down then back
+          btn!.style.transform = 'scale(0.9)';
           setTimeout(() => {
-            btn.style.transform = '';
+            if (btn) btn.style.transform = '';
           }, 150);
         }
-      }
-    );
+      });
+    });
   });
 
   // --- Inject into page ---
   document.body.appendChild(host);
+
+  // --- Initial visibility check ---
+  updateVisibility();
+
+  // --- SPA: watch for URL changes (pushState / popstate / hashchange) ---
+  // Patch history API so pushState/replaceState fire a custom event
+  const originalPushState = history.pushState.bind(history);
+  history.pushState = (...args) => {
+    originalPushState(...args);
+    updateVisibility();
+  };
+  const originalReplaceState = history.replaceState.bind(history);
+  history.replaceState = (...args) => {
+    originalReplaceState(...args);
+    updateVisibility();
+  };
+  window.addEventListener('popstate', updateVisibility);
+  window.addEventListener('hashchange', updateVisibility);
 }
 
-// Run when DOM is ready
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', injectQuickSaveButton);
 } else {

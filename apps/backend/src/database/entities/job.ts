@@ -34,11 +34,14 @@ export default class Job {
   @Column('text', { default: '' })
   notes!: string;
 
+  @Column('text', { default: '' })
+  requirements!: string;
+
   @Column('simple-json', { default: {} })
   metaData!: Record<string, unknown>;
 
-  @Column('simple-json', { default: {} })
-  description!: Record<string, unknown>;
+  @Column('text', { default: '' })
+  description!: string;
 
   @Column('simple-json', { default: {} })
   highlights!: Record<string, unknown>;

@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, ErrorComponent } from '@tanstack/react-router';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   EnhancedTextField,
   EnhancedButton,
@@ -9,7 +9,7 @@ import {
   EnhancedAccordion,
 } from '@repo/ui';
 import { Box } from '@mui/material';
-import type { Job, JobList, JobPublic } from '@repo/shared-types';
+import type { Job, JobList, JobPublic, ScrapedJob } from '@repo/shared-types';
 import styles from './style/job.module.css';
 import scrollStyles from '@repo/ui/scroll-bar.module.css';
 
@@ -17,8 +17,8 @@ interface JobFormData {
   companyName: string;
   title: string;
   location: string;
-  minSalary: string;
-  maxSalary: string;
+  salary: string;
+  requirements: string;
   currency: string;
   persona: string;
   acceptanceLevel: number;
@@ -35,8 +35,8 @@ const initialFormData: JobFormData = {
   companyName: '',
   title: '',
   location: '',
-  minSalary: '',
-  maxSalary: '',
+  salary: '',
+  requirements: '',
   currency: 'IND',
   persona: 'default',
   acceptanceLevel: 0,
@@ -125,13 +125,13 @@ function JobComponent() {
         companyName: jobData.companyName || '',
         title: jobData.title || '',
         location: String(jobData.metaData?.location || ''),
-        minSalary: String(jobData.metaData?.minSalary || ''),
-        maxSalary: String(jobData.metaData?.maxSalary || ''),
+        salary: String(jobData.metaData?.salary || ''),
+        requirements: String(jobData.requirements),
         currency: String(jobData.metaData?.currency || 'IND'),
         persona: jobData.persona || 'default',
         acceptanceLevel: jobData.acceptanceLevel || 0,
         jobType: String(jobData.metaData?.jobType || 'Full-time'),
-        description: String(jobData.description?.text || ''),
+        description: String(jobData.description || ''),
         notes: jobData.notes || '',
         status: jobData.status || 'draft',
         jobPostingUrl: String(jobData.metaData?.jobPostingUrl || ''),
@@ -145,21 +145,127 @@ function JobComponent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(loaderError);
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof JobFormData, string>>>({});
+  const originalFormDataRef = useRef<JobFormData>(formData);
 
-  // Pre-fill jobPostingUrl from Quick Save button (content script)
+  const getIsDirty = useCallback(
+    (current: JobFormData) =>
+      JSON.stringify(current) !== JSON.stringify(originalFormDataRef.current),
+    []
+  );
+
+  const getIsBlank = useCallback(
+    (current: JobFormData) => JSON.stringify(current) === JSON.stringify(initialFormData),
+    []
+  );
+
+  // Ref to track the last processed quick save to prevent double-processing in StrictMode
+  // or before chrome.storage.local.remove finishes.
+  const lastProcessedScrapeRef = useRef<string | null>(null);
+
+  // Pre-fill form from Quick Save button (content script) + scraped data
   useEffect(() => {
-    if (isEditing) return; // don't overwrite URL when editing an existing job
     if (typeof chrome === 'undefined' || !chrome.storage) return;
 
-    chrome.storage.local.get(['quickSaveUrl'], (result) => {
-      const url = result.quickSaveUrl;
-      if (url && typeof url === 'string') {
-        setFormData((prev) => ({ ...prev, jobPostingUrl: url }));
-        // Clear after reading so it doesn't persist to future form visits
-        chrome.storage.local.remove('quickSaveUrl');
+    const handleQuickSaveData = () => {
+      chrome.storage.local.get(['scrapedJobData'], (result) => {
+        const scraped = result.scrapedJobData as ScrapedJob;
+        if (!scraped || typeof scraped !== 'object') return;
+        console.log('=====gets called====');
+
+        const scrapeHash = JSON.stringify(scraped);
+        if (lastProcessedScrapeRef.current === scrapeHash) {
+          // Already processed this exact payload (due to double-effect or rapid firing)
+          return;
+        }
+
+        lastProcessedScrapeRef.current = scrapeHash;
+        chrome.storage.local.remove(['scrapedJobData', 'quickSaveActive']);
+
+        setFormData((current) => {
+          const blank = getIsBlank(current);
+          const dirty = getIsDirty(current);
+          console.log(
+            'original=======+++++>>>>>>>>>>',
+            JSON.stringify(originalFormDataRef.current)
+          );
+          console.log('state==+++++++++++++', JSON.stringify(current));
+
+          console.log('======states==========>>>>blank', blank, '=====', dirty);
+
+          // Case 1: fresh form, nothing entered — silently load
+          if (blank) {
+            setError(null);
+            return {
+              ...current,
+              companyName: scraped.companyName || current.companyName,
+              title: scraped.title || current.title,
+              location: scraped.location || current.location,
+              description: scraped.description || current.description,
+              keySkills:
+                Array.isArray(scraped.keySkills) && scraped.keySkills.length
+                  ? scraped.keySkills
+                  : current.keySkills,
+              tags:
+                Array.isArray(scraped.tags) && scraped.tags.length ? scraped.tags : current.tags,
+              jobType: scraped.jobType || current.jobType,
+              jobPostingUrl: scraped.jobPostingUrl || current.jobPostingUrl,
+              requirements: scraped.requirements || current.requirements,
+              salary: scraped.salary || current.salary,
+            };
+          }
+
+          // Case 2: fresh form, user has typed something — block and show error
+          if (!isEditing && dirty) {
+            setError(
+              'Quick Save arrived but you have unsaved changes. Save or discard them first, then click Quick Save again.'
+            );
+            return current; // keep form as-is
+          }
+
+          // Case 3: existing job loaded, nothing changed — silently replace
+          if (isEditing && !dirty) {
+            setError(null);
+            return {
+              ...initialFormData,
+              companyName: scraped.companyName || '',
+              title: scraped.title || '',
+              location: scraped.location || '',
+              description: scraped.description || '',
+              keySkills: Array.isArray(scraped.keySkills) ? scraped.keySkills : [],
+              tags: Array.isArray(scraped.tags) ? scraped.tags : [],
+              jobType: scraped.jobType || 'Full-time',
+              jobPostingUrl: scraped.jobPostingUrl || '',
+              requirements: scraped.requirements || '',
+              salary: scraped.salary || '',
+            };
+          }
+
+          // Case 4: existing job loaded, user made changes — block and show error
+          setError(
+            'Quick Save arrived but you have unsaved changes to the current job. Save or discard them first, then click Quick Save again.'
+          );
+          return current;
+        });
+      });
+    };
+
+    handleQuickSaveData();
+
+    const storageListener = (
+      changes: { [key: string]: chrome.storage.StorageChange },
+      areaName: string
+    ) => {
+      if (areaName === 'local' && changes.scrapedJobData && changes.scrapedJobData.newValue) {
+        handleQuickSaveData();
       }
-    });
-  }, [isEditing]);
+    };
+
+    chrome.storage.onChanged.addListener(storageListener);
+
+    return () => {
+      chrome.storage.onChanged.removeListener(storageListener);
+    };
+  }, [isEditing, getIsBlank, getIsDirty]);
 
   const validateField = (field: keyof JobFormData, value: string): string => {
     switch (field) {
@@ -237,15 +343,13 @@ function JobComponent() {
       tags: formData.tags,
       metaData: {
         location: formData.location,
-        minSalary: formData.minSalary,
-        maxSalary: formData.maxSalary,
+        salary: formData.salary,
         currency: formData.currency,
         jobType: formData.jobType,
         jobPostingUrl: formData.jobPostingUrl,
       },
-      description: {
-        text: formData.description,
-      },
+      description: formData.description,
+      requirements: formData.requirements,
     };
 
     if (typeof chrome !== 'undefined' && chrome.runtime) {
@@ -321,34 +425,7 @@ function JobComponent() {
           />
 
           <div className={styles.row}>
-            <div className={styles.field}>
-              <EnhancedTextField
-                label="Min Salary"
-                value={formData.minSalary}
-                onChange={handleChange('minSalary')}
-                placeholder="0"
-                type="number"
-                disabled={loading}
-                variant={formErrors.minSalary ? 'error' : 'default'}
-                helperText={formErrors.minSalary}
-              />
-            </div>
-            <div className={styles.field}>
-              <EnhancedTextField
-                label="Max Salary"
-                value={formData.maxSalary}
-                onChange={handleChange('maxSalary')}
-                placeholder="0"
-                type="number"
-                disabled={loading}
-                variant={formErrors.maxSalary ? 'error' : 'default'}
-                helperText={formErrors.maxSalary}
-              />
-            </div>
-          </div>
-
-          <div className={styles.row}>
-            <div className={styles.field}>
+            <div className={styles.field2}>
               <EnhancedTextField
                 label="Currency"
                 value={formData.currency}
@@ -359,6 +436,19 @@ function JobComponent() {
                 helperText={formErrors.currency}
               />
             </div>
+            <div className={styles.field3}>
+              <EnhancedTextField
+                label="Salary"
+                value={formData.salary}
+                onChange={handleChange('salary')}
+                disabled={loading}
+                variant={formErrors.salary ? 'error' : 'default'}
+                helperText={formErrors.salary}
+              />
+            </div>
+          </div>
+
+          <div className={styles.row}>
             <div className={styles.field}>
               <EnhancedTextField
                 label="Job Type"
@@ -431,6 +521,17 @@ function JobComponent() {
               disabled={loading}
               variant={formErrors.notes ? 'error' : 'default'}
               helperText={formErrors.notes}
+            />
+          </EnhancedAccordion>
+
+          <EnhancedAccordion title="Requirements">
+            <EnhancedTextInputArea
+              value={formData.requirements}
+              onChange={handleChange('requirements')}
+              placeholder="Paste job requirements here..."
+              disabled={loading}
+              variant={formErrors.requirements ? 'error' : 'default'}
+              helperText={formErrors.requirements}
             />
           </EnhancedAccordion>
 

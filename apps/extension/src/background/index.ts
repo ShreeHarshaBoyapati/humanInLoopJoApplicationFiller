@@ -2,6 +2,7 @@ import axios from 'axios';
 import type { ExtensionMessage } from '@repo/shared-types';
 import { handleUserMessage } from './handlers/user-handler.js';
 import { handleJobMessage } from './handlers/job-handler.js';
+import { handleContentMessages } from './handlers/content-handler.js';
 
 console.log('Background service worker started');
 
@@ -25,6 +26,7 @@ api.interceptors.request.use(async (config) => {
   const result = await new Promise<{ token?: string }>((resolve) => {
     chrome.storage.local.get(['token'], (res) => resolve(res as { token?: string }));
   });
+  console.log('result========>>>>', result);
 
   if (result.token) {
     config.headers.Authorization = `Bearer ${result.token}`;
@@ -34,30 +36,11 @@ api.interceptors.request.use(async (config) => {
 
 // Listen for messages from the UI and content scripts — dispatch to entity handlers
 chrome.runtime.onMessage.addListener((message: ExtensionMessage, sender, sendResponse) => {
-  // Quick Save from content script
-  if (message.action === 'OPEN_SIDE_PANEL') {
-    const url = message.payload?.url || '';
-    chrome.storage.local.set({ quickSaveUrl: url }, () => {
-      const tabId = sender.tab?.id;
-      if (tabId) {
-        chrome.sidePanel
-          .open({ tabId })
-          .then(() => sendResponse({ success: true }))
-          .catch((err) => {
-            console.error('Failed to open side panel:', err);
-            sendResponse({ success: false, error: String(err) });
-          });
-      } else {
-        sendResponse({ success: false, error: 'No tab id' });
-      }
-    });
-    return true;
-  }
-
+  const contentHandled = handleContentMessages(message, sender, sendResponse);
+  if (contentHandled) return true;
   // User-related actions
   const handled = handleUserMessage(message, sendResponse, api);
   if (handled) return true;
-  console.log('==========got here======+>>>>>>>');
 
   // Job-related actions
   const jobHandled = handleJobMessage(message, sendResponse, api);

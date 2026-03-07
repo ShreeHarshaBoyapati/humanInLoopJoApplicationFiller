@@ -11,12 +11,29 @@ export interface Job {
   acceptanceLevel: number;
   companyName: string;
   metaData: Record<string, unknown>;
-  description: Record<string, unknown>;
+  description: string;
+  requirements: string;
   highlights: Record<string, unknown>;
   keySkills: string[];
   notes: string;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface ScrapedJob {
+  title: string | null;
+  companyName: string | null;
+  location: string | null;
+  description: string | null;
+  requirements: string | null;
+  keySkills: string[] | null;
+  tags: string[] | null;
+  jobType: string | null;
+  salary: string | null;
+  currency: string | null;
+  jobPostingUrl: string;
+  platform: string | null;
+  scrapedAt: Date;
 }
 
 export interface JobPublic {

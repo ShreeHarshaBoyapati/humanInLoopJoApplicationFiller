@@ -52,6 +52,16 @@
   min-width: 0;
 }
 
+.field2 {
+  flex: 0.3;
+  min-width: 0;
+}
+
+.field3 {
+  flex: 0.7;
+  min-width: 0;
+}
+
 .addButtonContainer {
   margin-top: 1.75rem;
 }

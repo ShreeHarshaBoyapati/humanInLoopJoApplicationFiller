@@ -31,16 +31,26 @@ export const Route = createRootRoute({
     });
 
     const { isAuthenticated } = response;
-    console.log('isAuthenticated===========', isAuthenticated);
 
     if (isAuthenticated) {
+      if (
+        location.pathname === '/login' ||
+        location.pathname === '/new-user' ||
+        location.pathname === '/'
+      ) {
+        const storage = await new Promise<{ quickSaveActive?: boolean }>((resolve) => {
+          chrome.storage.local.get(['quickSaveActive'], (res) => resolve(res));
+        });
+        if (storage.quickSaveActive) {
+          throw redirect({ to: '/job' });
+        }
+      }
+
       if (location.pathname === '/login' || location.pathname === '/new-user') {
         throw redirect({ to: '/' });
       }
     } else {
       if (location.pathname !== '/login' && location.pathname !== '/new-user') {
-        console.log('======got to final');
-
         throw redirect({ to: '/login' });
       }
     }
