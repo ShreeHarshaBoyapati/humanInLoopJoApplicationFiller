@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as RecentJobsRouteImport } from './routes/recent-jobs'
+import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as NewUserRouteImport } from './routes/new-user'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as JobRouteImport } from './routes/job'
@@ -19,6 +20,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const RecentJobsRoute = RecentJobsRouteImport.update({
   id: '/recent-jobs',
   path: '/recent-jobs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
 const NewUserRoute = NewUserRouteImport.update({
@@ -53,6 +59,7 @@ export interface FileRoutesByFullPath {
   '/job': typeof JobRoute
   '/login': typeof LoginRoute
   '/new-user': typeof NewUserRoute
+  '/profile': typeof ProfileRoute
   '/recent-jobs': typeof RecentJobsRoute
 }
 export interface FileRoutesByTo {
@@ -61,6 +68,7 @@ export interface FileRoutesByTo {
   '/job': typeof JobRoute
   '/login': typeof LoginRoute
   '/new-user': typeof NewUserRoute
+  '/profile': typeof ProfileRoute
   '/recent-jobs': typeof RecentJobsRoute
 }
 export interface FileRoutesById {
@@ -70,13 +78,28 @@ export interface FileRoutesById {
   '/job': typeof JobRoute
   '/login': typeof LoginRoute
   '/new-user': typeof NewUserRoute
+  '/profile': typeof ProfileRoute
   '/recent-jobs': typeof RecentJobsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/job' | '/login' | '/new-user' | '/recent-jobs'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/job'
+    | '/login'
+    | '/new-user'
+    | '/profile'
+    | '/recent-jobs'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/job' | '/login' | '/new-user' | '/recent-jobs'
+  to:
+    | '/'
+    | '/about'
+    | '/job'
+    | '/login'
+    | '/new-user'
+    | '/profile'
+    | '/recent-jobs'
   id:
     | '__root__'
     | '/'
@@ -84,6 +107,7 @@ export interface FileRouteTypes {
     | '/job'
     | '/login'
     | '/new-user'
+    | '/profile'
     | '/recent-jobs'
   fileRoutesById: FileRoutesById
 }
@@ -93,6 +117,7 @@ export interface RootRouteChildren {
   JobRoute: typeof JobRoute
   LoginRoute: typeof LoginRoute
   NewUserRoute: typeof NewUserRoute
+  ProfileRoute: typeof ProfileRoute
   RecentJobsRoute: typeof RecentJobsRoute
 }
 
@@ -103,6 +128,13 @@ declare module '@tanstack/react-router' {
       path: '/recent-jobs'
       fullPath: '/recent-jobs'
       preLoaderRoute: typeof RecentJobsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/new-user': {
@@ -149,6 +181,7 @@ const rootRouteChildren: RootRouteChildren = {
   JobRoute: JobRoute,
   LoginRoute: LoginRoute,
   NewUserRoute: NewUserRoute,
+  ProfileRoute: ProfileRoute,
   RecentJobsRoute: RecentJobsRoute,
 }
 export const routeTree = rootRouteImport

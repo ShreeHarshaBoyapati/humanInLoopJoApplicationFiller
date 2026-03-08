@@ -1,5 +1,9 @@
 import { Link, Outlet, createRootRoute, redirect, useRouterState } from '@tanstack/react-router';
-import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
+import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
+import WorkOutlineIcon from '@mui/icons-material/WorkOutline';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
+import scrollStyles from '@repo/ui/scroll-bar.module.css';
 import styles from './style/__root.module.css';
 
 interface AuthCheckResponse {
@@ -62,38 +66,57 @@ function RootComponent() {
   const isLoginPage =
     routerState.location.pathname === '/login' || routerState.location.pathname === '/new-user';
 
+  if (isLoginPage) {
+    return (
+      <div className={styles.layoutWrapper}>
+        <main className={styles.mainContent}>
+          <Outlet />
+        </main>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-      {!isLoginPage && (
-        <>
-          <div className={styles.container}>
-            <Link
-              to="/"
-              className={styles.link}
-              activeProps={{
-                className: styles.activeLink,
-              }}
-              activeOptions={{ exact: true }}
-            >
-              Home
-            </Link>{' '}
-            <Link
-              to="/about"
-              className={styles.link}
-              activeProps={{
-                className: styles.activeLink,
-              }}
-            >
-              About
-            </Link>
-          </div>
-          <hr />
-        </>
-      )}
-      <main className={styles.mainContent}>
+    <div className={styles.layoutWrapper}>
+      <main className={`${styles.mainContent} ${scrollStyles.scrollbarVerticalContainer}`}>
         <Outlet />
       </main>
-      {/* <TanStackRouterDevtools position="bottom-right" /> */}
+
+      <nav className={styles.bottomNav}>
+        <Link
+          to="/"
+          className={styles.navItem}
+          activeProps={{ className: `${styles.navItem} ${styles.navItemActive}` }}
+          activeOptions={{ exact: true }}
+        >
+          <HomeRoundedIcon />
+          <span>Home</span>
+        </Link>
+        <Link
+          to="/recent-jobs"
+          className={styles.navItem}
+          activeProps={{ className: `${styles.navItem} ${styles.navItemActive}` }}
+        >
+          <WorkOutlineIcon />
+          <span>Jobs</span>
+        </Link>
+        <Link
+          to="/job"
+          className={styles.navItem}
+          activeProps={{ className: `${styles.navItem} ${styles.navItemActive}` }}
+        >
+          <AutoAwesomeIcon />
+          <span>Autofill</span>
+        </Link>
+        <Link
+          to="/profile"
+          className={styles.navItem}
+          activeProps={{ className: `${styles.navItem} ${styles.navItemActive}` }}
+        >
+          <PersonOutlineIcon />
+          <span>Profile</span>
+        </Link>
+      </nav>
     </div>
   );
 }

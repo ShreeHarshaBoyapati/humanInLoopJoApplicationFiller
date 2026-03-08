@@ -24,3 +24,8 @@
   margin: 0;
   padding: 0;
 }
+
+/* primary text color is --white-900
+ secondary text color is  --white-700
+ use spacing * integer for gaps,padding
+ border color is --grey-700 */
