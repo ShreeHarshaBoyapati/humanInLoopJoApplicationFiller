@@ -54,6 +54,14 @@ class NaukriScraper implements JobScraper {
     return url.hostname.includes('naukri.com');
   }
 
+  isJobPage(doc: Document): boolean {
+    // Naukri reliably includes JSON-LD for JobPostings when viewing an actual job
+    const jsonLd = parseJsonLd(doc);
+    console.log('=======in isJobPage');
+
+    return jsonLd !== null && jsonLd !== undefined;
+  }
+
   scrape(doc: Document, url: URL): ScrapedJob {
     const data = createEmptyScrapedData(this.platform, url.href);
 

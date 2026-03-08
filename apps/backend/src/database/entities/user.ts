@@ -6,7 +6,8 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from 'typeorm';
-import type Job from './job.js';
+import Job from './job.js';
+import ApiKey from './api-key.js';
 
 @Entity()
 export default class User {
@@ -25,8 +26,11 @@ export default class User {
   @Column('simple-array', { default: [] })
   persona!: string[];
 
-  @OneToMany('Job', 'user')
+  @OneToMany(() => Job, (job) => job.user)
   jobs!: Job[];
+
+  @OneToMany(() => ApiKey, (apiKey) => apiKey.user)
+  apiKeys!: ApiKey[];
 
   @CreateDateColumn()
   createdAt!: Date;

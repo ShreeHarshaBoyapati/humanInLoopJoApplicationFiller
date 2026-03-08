@@ -37,14 +37,19 @@ function getScraper(url: URL): JobScraper {
   return genericScraper;
 }
 
-/**
- * Returns true if the URL is handled by a platform-specific scraper (not generic).
- * Used by the content script to decide whether to show the Quick Save button.
- */
 export function isProbablyJobPage(url: URL): boolean {
   // Only the specific scrapers — exclude genericScraper (it always returns true)
   const specificScrapers = scrapers.filter((s) => s !== genericScraper);
   return specificScrapers.some((s) => s.canHandle(url));
+}
+
+export function isJobDetectedOnPage(doc: Document, url: URL): boolean {
+  const specificScrapers = scrapers.filter((s) => s !== genericScraper);
+  const activeScraper = specificScrapers.find((s) => s.canHandle(url));
+
+  if (!activeScraper || !activeScraper.isJobPage) return false;
+
+  return activeScraper.isJobPage(doc, url);
 }
 
 /**

@@ -9,10 +9,15 @@
  */
 
 import cssText from './quick-save.css?inline';
-import { scrapeCurrentPage, isProbablyJobPage } from './scrapers/scraper-registry';
+import {
+  scrapeCurrentPage,
+  isProbablyJobPage,
+  isJobDetectedOnPage,
+} from './scrapers/scraper-registry';
 
 // --- DOM refs (module-level so event handlers can access them) ---
 let host: HTMLDivElement | null = null;
+let wrapper: HTMLDivElement | null = null; // Contains button and pulse ring
 let btn: HTMLButtonElement | null = null;
 let tooltip: HTMLSpanElement | null = null;
 
@@ -29,12 +34,27 @@ function hideButton(): void {
 }
 
 function updateVisibility(): void {
+  console.log('======got added 0==========');
   try {
     const url = new URL(window.location.href);
     if (isProbablyJobPage(url)) {
       showButton();
+
+      // Determine if a specific job matches to show the ripple
+      if (wrapper) {
+        if (isJobDetectedOnPage(document, url)) {
+          console.log('======got added==========');
+
+          wrapper.classList.add('jfpReady');
+        } else {
+          console.log('=========got removed=========');
+
+          wrapper.classList.remove('jfpReady');
+        }
+      }
     } else {
       hideButton();
+      if (wrapper) wrapper.classList.remove('jfpReady');
     }
   } catch {
     hideButton();
@@ -64,6 +84,8 @@ function setLoading(isLoading: boolean): void {
 
 function injectQuickSaveButton(): void {
   // Guard against double-injection
+  console.log('=======got here============');
+
   if (document.getElementById('jfp-quick-save-root')) return;
 
   // --- Host element (visibility class lives here so :host() CSS selector works) ---
@@ -77,7 +99,7 @@ function injectQuickSaveButton(): void {
   shadow.appendChild(style);
 
   // --- Wrapper ---
-  const wrapper = document.createElement('div');
+  wrapper = document.createElement('div');
   wrapper.style.position = 'relative';
   wrapper.style.display = 'inline-flex';
   wrapper.style.alignItems = 'center';

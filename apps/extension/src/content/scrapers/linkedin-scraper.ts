@@ -55,6 +55,12 @@ class LinkedInScraper implements JobScraper {
     return url.hostname.includes('linkedin.com');
   }
 
+  isJobPage(doc: Document): boolean {
+    // If we can find the explicit job title, we are looking at a job
+    const title = safeTextMulti(doc, SELECTORS.title);
+    return title !== null && title.trim().length > 0;
+  }
+
   scrape(doc: Document, url: URL): ScrapedJob {
     const data = createEmptyScrapedData(this.platform, url.href);
 
