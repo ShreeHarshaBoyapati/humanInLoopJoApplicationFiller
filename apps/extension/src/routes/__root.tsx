@@ -1,4 +1,12 @@
-import { Link, Outlet, createRootRoute, redirect, useRouterState } from '@tanstack/react-router';
+import {
+  Link,
+  Outlet,
+  createRootRoute,
+  redirect,
+  useRouterState,
+  useNavigate,
+} from '@tanstack/react-router';
+import { useEffect } from 'react';
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import WorkOutlineIcon from '@mui/icons-material/WorkOutline';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
@@ -63,6 +71,26 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   const routerState = useRouterState();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (typeof chrome !== 'undefined' && chrome.runtime) {
+      const handleMessage = (message: { action: string; payload?: { message?: string } }) => {
+        if (message.action === 'LOGOUT_TRIGGERED') {
+          navigate({
+            to: '/login',
+            search: { message: message.payload?.message },
+            replace: true,
+          });
+        }
+      };
+
+      chrome.runtime.onMessage.addListener(handleMessage);
+      return () => {
+        chrome.runtime.onMessage.removeListener(handleMessage);
+      };
+    }
+  }, [navigate]);
   const isLoginPage =
     routerState.location.pathname === '/login' || routerState.location.pathname === '/new-user';
 

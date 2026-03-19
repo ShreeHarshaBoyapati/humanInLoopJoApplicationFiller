@@ -73,7 +73,12 @@ function HomeComponent() {
             horizontal: 'right',
           }}
         >
-          <StyledMenuItem onClick={handleClose}>
+          <StyledMenuItem
+            onClick={() => {
+              handleClose();
+              navigate({ to: '/settings' });
+            }}
+          >
             <Typography>Settings</Typography>
           </StyledMenuItem>
           <StyledMenuItem onClick={handleLogout}>

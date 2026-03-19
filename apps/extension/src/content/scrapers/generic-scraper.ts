@@ -19,7 +19,7 @@ class GenericScraper implements JobScraper {
     return true;
   }
 
-  scrape(doc: Document, url: URL): any {
+  scrape(doc: Document, url: URL) {
     const data = createEmptyScrapedData(this.platform, url.href);
 
     // ------ 1. JSON-LD (best source if available) ------

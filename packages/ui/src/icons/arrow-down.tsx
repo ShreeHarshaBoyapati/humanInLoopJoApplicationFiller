@@ -1,6 +1,12 @@
+import { SVGProps } from 'react';
 import styleConstants from '../constants/style-constants';
 
-const ArrowDownIcon = ({ width = 12, height = 7, fill = styleConstants.white700, ...props }) => {
+const ArrowDownIcon = ({
+  width = 12,
+  height = 7,
+  fill = styleConstants.white700,
+  ...props
+}: SVGProps<SVGSVGElement>) => {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

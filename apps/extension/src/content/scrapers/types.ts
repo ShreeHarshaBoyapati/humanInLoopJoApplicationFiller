@@ -25,5 +25,6 @@ export interface JobScraper {
    *
    * TODO: Replace `any` with a proper ScrapedJobData type in @repo/shared-types
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   scrape(doc: Document, url: URL): any;
 }

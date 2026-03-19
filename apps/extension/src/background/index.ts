@@ -1,5 +1,5 @@
-import axios from 'axios';
-import type { ExtensionMessage } from '@repo/shared-types';
+import axios, { AxiosError } from 'axios';
+import type { ExtensionMessage, ApiResponse } from '@repo/shared-types';
 import { handleUserMessage } from './handlers/user-handler.js';
 import { handleJobMessage } from './handlers/job-handler.js';
 import { handleContentMessages } from './handlers/content-handler.js';
@@ -26,13 +26,32 @@ api.interceptors.request.use(async (config) => {
   const result = await new Promise<{ token?: string }>((resolve) => {
     chrome.storage.local.get(['token'], (res) => resolve(res as { token?: string }));
   });
-  console.log('result========>>>>', result);
 
   if (result.token) {
     config.headers.Authorization = `Bearer ${result.token}`;
   }
   return config;
 });
+
+api.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError<ApiResponse>) => {
+    if (error.response && error.response.status === 401) {
+      const message = error.response.data?.message || 'Session expired. Please log in again.';
+      chrome.storage.local.remove('token', () => {
+        chrome.runtime
+          .sendMessage({
+            action: 'LOGOUT_TRIGGERED',
+            payload: { message },
+          })
+          .catch(() => {
+            // Ignore error if no listeners are active
+          });
+      });
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Listen for messages from the UI and content scripts — dispatch to entity handlers
 chrome.runtime.onMessage.addListener((message: ExtensionMessage, sender, sendResponse) => {

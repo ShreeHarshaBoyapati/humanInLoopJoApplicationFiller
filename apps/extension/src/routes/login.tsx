@@ -15,14 +15,20 @@ interface LoginResponse {
 }
 
 export const Route = createFileRoute('/login')({
+  validateSearch: (search: Record<string, unknown>): { message?: string } => {
+    return {
+      message: (search.message as string) || undefined,
+    };
+  },
   component: LoginComponent,
 });
 
 function LoginComponent() {
+  const search = Route.useSearch();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passVisible, setPassVisible] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(search.message || '');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 

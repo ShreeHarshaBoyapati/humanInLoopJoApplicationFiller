@@ -26,8 +26,9 @@ class IndeedScraper implements JobScraper {
     return url.hostname.includes('indeed.com');
   }
 
-  scrape(doc: Document, url: URL): any {
+  scrape(doc: Document, url: URL) {
     const data = createEmptyScrapedData(this.platform, url.href);
+    console.log('===>', doc);
 
     // TODO: Implement scraping logic
     // 1. Try parseJsonLd(doc) first — Indeed often has JobPosting schema

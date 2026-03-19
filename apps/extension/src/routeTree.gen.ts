@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RecentJobsRouteImport } from './routes/recent-jobs'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as NewUserRouteImport } from './routes/new-user'
@@ -17,6 +18,11 @@ import { Route as JobRouteImport } from './routes/job'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RecentJobsRoute = RecentJobsRouteImport.update({
   id: '/recent-jobs',
   path: '/recent-jobs',
@@ -61,6 +67,7 @@ export interface FileRoutesByFullPath {
   '/new-user': typeof NewUserRoute
   '/profile': typeof ProfileRoute
   '/recent-jobs': typeof RecentJobsRoute
+  '/settings': typeof SettingsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,6 +77,7 @@ export interface FileRoutesByTo {
   '/new-user': typeof NewUserRoute
   '/profile': typeof ProfileRoute
   '/recent-jobs': typeof RecentJobsRoute
+  '/settings': typeof SettingsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,6 +88,7 @@ export interface FileRoutesById {
   '/new-user': typeof NewUserRoute
   '/profile': typeof ProfileRoute
   '/recent-jobs': typeof RecentJobsRoute
+  '/settings': typeof SettingsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +100,7 @@ export interface FileRouteTypes {
     | '/new-user'
     | '/profile'
     | '/recent-jobs'
+    | '/settings'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +110,7 @@ export interface FileRouteTypes {
     | '/new-user'
     | '/profile'
     | '/recent-jobs'
+    | '/settings'
   id:
     | '__root__'
     | '/'
@@ -109,6 +120,7 @@ export interface FileRouteTypes {
     | '/new-user'
     | '/profile'
     | '/recent-jobs'
+    | '/settings'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -119,10 +131,18 @@ export interface RootRouteChildren {
   NewUserRoute: typeof NewUserRoute
   ProfileRoute: typeof ProfileRoute
   RecentJobsRoute: typeof RecentJobsRoute
+  SettingsRoute: typeof SettingsRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/recent-jobs': {
       id: '/recent-jobs'
       path: '/recent-jobs'
@@ -183,6 +203,7 @@ const rootRouteChildren: RootRouteChildren = {
   NewUserRoute: NewUserRoute,
   ProfileRoute: ProfileRoute,
   RecentJobsRoute: RecentJobsRoute,
+  SettingsRoute: SettingsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
