@@ -10,6 +10,8 @@ const colorPaletteConfig = {
   blue500: '#06B6D4',
   red600: '#f14158',
   red700: '#b00d22',
+  green500: '#004218',
+  green600: '#66ba1c',
 } as const;
 
 const layoutConfig = {

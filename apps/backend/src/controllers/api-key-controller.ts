@@ -1,9 +1,14 @@
 import type { Response, AuthenticatedTypedRequest } from '../types/index.js';
 import { getApiKeyRepository, getUserRepository } from '../database/repositories/index.js';
-import { encryptText } from '../utils/encryption.js';
-import { UpdateApiKeyInputType } from '../middlewares/api-key.js';
+import { encryptText, decryptText } from '../utils/encryption.js';
+import { UpdateApiKeyInputType, TestConnectionInputType } from '../middlewares/api-key.js';
 import ApiKey from '../database/entities/api-key.js';
-import { ProviderName } from '../services/ai/ai-factory.js';
+import { ProviderName } from '../services/ai/registry.js';
+import { transitDecrypt } from '@repo/utils';
+import { ApiKeyService } from '../services/api-key-service.js';
+import logger from '../utils/logger.js';
+
+const TRANSIT_SECRET = process.env.TRANSIT_SECRET ?? 'jfp-default-transit-secret-change-in-prod';
 
 class ApiKeyController {
   /**
@@ -13,7 +18,7 @@ class ApiKeyController {
    */
   async upsertApiKey(req: AuthenticatedTypedRequest<UpdateApiKeyInputType>, res: Response) {
     const userId = req.userId;
-    const { providerName, apiKey, model } = req.body;
+    const { id, providerName, credentials, model } = req.body;
     const apiKeyRepository = getApiKeyRepository();
     const userRepository = getUserRepository();
 
@@ -24,20 +29,44 @@ class ApiKeyController {
         return;
       }
 
-      const encryptedKey = encryptText(apiKey);
+      const encryptedCredentials: Record<string, string> = {};
+      for (const [key, value] of Object.entries(credentials)) {
+        if (value) {
+          if (
+            key.toLowerCase().includes('key') ||
+            key.toLowerCase().includes('secret') ||
+            key.toLowerCase().includes('token')
+          ) {
+            encryptedCredentials[key] = encryptText(value as string);
+          } else {
+            encryptedCredentials[key] = value as string;
+          }
+        }
+      }
 
-      const existingKey = await apiKeyRepository.findOne({
-        where: { user: { id: userId }, provider: providerName as ProviderName },
-      });
+      let existingKey = undefined;
+
+      if (id) {
+        existingKey = await apiKeyRepository.findOne({
+          where: { id, user: { id: userId } },
+        });
+      } else {
+        const existingKeysForModel = await apiKeyRepository.find({
+          where: { user: { id: userId }, provider: providerName as ProviderName, model },
+        });
+        existingKey = existingKeysForModel.find(
+          (k) => JSON.stringify(k.credentials) === JSON.stringify(encryptedCredentials)
+        );
+      }
 
       if (existingKey) {
-        existingKey.key = encryptedKey;
+        existingKey.credentials = encryptedCredentials;
         existingKey.model = model;
         await apiKeyRepository.save(existingKey);
       } else {
         const newKey = new ApiKey();
         newKey.provider = providerName as ProviderName;
-        newKey.key = encryptedKey;
+        newKey.credentials = encryptedCredentials;
         newKey.model = model;
         newKey.user = user;
         await apiKeyRepository.save(newKey);
@@ -64,16 +93,97 @@ class ApiKeyController {
     try {
       const keys = await apiKeyRepository.find({
         where: { user: { id: userId } },
-        select: ['id', 'provider', 'model', 'createdAt', 'updatedAt'],
+        select: ['id', 'provider', 'model', 'credentials', 'createdAt', 'updatedAt'],
+      });
+
+      const data = keys.map((k) => {
+        const { credentials, ...rest } = k;
+        const safeCredentials: Record<string, string> = {};
+        if (credentials) {
+          for (const [key, value] of Object.entries(credentials)) {
+            try {
+              if (
+                key.toLowerCase().includes('key') ||
+                key.toLowerCase().includes('secret') ||
+                key.toLowerCase().includes('token')
+              ) {
+                safeCredentials[key] = decryptText(value);
+              } else {
+                safeCredentials[key] = value;
+              }
+            } catch {
+              safeCredentials[key] = value;
+            }
+          }
+        }
+        return { ...rest, credentials: safeCredentials };
       });
 
       res.status(200).json({
         success: true,
-        data: keys,
+        data,
       });
     } catch (error: unknown) {
       console.error('Error fetching API Keys:', error);
       res.status(500).json({ success: false, message: 'Failed to fetch API Keys' });
+    }
+  }
+
+  /**
+   * Test if an API key is valid for the given provider and return available models.
+   * POST /api/api-key/test-connection
+   * Body: { providerName: 'gemini', apiKey: string (transit-encrypted) }
+   */
+  async testConnection(req: AuthenticatedTypedRequest<TestConnectionInputType>, res: Response) {
+    const { providerName, credentials } = req.body;
+    try {
+      const decryptedCredentials: Record<string, string> = { ...credentials };
+      if (decryptedCredentials.apiKey) {
+        decryptedCredentials.apiKey = await transitDecrypt(
+          decryptedCredentials.apiKey,
+          TRANSIT_SECRET
+        );
+      }
+      const models = await ApiKeyService.testConnection(providerName, decryptedCredentials);
+      res.status(200).json({ success: true, message: 'Connection successful', data: { models } });
+    } catch (error: unknown) {
+      let message = 'Connection failed';
+      if (error instanceof Error) {
+        message = error.message;
+        logger.error({ error: error }, 'Connection failed');
+      }
+      res.status(200).json({ success: false, message: message });
+    }
+  }
+
+  /**
+   * Delete an API Key for the authenticated user
+   * DELETE /api/api-key/:id
+   */
+  async deleteApiKey(req: AuthenticatedTypedRequest<null>, res: Response) {
+    const userId = req.userId!;
+    const id = req.params.id as string;
+    const apiKeyRepository = getApiKeyRepository();
+
+    try {
+      const key = await apiKeyRepository.findOne({
+        where: { id, user: { id: userId } },
+      });
+
+      if (!key) {
+        res.status(404).json({ success: false, message: 'Provider not found' });
+        return;
+      }
+
+      await apiKeyRepository.remove(key);
+
+      res.status(200).json({
+        success: true,
+        message: 'Provider deleted successfully',
+      });
+    } catch (error: unknown) {
+      console.error('Error deleting API Key:', error);
+      res.status(500).json({ success: false, message: 'Failed to delete Provider' });
     }
   }
 }

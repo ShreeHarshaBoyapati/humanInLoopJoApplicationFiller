@@ -3,6 +3,7 @@ import type { ExtensionMessage, ApiResponse } from '@repo/shared-types';
 import { handleUserMessage } from './handlers/user-handler.js';
 import { handleJobMessage } from './handlers/job-handler.js';
 import { handleContentMessages } from './handlers/content-handler.js';
+import { handleApiKeyMessage } from './handlers/api-key-handler.js';
 
 console.log('Background service worker started');
 
@@ -64,4 +65,8 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, sender, sendRes
   // Job-related actions
   const jobHandled = handleJobMessage(message, sendResponse, api);
   if (jobHandled) return true;
+
+  // API key-related actions
+  const apiKeyHandled = handleApiKeyMessage(message, sendResponse, api);
+  if (apiKeyHandled) return true;
 });

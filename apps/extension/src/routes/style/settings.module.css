@@ -250,7 +250,7 @@
 
 .formActions {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: calc(var(--spacing) * 3);
   margin-top: calc(var(--spacing) * 2);
 }
@@ -380,7 +380,6 @@
 
 .settingsBtn:hover {
   color: var(--white-900);
-  transform: rotate(45deg);
 }
 
 .addButton {
@@ -399,4 +398,61 @@
 
 .addButton:hover {
   opacity: 0.8;
+}
+
+/* ── Wizard step styles ── */
+
+.stepDisabled {
+  opacity: 0.4;
+  pointer-events: none;
+  user-select: none;
+}
+
+.stepNumber {
+  align-items: center;
+  background-color: var(--blue-500);
+  border-radius: 50%;
+  color: #000;
+  display: inline-flex;
+  font-size: 0.6rem;
+  font-weight: 800;
+  height: 14px;
+  justify-content: center;
+  margin-right: calc(var(--spacing) * 1);
+  width: 14px;
+}
+
+.stepNumberPlaceholder {
+  display: inline-flex;
+  height: 14px;
+  margin-right: calc(var(--spacing) * 1);
+  width: 14px;
+}
+
+/* Step 3 — test connection layout: button on left, result on right */
+.testConnectionRow {
+  align-items: center;
+  display: flex;
+  gap: calc(var(--spacing) * 3);
+}
+
+.connectionResult {
+  align-items: center;
+  border-radius: var(--border-radius);
+  display: flex;
+  flex: 1;
+  font-size: 0.75rem;
+  font-weight: 600;
+  gap: calc(var(--spacing) * 2);
+  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3);
+}
+
+.connectionSuccess {
+  background-color: var(--green-500);
+  color: var(--green-600);
+}
+
+.connectionError {
+  background-color: var(--red-600);
+  color: var(--red-700);
 }

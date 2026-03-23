@@ -5,25 +5,23 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
-  Unique,
 } from 'typeorm';
 import User from './user.js';
-import type { ProviderName } from '../../services/ai/ai-factory.js';
+import type { ProviderName } from '../../services/ai/registry.js';
 
 @Entity()
-@Unique(['user', 'provider']) // A user can only have one active key per provider
 export default class ApiKey {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
   @Column({
     type: 'enum',
-    enum: ['gemini', 'anthropic'],
+    enum: ['gemini', 'openai', 'anthropic', 'groq', 'mistral', 'ollama', 'custom'],
   })
   provider!: ProviderName;
 
-  @Column('text')
-  key!: string;
+  @Column({ type: 'jsonb', default: {} })
+  credentials!: Record<string, string>;
 
   @Column('varchar')
   model!: string;

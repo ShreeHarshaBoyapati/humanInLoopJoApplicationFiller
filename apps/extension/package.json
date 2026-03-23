@@ -26,6 +26,7 @@
     "@repo/eslint-config": "workspace:*",
     "@repo/shared-types": "workspace:^",
     "@repo/typescript-config": "workspace:*",
+    "@repo/utils": "workspace:*",
     "@tanstack/router-plugin": "^1.159.14",
     "@types/chrome": "^0.1.36",
     "@types/node": "^22.15.3",
