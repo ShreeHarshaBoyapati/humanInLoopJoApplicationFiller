@@ -115,6 +115,10 @@
   flex-direction: column;
 }
 
+.cardPadding {
+  padding: calc(var(--spacing) * 4);
+}
+
 .activeCard {
   border: 1px solid var(--blue-500);
 }
