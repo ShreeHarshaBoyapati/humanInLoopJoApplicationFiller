@@ -93,7 +93,6 @@ class ApiKeyController {
     try {
       const keys = await apiKeyRepository.find({
         where: { user: { id: userId } },
-        select: ['id', 'provider', 'model', 'credentials', 'createdAt', 'updatedAt'],
       });
 
       const data = keys.map((k) => {
@@ -184,6 +183,38 @@ class ApiKeyController {
     } catch (error: unknown) {
       console.error('Error deleting API Key:', error);
       res.status(500).json({ success: false, message: 'Failed to delete Provider' });
+    }
+  }
+
+  async selectApiKey(req: AuthenticatedTypedRequest<null>, res: Response) {
+    const userId = req.userId!;
+    const id = req.params.id as string;
+    const apiKeyRepository = getApiKeyRepository();
+
+    try {
+      const keys = await apiKeyRepository.find({
+        where: { user: { id: userId } },
+      });
+
+      const targetKey = keys.find((obj) => obj.id === id);
+      if (!targetKey) {
+        res.status(404).json({ success: false, message: 'Provider not found' });
+        return;
+      }
+
+      keys.forEach((obj) => {
+        obj.active = obj.id === id;
+      });
+
+      await apiKeyRepository.save(keys);
+
+      res.status(200).json({
+        success: true,
+        message: 'Provider selected successfully',
+      });
+    } catch (error: unknown) {
+      console.error('Error selecting API Key:', error);
+      res.status(500).json({ success: false, message: 'Failed to select Provider' });
     }
   }
 }

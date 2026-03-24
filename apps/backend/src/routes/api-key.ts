@@ -14,6 +14,7 @@ router.post(
   testConnectionValidation,
   asHandler(apiKeyController.testConnection)
 );
+router.put('/select/:id', authMiddleware, asHandler(apiKeyController.selectApiKey));
 router.delete('/:id', authMiddleware, asHandler(apiKeyController.deleteApiKey));
 
 export default router;

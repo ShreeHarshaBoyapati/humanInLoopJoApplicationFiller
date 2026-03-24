@@ -261,7 +261,7 @@ export const EnhancedTextField = forwardRef<HTMLInputElement, EnhancedTextFieldP
             slotProps={{
               ...customProps?.childProps?.slotProps,
               htmlInput: {
-                'data-testId': testId,
+                'data-testid': testId,
                 ...(customProps.childProps?.slotProps?.htmlInput || {}),
               },
               input: {

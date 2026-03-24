@@ -238,7 +238,7 @@ export const EnhancedTextInputArea = forwardRef<HTMLInputElement, EnhancedTextIn
             slotProps={{
               ...customProps?.childProps?.slotProps,
               htmlInput: {
-                'data-testId': testId,
+                'data-testid': testId,
                 ...(customProps.childProps?.slotProps?.htmlInput || {}),
               },
             }}

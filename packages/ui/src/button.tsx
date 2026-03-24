@@ -229,7 +229,7 @@ export const EnhancedButton = forwardRef<HTMLButtonElement, EnhancedButtonProps>
         endIcon={endIcon}
         colorTheme={colorTheme}
         className={className}
-        data-testId={testId}
+        data-testid={testId}
         {...(customProps?.props || {})}
       >
         <span

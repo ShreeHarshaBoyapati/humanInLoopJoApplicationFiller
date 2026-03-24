@@ -1,6 +1,6 @@
 import type { AxiosError, AxiosInstance } from 'axios';
 import type { ExtensionMessage, ApiResponse } from '@repo/shared-types';
-import { transitEncrypt } from '@repo/utils';
+import { transitEncrypt, transitDecrypt } from '@repo/utils';
 
 // TRANSIT_SECRET must match the backend. In development the fallback is used.
 // In production set VITE_EXT_TRANSIT_SECRET in the extension build environment.
@@ -85,8 +85,24 @@ export function handleApiKeyMessage(
     return true;
   }
 
+  if (message.action === 'DECRYPT_API_KEY') {
+    const { encryptedKey } = message.payload;
+    if (!encryptedKey) {
+      sendResponse({ success: false, message: 'No key provided' });
+      return true;
+    }
+    transitDecrypt(encryptedKey, TRANSIT_SECRET)
+      .then((decryptedKey) => {
+        sendResponse({ success: true, data: { decryptedKey } });
+      })
+      .catch((error) => {
+        console.error('DECRYPT_API_KEY error:', error);
+        sendResponse({ success: false, message: 'Failed to decrypt key' });
+      });
+    return true;
+  }
+
   if (message.action === 'GET_CONFIGURED_PROVIDERS') {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     api
       .get<ApiResponse<any[]>>('/api-key')
       .then((response: { data: ApiResponse<Record<string, unknown>[]> }) => {
@@ -119,6 +135,23 @@ export function handleApiKeyMessage(
         sendResponse({
           success: false,
           error: error.response?.data?.message || 'Failed to delete provider',
+        });
+      });
+    return true;
+  }
+
+  if (message.action === 'SELECT_PROVIDER') {
+    const { id } = message.payload;
+    api
+      .put<ApiResponse>(`/api-key/select/${id}`)
+      .then((response) => {
+        sendResponse({ success: response.data.success });
+      })
+      .catch((error: AxiosError<ApiResponse>) => {
+        console.error('SELECT_PROVIDER error:', error);
+        sendResponse({
+          success: false,
+          error: error.response?.data?.message || 'Failed to select provider',
         });
       });
     return true;

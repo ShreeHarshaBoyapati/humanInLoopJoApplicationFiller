@@ -11,5 +11,5 @@
     "source.fixAll.eslint": "explicit",
     "source.fixAll.stylelint": "explicit"
   },
-  "cSpell.words": ["naukri"]
+  "cSpell.words": ["naukri", "ollama"]
 }

@@ -113,7 +113,6 @@
   border-radius: var(--border-radius);
   display: flex;
   flex-direction: column;
-  padding: calc(var(--spacing) * 4);
 }
 
 .activeCard {
@@ -192,6 +191,7 @@
   display: flex;
   flex-direction: column;
   gap: calc(var(--spacing) * 4);
+  padding: calc(var(--spacing) * 4);
 }
 
 .formField {
@@ -200,100 +200,11 @@
   gap: calc(var(--spacing) * 2);
 }
 
-.fieldLabel {
-  color: var(--white-700);
-  font-size: 0.65rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.inputBox {
-  background-color: var(--black-700);
-  border: 1px solid var(--grey-700);
-  border-radius: var(--border-radius);
-  color: var(--white-900);
-  font-family: inherit;
-  font-size: 0.875rem;
-  outline: none;
-  padding: calc(var(--spacing) * 3);
-  width: 100%;
-}
-
-.inputBox:focus {
-  border-color: var(--blue-500);
-}
-
-.inputWrapper {
-  position: relative;
-  width: 100%;
-}
-
-.visibilityBtn {
-  align-items: center;
-  background: none;
-  border: none;
-  color: var(--white-700);
-  cursor: pointer;
-  display: flex;
-  height: 100%;
-  justify-content: center;
-  padding: 0 calc(var(--spacing) * 3);
-  position: absolute;
-  right: 0;
-  top: 0;
-}
-
-.visibilityBtn:hover {
-  color: var(--white-900);
-}
-
 .formActions {
   display: flex;
   flex-direction: row;
   gap: calc(var(--spacing) * 3);
-  margin-top: calc(var(--spacing) * 2);
-}
-
-.secondaryActions {
-  display: flex;
-  gap: calc(var(--spacing) * 2);
-  width: 100%;
-}
-
-.cancelBtn {
-  background: none;
-  border: 1px solid transparent;
-  border-radius: var(--border-radius);
-  color: var(--white-900);
-  cursor: pointer;
-  flex: 1;
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3);
-  text-align: center;
-}
-
-.cancelBtn:hover {
-  background-color: var(--black-700);
-}
-
-.testBtn {
-  background: none;
-  border: 1px solid var(--blue-500);
-  border-radius: var(--border-radius);
-  color: var(--blue-500);
-  cursor: pointer;
-  flex: 1;
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3);
-  text-align: center;
-  transition: all 0.2s;
-}
-
-.testBtn:hover {
-  background-color: rgb(0 219 216 / 10%);
+  justify-content: end;
 }
 
 .providerList {
@@ -313,6 +224,16 @@
   padding: calc(var(--spacing) * 4);
 }
 
+.providerItem:hover {
+  background-color: var(--grey-300);
+  cursor: pointer;
+}
+
+.providerItemDisabled {
+  background-color: var(--black-800);
+  cursor: auto;
+}
+
 .providerInfo {
   align-items: center;
   display: flex;
@@ -321,7 +242,7 @@
 
 .providerIcon {
   align-items: center;
-  background-color: rgb(255 255 255 / 5%);
+  background-color: var(--black-700);
   border-radius: var(--border-radius);
   color: var(--blue-500);
   display: flex;
@@ -353,9 +274,9 @@
 }
 
 .activeTag {
-  background-color: rgb(0 150 136 / 15%);
+  background-color: var(--green-500);
   border-radius: 4px;
-  color: #4caf50;
+  color: var(--green-600);
   font-size: 0.6rem;
   font-weight: 700;
   padding: 2px 6px;
@@ -379,60 +300,15 @@
 }
 
 .settingsBtn:hover {
-  color: var(--white-900);
-}
-
-.addButton {
-  align-items: center;
-  background: none;
-  border: none;
-  color: var(--blue-500);
-  cursor: pointer;
-  display: flex;
-  font-size: 0.75rem;
-  font-weight: 600;
-  gap: calc(var(--spacing) * 1);
-  padding: 0;
-  transition: opacity 0.2s;
-}
-
-.addButton:hover {
-  opacity: 0.8;
-}
-
-/* ── Wizard step styles ── */
-
-.stepDisabled {
-  opacity: 0.4;
-  pointer-events: none;
-  user-select: none;
-}
-
-.stepNumber {
-  align-items: center;
-  background-color: var(--blue-500);
+  background-color: var(--black-700);
   border-radius: 50%;
-  color: #000;
-  display: inline-flex;
-  font-size: 0.6rem;
-  font-weight: 800;
-  height: 14px;
-  justify-content: center;
-  margin-right: calc(var(--spacing) * 1);
-  width: 14px;
-}
-
-.stepNumberPlaceholder {
-  display: inline-flex;
-  height: 14px;
-  margin-right: calc(var(--spacing) * 1);
-  width: 14px;
 }
 
 /* Step 3 — test connection layout: button on left, result on right */
 .testConnectionRow {
   align-items: center;
   display: flex;
+  flex-direction: column;
   gap: calc(var(--spacing) * 3);
 }
 
@@ -445,6 +321,7 @@
   font-weight: 600;
   gap: calc(var(--spacing) * 2);
   padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3);
+  width: 100%;
 }
 
 .connectionSuccess {
@@ -455,4 +332,17 @@
 .connectionError {
   background-color: var(--red-600);
   color: var(--red-700);
+}
+
+.rowDivider {
+  border-top: 1px solid var(--grey-700);
+  width: 100%;
+}
+
+.footer {
+  border-top: 1px solid var(--grey-700);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 4);
+  padding: calc(var(--spacing) * 4);
 }

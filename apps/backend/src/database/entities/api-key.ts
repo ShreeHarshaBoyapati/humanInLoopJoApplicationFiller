@@ -26,6 +26,9 @@ export default class ApiKey {
   @Column('varchar')
   model!: string;
 
+  @Column({ type: 'boolean', default: false })
+  active!: boolean;
+
   @ManyToOne(() => User, (user) => user.apiKeys, { onDelete: 'CASCADE' })
   user!: User;
 
