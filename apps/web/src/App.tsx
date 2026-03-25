@@ -499,6 +499,28 @@ function App() {
       </section>
 
       <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Buttons - View More</h2>
+        <div className={styles.grid}>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Default</span>
+            <Button label="View More" colorTheme="text" />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>With End Icon</span>
+            <Button
+              label="View More"
+              colorTheme="text"
+              endIcon={<span style={{ fontSize: '16px' }}>▼</span>}
+            />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Disabled</span>
+            <Button label="View More" colorTheme="text" disabled />
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Chips</h2>
         <div className={styles.grid}>
           <div className={styles.variantContainer}>

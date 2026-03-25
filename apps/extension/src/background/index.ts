@@ -4,6 +4,7 @@ import { handleUserMessage } from './handlers/user-handler.js';
 import { handleJobMessage } from './handlers/job-handler.js';
 import { handleContentMessages } from './handlers/content-handler.js';
 import { handleApiKeyMessage } from './handlers/api-key-handler.js';
+import { handlePersonaMessage } from './handlers/persona-handler.js';
 
 console.log('Background service worker started');
 
@@ -69,4 +70,8 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, sender, sendRes
   // API key-related actions
   const apiKeyHandled = handleApiKeyMessage(message, sendResponse, api);
   if (apiKeyHandled) return true;
+
+  // Persona-related actions
+  const personaHandled = handlePersonaMessage(message, sendResponse, api);
+  if (personaHandled) return true;
 });

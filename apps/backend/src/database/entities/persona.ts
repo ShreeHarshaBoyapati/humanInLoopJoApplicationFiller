@@ -15,11 +15,14 @@ export default class Persona {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column('varchar')
+  @Column('varchar', { unique: true })
   title!: string;
 
   @Column('simple-array', { default: [] })
   keywords!: string[];
+
+  @Column('boolean', { default: false })
+  active!: boolean;
 
   @ManyToOne(() => User, (user) => user.personas, { onDelete: 'CASCADE' })
   user!: User;

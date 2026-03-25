@@ -172,23 +172,9 @@
   text-decoration: underline;
 }
 
-.viewMoreBtn {
-  align-items: center;
-  background: none;
-  border: none;
-  color: var(--white-700);
-  cursor: pointer;
+.buttonContainer {
   display: flex;
-  font-size: 0.8rem;
-  font-weight: 500;
   justify-content: center;
-  padding: calc(var(--spacing) * 2) 0;
-  transition: color 0.2s;
-  width: 100%;
-}
-
-.viewMoreBtn:hover {
-  color: var(--white-900);
 }
 
 .addProviderForm {
@@ -231,6 +217,10 @@
 .providerItem:hover {
   background-color: var(--grey-300);
   cursor: pointer;
+}
+
+.selectedProviderItem {
+  border-color: var(--blue-500);
 }
 
 .providerItemDisabled {

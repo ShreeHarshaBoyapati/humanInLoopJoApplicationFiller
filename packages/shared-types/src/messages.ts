@@ -34,4 +34,9 @@ export type ExtensionMessage =
   | { action: 'GET_CONFIGURED_PROVIDERS' }
   | { action: 'DELETE_PROVIDER'; payload: { id: string } }
   | { action: 'DECRYPT_API_KEY'; payload: { encryptedKey: string } }
-  | { action: 'SELECT_PROVIDER'; payload: { id: string } };
+  | { action: 'SELECT_PROVIDER'; payload: { id: string } }
+  | { action: 'CREATE_PERSONA'; payload: { title: string; keywords?: string[] } }
+  | { action: 'UPDATE_PERSONA'; payload: { id: string; title?: string; keywords?: string[] } }
+  | { action: 'DELETE_PERSONA'; payload: { id: string } }
+  | { action: 'GET_PERSONAS' }
+  | { action: 'SELECT_PERSONA'; payload: { id: string } };

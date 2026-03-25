@@ -380,9 +380,8 @@ export function AiProvidersSection() {
             {/* Actions */}
             <div className={styles.formActions}>
               <EnhancedButton
-                label={isSaving ? 'Saving…' : 'Save Provider'}
+                label={isSaving ? 'Saving…' : 'Save'}
                 colorTheme="primary"
-                style={{ width: '100%' }}
                 onClick={handleSave}
                 disabled={!step4Enabled || !model || isSaving}
               />

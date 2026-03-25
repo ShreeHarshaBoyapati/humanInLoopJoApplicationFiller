@@ -1,8 +1,13 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import styles from '../routes/style/settings.module.css';
 import styleConstants from '@repo/ui/constants/style-constants.js';
+import { EnhancedButton } from '@repo/ui';
+
+const INITIAL_VISIBLE_COUNT = 2;
 
 interface ProviderData {
   id: string;
@@ -23,7 +28,20 @@ export function ConfiguredProviders({ onEdit, refreshTrigger = 0 }: ConfiguredPr
   const [providers, setProviders] = useState<ProviderData[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeLoading, setActiveLoading] = useState(false);
-  const [activeIndex, setActiveIndex] = useState('');
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Sort providers to ensure active one is always first in the visible list
+  const sortedProviders = useMemo(() => {
+    return [...providers].sort((a, b) => {
+      if (a.active && !b.active) return -1;
+      if (!a.active && b.active) return 1;
+      return 0;
+    });
+  }, [providers]);
+
+  const visibleProviders = isExpanded
+    ? sortedProviders
+    : sortedProviders.slice(0, INITIAL_VISIBLE_COUNT);
 
   const fetchProviders = useCallback(() => {
     setLoading(true);
@@ -33,11 +51,6 @@ export function ConfiguredProviders({ onEdit, refreshTrigger = 0 }: ConfiguredPr
         (res: { success: boolean; data?: ProviderData[]; error?: string }) => {
           setLoading(false);
           if (res?.success && res.data) {
-            for (const obj of res.data) {
-              if (obj.active) {
-                setActiveIndex(obj.id);
-              }
-            }
             setProviders(res.data);
           }
         }
@@ -70,10 +83,16 @@ export function ConfiguredProviders({ onEdit, refreshTrigger = 0 }: ConfiguredPr
       chrome.runtime.sendMessage(
         { action: 'SELECT_PROVIDER', payload: { id } },
         (res: { success: boolean; message?: string }) => {
-          if (res?.success) {
-            setActiveIndex(id);
-          }
           setActiveLoading(false);
+          if (res?.success) {
+            // Update local state to reflect the active provider
+            setProviders((prevProviders) =>
+              prevProviders.map((p) => ({
+                ...p,
+                active: p.id === id,
+              }))
+            );
+          }
         }
       );
     }
@@ -103,31 +122,31 @@ export function ConfiguredProviders({ onEdit, refreshTrigger = 0 }: ConfiguredPr
 
   return (
     <>
-      <span className={styles.fieldLabel} style={{ marginTop: 'calc(var(--spacing) * 4)' }}>
+      <span className={styles.sectionHeading} style={{ marginTop: 'calc(var(--spacing) * 4)' }}>
         CONFIGURED PROVIDERS
       </span>
 
       <div className={styles.providerList} style={{ marginTop: 0 }}>
-        {providers.map((p) => (
+        {visibleProviders.map((p) => (
           <div
             key={p.id}
-            className={`${styles.providerItem} ${activeLoading ? styles.providerItemDisabled : ''}`}
+            className={`${styles.providerItem} ${activeLoading ? styles.providerItemDisabled : ''} ${p.active ? styles.selectedProviderItem : ''}`}
             onClick={() => {
-              if (activeIndex != p.id) {
+              if (!p.active) {
                 handleSelect(p.id);
               }
             }}
           >
             <div className={styles.providerInfo}>
               <div
-                className={`${styles.providerIcon} ${activeIndex != p.id ? styles.providerIconInactive : ''}`}
+                className={`${styles.providerIcon} ${!p.active ? styles.providerIconInactive : ''}`}
               >
                 {getProviderIcon(p.provider)}
               </div>
               <div className={styles.providerDetails}>
                 <div className={styles.providerNameRow}>
                   <span className={styles.providerName}>{formatName(p.provider)}</span>
-                  {activeIndex == p.id && <span className={styles.activeTag}>ACTIVE</span>}
+                  {p.active && <span className={styles.activeTag}>ACTIVE</span>}
                 </div>
                 <span className={styles.usageText}>Model: {p.model}</span>
               </div>
@@ -154,6 +173,20 @@ export function ConfiguredProviders({ onEdit, refreshTrigger = 0 }: ConfiguredPr
           </div>
         ))}
       </div>
+
+      {providers.length > INITIAL_VISIBLE_COUNT && (
+        <div className={styles.buttonContainer}>
+          <EnhancedButton
+            colorTheme="text"
+            label={isExpanded ? 'View Less' : 'View More'}
+            size="small"
+            endIcon={
+              isExpanded ? <ExpandLessIcon fontSize="small" /> : <ExpandMoreIcon fontSize="small" />
+            }
+            onClick={() => setIsExpanded(!isExpanded)}
+          />
+        </div>
+      )}
     </>
   );
 }

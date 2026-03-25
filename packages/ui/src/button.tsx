@@ -106,6 +106,22 @@ const colorThemeStyles = {
     },
     textDecoration: 'underline',
   },
+  text: {
+    background: 'none',
+    border: 'none',
+    color: styleConstants.white700,
+    width: '100%',
+    justifyContent: 'center',
+    transition: 'color 0.2s',
+    '&:hover,&:active': {
+      background: 'none',
+      border: 'none',
+      color: styleConstants.white900,
+    },
+    '&:focus-visible': {
+      outline: 'none',
+    },
+  },
 } satisfies Record<string, ColorThemeStyle>;
 
 type ColorTheme = keyof typeof colorThemeStyles;
