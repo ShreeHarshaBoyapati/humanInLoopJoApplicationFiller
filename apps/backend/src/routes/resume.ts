@@ -9,6 +9,7 @@ import {
   getResumeByIdValidation,
 } from '../middlewares/resume.js';
 import { asHandler } from '../types/api.js';
+import type { Request, Response, NextFunction } from 'express';
 
 const router: express.Router = express.Router();
 
@@ -24,8 +25,17 @@ const upload = multer({
       'application/pdf',
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/octet-stream',
+      'application/x-zip-compressed',
     ];
-    if (allowedMimeTypes.includes(file.mimetype)) {
+
+    const extension = file.originalname.split('.').pop()?.toLowerCase();
+    const allowedExtensions = ['pdf', 'doc', 'docx', 'txt'];
+
+    if (
+      allowedMimeTypes.includes(file.mimetype) ||
+      (extension && allowedExtensions.includes(extension))
+    ) {
       cb(null, true);
     } else {
       cb(new Error('Invalid file type. Only PDF and Word documents are allowed.'));
@@ -33,17 +43,30 @@ const upload = multer({
   },
 });
 
+const handleUpload = (req: Request, res: Response, next: NextFunction) => {
+  upload.single('file')(req, res, (err) => {
+    if (err) {
+      if (err instanceof multer.MulterError) {
+        return res.status(400).json({ success: false, message: `Upload error: ${err.message}` });
+      }
+
+      return res.status(400).json({ success: false, message: err.message });
+    }
+    next();
+  });
+};
+
 router.post(
   '/',
   authMiddleware,
-  upload.single('file'),
+  handleUpload,
   createResumeValidation,
   asHandler(ResumeController.create)
 );
 router.put(
   '/',
   authMiddleware,
-  upload.single('file'),
+  handleUpload,
   updateResumeValidation,
   asHandler(ResumeController.update)
 );

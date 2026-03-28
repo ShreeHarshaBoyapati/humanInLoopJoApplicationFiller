@@ -6,6 +6,7 @@ import { EnhancedButton as Button } from '@repo/ui/button.tsx';
 import { EnhancedChip as Chip } from '@repo/ui/chip.tsx';
 import { EnhancedSelectDropdown as SelectDropdown } from '@repo/ui/select-dropdown.tsx';
 import { EnhancedTextInputArea as TextInputArea } from '@repo/ui/text-input-area.tsx';
+import { FileUploader } from '@repo/ui/file-uploader.tsx';
 import scrollbarStyles from '@repo/ui/scroll-bar.module.css';
 
 // API URL: In production, frontend and backend are on same origin
@@ -557,6 +558,42 @@ function App() {
               id="check-4"
               testId="check-4"
             />
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>File Uploader</h2>
+        <div className={styles.grid}>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Default (PDF, DOC, DOCX)</span>
+            <FileUploader
+              onFilesSelected={(files) => console.log('Selected files:', files)}
+              testId="file-uploader-default"
+            />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Custom Formats (Images)</span>
+            <FileUploader
+              acceptedFormats={['.jpg', '.jpeg', '.png', '.gif']}
+              maxFiles={3}
+              maxSizeMB={10}
+              onFilesSelected={(files) => console.log('Selected images:', files)}
+              testId="file-uploader-images"
+            />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Multiple Files</span>
+            <FileUploader
+              acceptedFormats={['.pdf', '.doc', '.docx']}
+              maxFiles={5}
+              onFilesSelected={(files) => console.log('Selected multiple:', files)}
+              testId="file-uploader-multiple"
+            />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Disabled State</span>
+            <FileUploader disabled={true} testId="file-uploader-disabled" />
           </div>
         </div>
       </section>

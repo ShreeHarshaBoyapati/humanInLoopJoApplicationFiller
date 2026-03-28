@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import styles from '../routes/style/settings.module.css';
 import { EnhancedButton, EnhancedTextField } from '@repo/ui';
 import AddIcon from '@mui/icons-material/Add';
@@ -8,6 +9,7 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import styleConstants from '@repo/ui/constants/style-constants.js';
 import type { Persona } from '@repo/shared-types';
 
@@ -16,6 +18,7 @@ const INITIAL_VISIBLE_COUNT = 2;
 type ConnectionStatus = { type: 'success' | 'error'; text: string } | null;
 
 export function PersonasSection() {
+  const navigate = useNavigate();
   const [isAddingPersona, setIsAddingPersona] = useState<boolean>(false);
   const [name, setName] = useState('');
   const [keywords, setKeywords] = useState('');
@@ -270,6 +273,17 @@ export function PersonasSection() {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  className={styles.settingsBtn}
+                  aria-label="View resumes"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate({ to: '/resume', search: { personaId: p.id, title: p.title } });
+                  }}
+                  title="View resumes"
+                >
+                  <ArticleOutlinedIcon fontSize="small" />
+                </button>
                 <button
                   className={styles.settingsBtn}
                   aria-label="Edit persona"

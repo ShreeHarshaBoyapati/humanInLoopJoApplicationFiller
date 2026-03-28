@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ResumeRouteImport } from './routes/resume'
 import { Route as RecentJobsRouteImport } from './routes/recent-jobs'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as NewUserRouteImport } from './routes/new-user'
@@ -21,6 +22,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResumeRoute = ResumeRouteImport.update({
+  id: '/resume',
+  path: '/resume',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RecentJobsRoute = RecentJobsRouteImport.update({
@@ -67,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/new-user': typeof NewUserRoute
   '/profile': typeof ProfileRoute
   '/recent-jobs': typeof RecentJobsRoute
+  '/resume': typeof ResumeRoute
   '/settings': typeof SettingsRoute
 }
 export interface FileRoutesByTo {
@@ -77,6 +84,7 @@ export interface FileRoutesByTo {
   '/new-user': typeof NewUserRoute
   '/profile': typeof ProfileRoute
   '/recent-jobs': typeof RecentJobsRoute
+  '/resume': typeof ResumeRoute
   '/settings': typeof SettingsRoute
 }
 export interface FileRoutesById {
@@ -88,6 +96,7 @@ export interface FileRoutesById {
   '/new-user': typeof NewUserRoute
   '/profile': typeof ProfileRoute
   '/recent-jobs': typeof RecentJobsRoute
+  '/resume': typeof ResumeRoute
   '/settings': typeof SettingsRoute
 }
 export interface FileRouteTypes {
@@ -100,6 +109,7 @@ export interface FileRouteTypes {
     | '/new-user'
     | '/profile'
     | '/recent-jobs'
+    | '/resume'
     | '/settings'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -110,6 +120,7 @@ export interface FileRouteTypes {
     | '/new-user'
     | '/profile'
     | '/recent-jobs'
+    | '/resume'
     | '/settings'
   id:
     | '__root__'
@@ -120,6 +131,7 @@ export interface FileRouteTypes {
     | '/new-user'
     | '/profile'
     | '/recent-jobs'
+    | '/resume'
     | '/settings'
   fileRoutesById: FileRoutesById
 }
@@ -131,6 +143,7 @@ export interface RootRouteChildren {
   NewUserRoute: typeof NewUserRoute
   ProfileRoute: typeof ProfileRoute
   RecentJobsRoute: typeof RecentJobsRoute
+  ResumeRoute: typeof ResumeRoute
   SettingsRoute: typeof SettingsRoute
 }
 
@@ -141,6 +154,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/resume': {
+      id: '/resume'
+      path: '/resume'
+      fullPath: '/resume'
+      preLoaderRoute: typeof ResumeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/recent-jobs': {
@@ -203,6 +223,7 @@ const rootRouteChildren: RootRouteChildren = {
   NewUserRoute: NewUserRoute,
   ProfileRoute: ProfileRoute,
   RecentJobsRoute: RecentJobsRoute,
+  ResumeRoute: ResumeRoute,
   SettingsRoute: SettingsRoute,
 }
 export const routeTree = rootRouteImport

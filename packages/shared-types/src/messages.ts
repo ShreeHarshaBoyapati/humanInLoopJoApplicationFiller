@@ -1,4 +1,11 @@
 import { GetJobParams, Job, JobPublic } from './job';
+import {
+  GetResumeParams,
+  CreateResumeParams,
+  UpdateResumeParams,
+  DeleteResumeParams,
+  GetResumeByIdParams,
+} from './resume';
 
 /**
  * Chrome extension message contracts.
@@ -39,4 +46,9 @@ export type ExtensionMessage =
   | { action: 'UPDATE_PERSONA'; payload: { id: string; title?: string; keywords?: string[] } }
   | { action: 'DELETE_PERSONA'; payload: { id: string } }
   | { action: 'GET_PERSONAS' }
-  | { action: 'SELECT_PERSONA'; payload: { id: string } };
+  | { action: 'SELECT_PERSONA'; payload: { id: string } }
+  | { action: 'GET_RESUMES'; payload?: GetResumeParams }
+  | { action: 'CREATE_RESUME'; payload: CreateResumeParams }
+  | { action: 'UPDATE_RESUME'; payload: UpdateResumeParams }
+  | { action: 'DELETE_RESUME'; payload: DeleteResumeParams }
+  | { action: 'GET_RESUME_BY_ID'; payload: GetResumeByIdParams };

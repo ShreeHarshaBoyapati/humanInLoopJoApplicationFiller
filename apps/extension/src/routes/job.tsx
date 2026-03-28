@@ -12,6 +12,7 @@ import { Box } from '@mui/material';
 import type { Job, JobList, JobPublic, ScrapedJob } from '@repo/shared-types';
 import styles from './style/job.module.css';
 import scrollStyles from '@repo/ui/scroll-bar.module.css';
+import styleConstants from '@repo/ui/constants/style-constants.js';
 
 interface JobFormData {
   companyName: string;
@@ -111,7 +112,9 @@ export const Route = createFileRoute('/job')({
     );
   },
   component: JobComponent,
-  pendingComponent: () => <div style={{ color: '#fff', padding: '1rem' }}>Loading job data...</div>,
+  pendingComponent: () => (
+    <div style={{ color: styleConstants.white700, padding: '1rem' }}>Loading job data...</div>
+  ),
   errorComponent: ErrorComponent,
 });
 

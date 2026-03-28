@@ -340,3 +340,44 @@
   gap: calc(var(--spacing) * 4);
   padding: calc(var(--spacing) * 4);
 }
+
+.resumeItemWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 2);
+}
+
+.resumeActions {
+  align-items: center;
+  display: flex;
+  gap: calc(var(--spacing) * 2);
+}
+
+.keywordsToggle {
+  align-items: center;
+  background: none;
+  border: none;
+  color: var(--white-700);
+  cursor: pointer;
+  display: flex;
+  font-size: 0.75rem;
+  gap: calc(var(--spacing) * 1);
+  padding: 0;
+}
+
+.keywordsToggle:hover {
+  color: var(--white-900);
+}
+
+.keywordsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--spacing) * 2);
+  padding-left: calc(var(--spacing) * 4);
+}
+
+.noKeywords {
+  color: var(--white-700);
+  font-size: 0.75rem;
+  padding-left: calc(var(--spacing) * 4);
+}
