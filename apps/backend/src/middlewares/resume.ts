@@ -8,6 +8,11 @@ const GetResumeByIdSchema = z.object({
   id: z.uuidv4('Invalid resume ID'),
 });
 
+// Schema for parsing a resume
+const ParseResumeSchema = z.object({
+  id: z.uuidv4('Invalid resume ID'),
+});
+
 // Schema for deleting a resume
 const DeleteResumeSchema = z.object({
   id: z.uuidv4('Invalid resume ID'),
@@ -23,12 +28,14 @@ const UpdateResumeSchema = z.object({
 const CreateResumeSchema = z.object({
   personaId: z.uuidv4('Invalid persona ID'),
   keywords: z.array(z.string()).optional(),
+  parsedData: z.record(z.string(), z.unknown()).optional(),
 });
 
 export type GetResumeByIdInput = z.input<typeof GetResumeByIdSchema>;
 export type DeleteResumeInput = z.input<typeof DeleteResumeSchema>;
 export type UpdateResumeInput = z.input<typeof UpdateResumeSchema>;
 export type CreateResumeInput = z.input<typeof CreateResumeSchema>;
+export type ParseResumeInput = z.input<typeof ParseResumeSchema>;
 
 export function getResumeByIdValidation(req: Request, res: Response, next: NextFunction) {
   try {
@@ -121,6 +128,9 @@ export function createResumeValidation(req: Request, res: Response, next: NextFu
         req.body.keywords = req.body.keywords.split(',').map((k: string) => k.trim());
       }
     }
+    if (req.body.parsedData) {
+      req.body.parsedData = JSON.parse(req.body.parsedData);
+    }
     req.body = CreateResumeSchema.parse(req.body);
     next();
   } catch (error) {
@@ -140,4 +150,42 @@ export function createResumeValidation(req: Request, res: Response, next: NextFu
     res.status(400).json(data);
     return;
   }
+}
+
+export function parseResumeValidation(req: Request, res: Response, next: NextFunction) {
+  try {
+    const parsed = ParseResumeSchema.parse(req.params);
+    (req as Request & { validatedParams: z.infer<typeof ParseResumeSchema> }).validatedParams =
+      parsed;
+    next();
+  } catch (error) {
+    if (error instanceof ZodError) {
+      const data: ApiResponse = {
+        success: false,
+        message: flattenZodErrorToString(error),
+      };
+      res.status(400).json(data);
+      return;
+    }
+
+    const data: ApiResponse = {
+      success: false,
+      message: 'Invalid input',
+    };
+    res.status(400).json(data);
+    return;
+  }
+}
+
+export function parseFileResumeValidation(req: Request, res: Response, next: NextFunction) {
+  // Just validate that file is present
+  if (!req.file) {
+    const data: ApiResponse = {
+      success: false,
+      message: 'File is required',
+    };
+    res.status(400).json(data);
+    return;
+  }
+  next();
 }

@@ -7,6 +7,7 @@ import {
   updateResumeValidation,
   deleteResumeValidation,
   getResumeByIdValidation,
+  parseFileResumeValidation,
 } from '../middlewares/resume.js';
 import { asHandler } from '../types/api.js';
 import type { Request, Response, NextFunction } from 'express';
@@ -71,6 +72,14 @@ router.put(
   asHandler(ResumeController.update)
 );
 router.delete('/', authMiddleware, deleteResumeValidation, asHandler(ResumeController.delete));
+router.post(
+  '/parse-file',
+  authMiddleware,
+  handleUpload,
+  parseFileResumeValidation,
+  asHandler(ResumeController.parseFile)
+);
+
 router.get('/:id', authMiddleware, getResumeByIdValidation, asHandler(ResumeController.getById));
 router.get('/', authMiddleware, asHandler(ResumeController.getAll));
 

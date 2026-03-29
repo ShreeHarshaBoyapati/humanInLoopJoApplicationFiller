@@ -29,6 +29,9 @@ export default class Resume {
   @Column('simple-array', { default: [] })
   keywords!: string[];
 
+  @Column('jsonb', { nullable: true })
+  parsedData!: Record<string, unknown> | null;
+
   @ManyToOne(() => Persona, (persona) => persona.resumes, { onDelete: 'CASCADE' })
   persona!: Persona;
 

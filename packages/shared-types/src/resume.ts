@@ -3,6 +3,39 @@
  * Used in API responses for resume CRUD operations.
  */
 
+export interface PersonalInfo {
+  name: string | null;
+  email: string | null;
+  phone: string | null;
+  location: string | null;
+  linkedin: string | null;
+}
+
+export interface Education {
+  degree: string | null;
+  institution: string | null;
+  year: string | null;
+}
+
+export interface Experience {
+  company: string | null;
+  role: string | null;
+  duration: string | null;
+  summary: string | null;
+}
+
+export interface ResumeData {
+  personal: PersonalInfo;
+  current_title: string | null;
+  years_experience: number | null;
+  summary: string | null;
+  skills: string[];
+  tools: string[];
+  education: Education[];
+  experience: Experience[];
+  keywords?: string[];
+}
+
 export interface ResumeMetadata {
   id: string;
   fileName: string;
@@ -31,6 +64,7 @@ export interface CreateResumeParams {
   personaId: string;
   file: FileDataPayload;
   keywords?: string[];
+  parsedData?: ResumeData;
 }
 
 export interface UpdateResumeParams {

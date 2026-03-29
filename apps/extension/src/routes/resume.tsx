@@ -1,6 +1,6 @@
 import { createFileRoute, ErrorComponent, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
-import type { ResumeMetadata, ApiResponse } from '@repo/shared-types';
+import type { ResumeMetadata, ApiResponse, ResumeData } from '@repo/shared-types';
 import styleConstants from '@repo/ui/constants/style-constants.js';
 import styles from './style/settings.module.css';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
@@ -11,7 +11,15 @@ import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import { EnhancedButton, FileUploader, EnhancedChip } from '@repo/ui';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import {
+  EnhancedButton,
+  FileUploader,
+  EnhancedChip,
+  EnhancedTextField,
+  EnhancedTooltipWithText,
+} from '@repo/ui';
+import { Box } from '@mui/material';
 
 export interface ResumeSearch {
   personaId?: string;
@@ -90,9 +98,93 @@ function ResumeComponent() {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [expandedKeywords, setExpandedKeywords] = useState<Set<string>>(new Set());
+  const [isParsing, setIsParsing] = useState<boolean>(false);
+  const [parsedData, setParsedData] = useState<ResumeData | null>(null);
+  const [keywords, setKeywords] = useState<string[]>([]);
+  const [keywordInput, setKeywordInput] = useState('');
+
+  // Computed step enables (similar to AiProvidersSection pattern)
+  const step2Enabled = selectedFiles.length > 0; // File selected, can parse
+  const step3Enabled = parsedData !== null; // File parsed, can save
 
   const handleFilesSelected = (files: File[]) => {
     setSelectedFiles(files);
+    // Reset parsed data when file changes
+    setParsedData(null);
+    setKeywords([]);
+  };
+
+  const handleParseFile = async () => {
+    if (selectedFiles.length === 0) {
+      setSaveStatus({ type: 'error', text: 'Please select a file to parse' });
+      return;
+    }
+
+    setIsParsing(true);
+    setSaveStatus(null);
+
+    try {
+      const file = selectedFiles[0] as File;
+      const reader = new FileReader();
+
+      reader.onload = async () => {
+        const base64 = reader.result as string;
+        const filePayload = {
+          name: file.name,
+          type: file.type,
+          size: file.size,
+          base64,
+        };
+
+        const response = await new Promise<ApiResponse<ResumeData>>((resolve) => {
+          chrome.runtime.sendMessage(
+            {
+              action: 'PARSE_FILE_RESUME',
+              payload: { file: filePayload },
+            },
+            (res: ApiResponse<ResumeData>) => {
+              resolve(res);
+            }
+          );
+        });
+
+        setIsParsing(false);
+
+        if (response.success && response.data) {
+          setKeywords(response.data.keywords || []);
+          if (response.data.keywords) {
+            delete response.data.keywords;
+          }
+          setParsedData(response.data);
+          setSaveStatus({ type: 'success', text: 'File parsed successfully' });
+        } else {
+          setSaveStatus({ type: 'error', text: response.message || 'Failed to parse file' });
+        }
+      };
+
+      reader.onerror = () => {
+        setSaveStatus({ type: 'error', text: 'Error reading file data' });
+        setIsParsing(false);
+      };
+
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.log('Error parsing file', error);
+      setSaveStatus({ type: 'error', text: 'An error occurred while parsing' });
+      setIsParsing(false);
+    }
+  };
+
+  const handleAddKeyword = () => {
+    const trimmed = keywordInput.trim();
+    if (!trimmed) return;
+    if (keywords.includes(trimmed)) return;
+    setKeywords((prev) => [...prev, trimmed]);
+    setKeywordInput('');
+  };
+
+  const handleDeleteKeyword = (index: number) => {
+    setKeywords((prev) => prev.filter((_, i) => i !== index));
   };
 
   const handleSave = async () => {
@@ -129,6 +221,8 @@ function ResumeComponent() {
               payload: {
                 personaId,
                 file: filePayload,
+                keywords: keywords.length > 0 ? keywords : undefined,
+                parsedData: parsedData || undefined,
               },
             },
             (res: ApiResponse<ResumeMetadata>) => {
@@ -141,6 +235,8 @@ function ResumeComponent() {
           setSaveStatus({ type: 'success', text: 'Resume uploaded successfully' });
           setResumes((prev) => [response.data!, ...prev]);
           setSelectedFiles([]);
+          setParsedData(null);
+          setKeywords([]);
           setIsAddingResume(false);
         } else {
           setSaveStatus({ type: 'error', text: response.message || 'Failed to upload resume' });
@@ -179,6 +275,9 @@ function ResumeComponent() {
 
   const resetForm = () => {
     setSelectedFiles([]);
+    setParsedData(null);
+    setKeywords([]);
+    setKeywordInput('');
     setIsAddingResume(false);
     setSaveStatus(null);
   };
@@ -208,30 +307,76 @@ function ResumeComponent() {
         { action: 'GET_RESUME_BY_ID', payload: { id: resumeId } },
         (res: {
           success: boolean;
-          data?: { array: number[]; contentType: string };
+          data?: { array?: number[]; contentType: string; text?: string };
           fileName?: string;
           message?: string;
         }) => {
           try {
             if (res?.success && res.data && res.fileName) {
-              const byteArray = new Uint8Array(res.data.array);
-              const blob = new Blob([byteArray], { type: res.data.contentType });
-              const url = URL.createObjectURL(blob);
-
               newWindow.document.title = res.fileName;
-              newWindow.document.body.style.margin = '0';
-              newWindow.document.body.style.padding = '0';
-              newWindow.document.body.style.overflow = 'hidden';
-              newWindow.document.body.style.backgroundColor = '#333';
 
-              const iframe = newWindow.document.createElement('iframe');
-              iframe.src = url;
-              iframe.style.width = '100vw';
-              iframe.style.height = '100vh';
-              iframe.style.border = 'none';
+              // Handle plain text content (TXT files)
+              if (res.data.text) {
+                newWindow.document.body.style.margin = '0';
+                newWindow.document.body.style.padding = '0';
+                newWindow.document.body.style.backgroundColor = '#1a1a1a';
+                const escapedText = res.data.text
+                  .replace(/&/g, '\x26amp;')
+                  .replace(/</g, '\x26lt;')
+                  .replace(/>/g, '\x26gt;');
+                newWindow.document.body.innerHTML = `
+                  <style>
+                    html, body {
+                      height: 100%;
+                      margin: 0;
+                      padding: 0;
+                      overflow: hidden;
+                    }
+                    pre {
+                      font-family: 'Courier New', monospace;
+                      white-space: pre-wrap;
+                      word-wrap: break-word;
+                      padding: 20px;
+                      margin: 0;
+                      color: #e0e0e0;
+                      background: #1a1a1a;
+                      height: 100%;
+                      box-sizing: border-box;
+                      overflow: auto;
+                    }
+                  </style>
+                  <pre>${escapedText}</pre>
+                `;
+                return;
+              }
 
-              newWindow.document.body.innerHTML = '';
-              newWindow.document.body.appendChild(iframe);
+              // Handle binary files (PDF, DOCX, etc.) with iframe
+              if (res.data.array) {
+                const byteArray = new Uint8Array(res.data.array);
+                const blob = new Blob([byteArray], { type: res.data.contentType });
+                const url = URL.createObjectURL(blob);
+
+                newWindow.document.body.style.margin = '0';
+                newWindow.document.body.style.padding = '0';
+                newWindow.document.body.style.backgroundColor = '#333';
+
+                const iframe = newWindow.document.createElement('iframe');
+                iframe.src = url;
+                iframe.style.width = '100vw';
+                iframe.style.height = '100vh';
+                iframe.style.border = 'none';
+
+                newWindow.document.body.innerHTML = '';
+                newWindow.document.body.appendChild(iframe);
+                return;
+              }
+
+              // If none of the above, show error
+              newWindow.close();
+              setSaveStatus({
+                type: 'error',
+                text: 'Failed to render document',
+              });
             } else {
               newWindow.close();
               setSaveStatus({
@@ -299,6 +444,7 @@ function ResumeComponent() {
       {isAddingResume && (
         <div className={styles.card}>
           <div className={styles.addProviderForm}>
+            {/* Step 1: File Upload */}
             <div className={styles.formField}>
               <FileUploader
                 onFilesSelected={handleFilesSelected}
@@ -309,15 +455,77 @@ function ResumeComponent() {
                     setSaveStatus(null);
                   }
                 }}
-                acceptedFormats={['.pdf', '.doc', '.docx']}
+                acceptedFormats={['.pdf', '.txt', '.docx']}
                 maxFiles={1}
                 maxSizeMB={10}
                 testId="resume-uploader"
               />
             </div>
-          </div>
-          <div className={styles.footer}>
-            {/* Save status */}
+
+            {/* Step 2: Parse Button */}
+            <div className={styles.formField}>
+              <div className={styles.testConnectionRow}>
+                <EnhancedButton
+                  colorTheme="secondary"
+                  className={styles.testBtn}
+                  onClick={handleParseFile}
+                  disabled={!step2Enabled || isParsing || isSaving}
+                  label={isParsing ? 'Parsing…' : 'Parse'}
+                  size="medium"
+                  startIcon={<AutoAwesomeIcon fontSize="small" />}
+                  customProps={{ props: { sx: { width: '100%', maxWidth: '100%' } } }}
+                />
+              </div>
+            </div>
+
+            {/* Step 3: Keywords Section (shown after parse) */}
+
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div className={styles.row} style={{ alignItems: 'flex-start' }}>
+                <div
+                  className={styles.formField}
+                  style={{ flexDirection: 'row', alignItems: 'end', width: '100%' }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <EnhancedTextField
+                      label="Keywords"
+                      variant={!step3Enabled || isSaving ? 'disabled' : 'default'}
+                      value={keywordInput}
+                      onChange={(e) => setKeywordInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddKeyword();
+                        }
+                      }}
+                      placeholder="Enter keywords"
+                      helperText="Press Enter to add"
+                    />
+                  </div>
+                  <EnhancedButton
+                    label="Add"
+                    colorTheme="secondary"
+                    onClick={handleAddKeyword}
+                    disabled={isSaving || !keywordInput.trim() || !step3Enabled}
+                  />
+                </div>
+              </div>
+              {step3Enabled && (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  {keywords.map((keyword, index) => (
+                    <EnhancedChip
+                      key={`keyword-${index}`}
+                      id={`keyword-chip-${index}`}
+                      testId={`keyword-chip-${index}`}
+                      label={keyword}
+                      showDeleteIcon={!isSaving}
+                      onDelete={() => handleDeleteKeyword(index)}
+                    />
+                  ))}
+                </Box>
+              )}
+            </Box>
+
             {saveStatus && (
               <div
                 className={`${styles.connectionResult} ${
@@ -332,16 +540,19 @@ function ResumeComponent() {
                 <span>{saveStatus.text}</span>
               </div>
             )}
+          </div>
 
+          {/* Step 4: Footer with Save and Cancel */}
+          <div className={styles.footer}>
             {/* Actions */}
             <div className={styles.formActions}>
               <EnhancedButton
-                label={isSaving ? 'Saving…' : 'Upload'}
+                label={isSaving ? 'Saving…' : 'Save'}
                 colorTheme="primary"
                 onClick={handleSave}
-                disabled={isSaving || selectedFiles.length === 0}
+                disabled={!step3Enabled || isSaving || isParsing}
               />
-              <EnhancedButton colorTheme="secondary" onClick={resetForm} label="Cancel" />
+              <EnhancedButton colorTheme="tertiary" onClick={resetForm} label="Cancel" />
             </div>
           </div>
         </div>
@@ -361,11 +572,43 @@ function ResumeComponent() {
             <div key={resume.id} className={styles.resumeItemWrapper}>
               <div className={styles.providerItem}>
                 <div className={styles.providerInfo}>
-                  <div className={styles.providerDetails}>
-                    <div className={styles.providerNameRow}>
-                      <span className={styles.providerName}>{resume.fileName}</span>
+                  <div
+                    className={styles.providerDetails}
+                    style={{ overflow: 'hidden', minWidth: 0 }}
+                  >
+                    <div
+                      className={styles.providerNameRow}
+                      style={{ overflow: 'hidden', minWidth: 0, width: '100%' }}
+                    >
+                      <EnhancedTooltipWithText
+                        description={resume.fileName}
+                        showIcon={false}
+                        placement="top-start"
+                        customProps={{
+                          childProps: {
+                            childrenBox: {
+                              sx: { minWidth: 0, flex: 1, overflow: 'hidden', width: '100%' },
+                            },
+                          },
+                        }}
+                      >
+                        <span
+                          className={styles.providerName}
+                          style={{
+                            display: 'block',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            width: '100%',
+                          }}
+                        >
+                          {resume.fileName}
+                        </span>
+                      </EnhancedTooltipWithText>
                     </div>
-                    <span className={styles.usageText}>{formatFileSize(resume.fileSize)}</span>
+                    <span className={styles.usageText} style={{ display: 'block' }}>
+                      {formatFileSize(resume.fileSize)}
+                    </span>
                   </div>
                 </div>
                 <div className={styles.resumeActions}>

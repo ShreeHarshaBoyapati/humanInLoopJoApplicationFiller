@@ -4,7 +4,7 @@ import { encryptText, decryptText } from '../utils/encryption.js';
 import { UpdateApiKeyInputType, TestConnectionInputType } from '../middlewares/api-key.js';
 import ApiKey from '../database/entities/api-key.js';
 import { ProviderName } from '../services/ai/registry.js';
-import { transitDecrypt } from '@repo/utils';
+import { transitDecrypt, transitEncrypt } from '@repo/utils';
 import { ApiKeyService } from '../services/api-key-service.js';
 import logger from '../utils/logger.js';
 
@@ -37,7 +37,16 @@ class ApiKeyController {
             key.toLowerCase().includes('secret') ||
             key.toLowerCase().includes('token')
           ) {
-            encryptedCredentials[key] = encryptText(value as string);
+            let plainText = value as string;
+            try {
+              if (plainText.includes(':')) {
+                const decryptedStr = await transitDecrypt(plainText, TRANSIT_SECRET);
+                if (decryptedStr) plainText = decryptedStr;
+              }
+            } catch {
+              // treat as plaintext
+            }
+            encryptedCredentials[key] = encryptText(plainText);
           } else {
             encryptedCredentials[key] = value as string;
           }
@@ -95,28 +104,51 @@ class ApiKeyController {
         where: { user: { id: userId } },
       });
 
-      const data = keys.map((k) => {
-        const { credentials, ...rest } = k;
-        const safeCredentials: Record<string, string> = {};
-        if (credentials) {
-          for (const [key, value] of Object.entries(credentials)) {
-            try {
-              if (
-                key.toLowerCase().includes('key') ||
-                key.toLowerCase().includes('secret') ||
-                key.toLowerCase().includes('token')
-              ) {
-                safeCredentials[key] = decryptText(value);
-              } else {
+      const data = await Promise.all(
+        keys.map(async (k) => {
+          const { credentials, ...rest } = k;
+          const safeCredentials: Record<string, string> = {};
+          if (credentials) {
+            for (const [key, value] of Object.entries(credentials)) {
+              try {
+                if (
+                  key.toLowerCase().includes('key') ||
+                  key.toLowerCase().includes('secret') ||
+                  key.toLowerCase().includes('token')
+                ) {
+                  let plainText = value;
+                  try {
+                    plainText = decryptText(value);
+                  } catch {
+                    // Fallback for old/transit-only strings
+                  }
+
+                  let isAlreadyTransit = false;
+                  try {
+                    if (plainText.includes(':')) {
+                      await transitDecrypt(plainText, TRANSIT_SECRET);
+                      isAlreadyTransit = true;
+                    }
+                  } catch {
+                    // Fallback for new strings
+                  }
+
+                  if (isAlreadyTransit) {
+                    safeCredentials[key] = plainText;
+                  } else {
+                    safeCredentials[key] = await transitEncrypt(plainText, TRANSIT_SECRET);
+                  }
+                } else {
+                  safeCredentials[key] = value;
+                }
+              } catch {
                 safeCredentials[key] = value;
               }
-            } catch {
-              safeCredentials[key] = value;
             }
           }
-        }
-        return { ...rest, credentials: safeCredentials };
-      });
+          return { ...rest, credentials: safeCredentials };
+        })
+      );
 
       res.status(200).json({
         success: true,

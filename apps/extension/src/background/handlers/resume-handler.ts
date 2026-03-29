@@ -9,6 +9,7 @@ import type {
   UpdateResumeParams,
   DeleteResumeParams,
   GetResumeByIdParams,
+  ResumeData,
 } from '@repo/shared-types';
 
 /**
@@ -54,6 +55,10 @@ export function handleResumeMessage(
 
       if (payload.keywords && payload.keywords.length > 0) {
         formData.append('keywords', JSON.stringify(payload.keywords));
+      }
+
+      if (payload.parsedData) {
+        formData.append('parsedData', JSON.stringify(payload.parsedData));
       }
 
       api
@@ -139,30 +144,48 @@ export function handleResumeMessage(
       .then((response) => {
         const { data } = response;
         if (data.success && data.data) {
-          // The file is returned as base64 string in JSON response
-          const resumeData = data.data as ResumeFull & { file: { type: string; data: number[] } };
-          const fileData = resumeData.file;
+          const resumeData = data.data as ResumeFull & {
+            file?: { type: string; data: number[] };
+            text?: string;
+            contentType?: string;
+          };
 
-          // Convert array buffer to Uint8Array
-          // [Removed unused byteArray]
-
-          // Determine content type based on file extension
-          const fileName = resumeData.fileName.toLowerCase();
-          let contentType = 'application/octet-stream';
-          if (fileName.endsWith('.pdf')) {
-            contentType = 'application/pdf';
-          } else if (fileName.endsWith('.doc')) {
-            contentType = 'application/msword';
-          } else if (fileName.endsWith('.docx')) {
-            contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+          // Check if backend returned text (for TXT files)
+          if (resumeData.text) {
+            sendResponse({
+              success: true,
+              data: { text: resumeData.text },
+              fileName: resumeData.fileName,
+              contentType: 'text/plain',
+            });
+            return;
           }
 
-          // Send the raw array data and content type to the frontend to construct the Blob
-          sendResponse({
-            success: true,
-            data: { array: fileData.data, contentType },
-            fileName: resumeData.fileName,
-          });
+          // For PDF, DOCX and other binary files
+          if (resumeData.file) {
+            const fileData = resumeData.file;
+
+            // Determine content type based on file extension
+            const fileName = resumeData.fileName.toLowerCase();
+            let contentType = 'application/octet-stream';
+            if (fileName.endsWith('.pdf')) {
+              contentType = 'application/pdf';
+            } else if (fileName.endsWith('.doc')) {
+              contentType = 'application/msword';
+            } else if (fileName.endsWith('.docx')) {
+              contentType =
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+            } else if (fileName.endsWith('.txt')) {
+              contentType = 'text/plain';
+            }
+
+            // Send the raw array data and content type to the frontend to construct the Blob
+            sendResponse({
+              success: true,
+              data: { array: fileData.data, contentType },
+              fileName: resumeData.fileName,
+            });
+          }
         } else {
           sendResponse({ success: false, message: data.message || 'Failed to get resume' });
         }
@@ -171,6 +194,36 @@ export function handleResumeMessage(
         console.error('Resume fetch error:', error);
         sendResponse({ success: false, message: error.response?.data?.message || error.message });
       });
+
+    return true;
+  }
+
+  if (message.action === 'PARSE_FILE_RESUME') {
+    (async () => {
+      const payload = message.payload as {
+        file: { name: string; type: string; size: number; base64: string };
+      };
+      const formData = new FormData();
+
+      const fileResponse = await fetch(payload.file.base64);
+      const blob = await fileResponse.blob();
+      formData.append('file', blob, payload.file.name);
+
+      api
+        .post<ApiResponse<ResumeData>>('/resume/parse-file', formData)
+        .then((response) => {
+          const { data } = response;
+          if (data.success) {
+            sendResponse({ success: true, data: data.data, message: data.message });
+          } else {
+            sendResponse({ success: false, message: data.message || 'Failed to parse file' });
+          }
+        })
+        .catch((error: AxiosError<ApiResponse>) => {
+          console.error('File parse error:', error);
+          sendResponse({ success: false, message: error.response?.data?.message || error.message });
+        });
+    })();
 
     return true;
   }

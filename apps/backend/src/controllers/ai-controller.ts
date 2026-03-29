@@ -4,6 +4,9 @@ import { getApiKeyRepository } from '../database/repositories/index.js';
 import { decryptText } from '../utils/encryption.js';
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
+import { transitDecrypt } from '@repo/utils';
+
+const TRANSIT_SECRET = process.env.TRANSIT_SECRET ?? 'jfp-default-transit-secret-change-in-prod';
 
 class AiController {
   async analyzeKeywords(
@@ -44,11 +47,21 @@ class AiController {
               key.toLowerCase().includes('secret') ||
               key.toLowerCase().includes('token'))
           ) {
+            let plainText = value;
             try {
-              decryptedCredentials[key] = decryptText(value);
+              plainText = decryptText(value);
             } catch {
-              decryptedCredentials[key] = value;
+              // Fallback
             }
+            if (plainText.includes(':')) {
+              try {
+                const unwrapped = await transitDecrypt(plainText, TRANSIT_SECRET);
+                if (unwrapped) plainText = unwrapped;
+              } catch {
+                // Not transit encrypted
+              }
+            }
+            decryptedCredentials[key] = plainText;
           } else {
             decryptedCredentials[key] = value as string;
           }

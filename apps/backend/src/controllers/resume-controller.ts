@@ -7,6 +7,9 @@ import type {
   CreateResumeInput,
 } from '../middlewares/resume.js';
 import { ApiResponse } from '@repo/shared-types';
+import type { ResumeData } from '@repo/shared-types';
+import { parseFile } from '../utils/file-parser.js';
+import { parseResume as parseResumeWithAI } from '../services/resume-parser.js';
 
 interface ResumeMetadataResponse {
   id: string;
@@ -69,12 +72,14 @@ class ResumeController {
 
     // Get keywords from body (already parsed by middleware)
     const keywords = req.body.keywords || [];
+    const parsedData = req.body.parsedData || null;
 
     const resume = resumeRepository.create({
       file: req.file.buffer,
       fileName: req.file.originalname,
       fileSize: req.file.size,
       keywords,
+      parsedData,
       persona,
     });
 
@@ -266,6 +271,26 @@ class ResumeController {
       return;
     }
 
+    // Determine file extension
+    const fileName = resume.fileName.toLowerCase();
+    const extension = fileName.split('.').pop();
+
+    // For TXT files, return text content for browser viewing
+    if (extension === 'txt') {
+      const textContent = resume.file.toString('utf-8');
+      const data: ApiResponse<{ text: string; fileName: string; contentType: string }> = {
+        success: true,
+        data: {
+          text: textContent,
+          fileName: resume.fileName,
+          contentType: 'text/plain',
+        },
+      };
+      res.status(200).json(data);
+      return;
+    }
+
+    // For PDF, DOCX, and other binary files, return raw file data
     const data: ApiResponse<ResumeFullResponse> = {
       success: true,
       data: {
@@ -277,6 +302,55 @@ class ResumeController {
         createdAt: resume.createdAt,
         updatedAt: resume.updatedAt,
       },
+    };
+    res.status(200).json(data);
+  }
+
+  async parseFile(
+    req: AuthenticatedTypedRequest<null> & { file?: Express.Multer.File },
+    res: Response
+  ) {
+    const userId = req.userId;
+
+    if (!req.file) {
+      const data: ApiResponse = {
+        success: false,
+        message: 'File is required',
+      };
+      res.status(400).json(data);
+      return;
+    }
+
+    // Extract text from file
+    let extractedText = '';
+    try {
+      extractedText = await parseFile(req.file.buffer, req.file.originalname);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to parse file';
+      const data: ApiResponse = {
+        success: false,
+        message: errorMessage,
+      };
+      res.status(400).json(data);
+      return;
+    }
+
+    // Parse resume using AI (uses user's active API key)
+    const parseResult = await parseResumeWithAI(extractedText, userId);
+
+    if (!parseResult.success) {
+      const data: ApiResponse = {
+        success: false,
+        message: parseResult.message,
+      };
+      res.status(500).json(data);
+      return;
+    }
+
+    const data: ApiResponse<ResumeData> = {
+      success: true,
+      message: 'File parsed successfully',
+      data: parseResult.data as ResumeData,
     };
     res.status(200).json(data);
   }

@@ -231,7 +231,9 @@
 .providerInfo {
   align-items: center;
   display: flex;
+  flex: 1;
   gap: calc(var(--spacing) * 4);
+  min-width: 0;
 }
 
 .providerIcon {
@@ -251,20 +253,27 @@
 
 .providerDetails {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: calc(var(--spacing) * 1);
+  min-width: 0;
 }
 
 .providerNameRow {
   align-items: center;
   display: flex;
   gap: calc(var(--spacing) * 2);
+  min-width: 0;
 }
 
 .providerName {
   color: var(--white-900);
   font-size: 0.9rem;
   font-weight: 700;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .activeTag {
@@ -304,6 +313,7 @@
   display: flex;
   flex-direction: column;
   gap: calc(var(--spacing) * 3);
+  width: 100%;
 }
 
 .connectionResult {
@@ -376,8 +386,33 @@
   padding-left: calc(var(--spacing) * 4);
 }
 
+.parsedKeywordsSection {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 2);
+  margin-top: calc(var(--spacing) * 2);
+}
+
+.parsedKeywordsSection .keywordsContainer {
+  padding-left: 0;
+}
+
 .noKeywords {
   color: var(--white-700);
   font-size: 0.75rem;
   padding-left: calc(var(--spacing) * 4);
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
