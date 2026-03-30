@@ -11,3 +11,4 @@ export * from './chip';
 export * from './accordion';
 export * from './action-card';
 export * from './file-uploader';
+export * from './stepper';

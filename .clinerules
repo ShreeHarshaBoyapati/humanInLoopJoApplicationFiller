@@ -1,0 +1,10 @@
+# Project Rules
+- Create the file only with kebab-case formate
+- don't add the inline css, add it into the module.css
+
+## Terminal Commands
+
+- Do NOT run terminal commands directly using `execute_command` tool.
+- Instead, provide the commands at the end of each task for the user to run themselves.
+- Present commands in a clear, copy-paste friendly format (e.g., in code blocks).
+- Explain what each command does before presenting it.

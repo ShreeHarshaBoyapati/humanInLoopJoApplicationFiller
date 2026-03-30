@@ -67,6 +67,7 @@ const GetJobsSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(10),
 
   // Filtering
+  id: z.uuid('Invalid job ID').optional(),
   status: z.enum(['draft', 'active', 'archived']).optional(),
   persona: z.string().optional(),
 

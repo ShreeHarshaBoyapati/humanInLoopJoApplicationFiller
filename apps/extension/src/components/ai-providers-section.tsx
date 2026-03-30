@@ -3,7 +3,7 @@ import { EnhancedButton, EnhancedSelectDropdown, EnhancedTextField } from '@repo
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
-import { ConfiguredProviders } from './ConfiguredProviders';
+import { ConfiguredProviders } from './configured-providers';
 import styles from '../routes/style/settings.module.css';
 
 type ConnectionStatus = { type: 'success' | 'error'; text: string } | null;

@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import styles from '../routes/style/settings.module.css';
-import { EnhancedButton, EnhancedTextField } from '@repo/ui';
+import { EnhancedButton, EnhancedTextField, EnhancedTooltipWithText } from '@repo/ui';
 import AddIcon from '@mui/icons-material/Add';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
@@ -264,7 +264,22 @@ export function PersonasSection() {
               <div className={styles.providerInfo}>
                 <div className={styles.providerDetails}>
                   <div className={styles.providerNameRow}>
-                    <span className={styles.providerName}>{formatName(p.title)}</span>
+                    <span className={styles.providerNameWrapper}>
+                      <EnhancedTooltipWithText
+                        description={formatName(p.title)}
+                        showIcon={false}
+                        placement="top-start"
+                        customProps={{
+                          childProps: {
+                            childrenBox: {
+                              sx: { minWidth: 0, flex: 1 },
+                            },
+                          },
+                        }}
+                      >
+                        <span className={styles.providerName}>{formatName(p.title)}</span>
+                      </EnhancedTooltipWithText>
+                    </span>
                     {p.active && <span className={styles.activeTag}>ACTIVE</span>}
                   </div>
                   <span className={styles.usageText}>

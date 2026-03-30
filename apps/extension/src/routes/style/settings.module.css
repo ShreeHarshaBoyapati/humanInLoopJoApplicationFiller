@@ -262,18 +262,30 @@
 .providerNameRow {
   align-items: center;
   display: flex;
+  flex-wrap: nowrap;
   gap: calc(var(--spacing) * 2);
   min-width: 0;
+  overflow: hidden;
+  width: 100%;
+}
+
+.providerNameWrapper {
+  display: block;
+  flex: 1;
+  min-width: 0;
+  overflow: visible;
 }
 
 .providerName {
   color: var(--white-900);
+  display: block;
   font-size: 0.9rem;
   font-weight: 700;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  width: 100%;
 }
 
 .activeTag {

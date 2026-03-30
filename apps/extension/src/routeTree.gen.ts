@@ -16,6 +16,7 @@ import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as NewUserRouteImport } from './routes/new-user'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as JobRouteImport } from './routes/job'
+import { Route as AutofillRouteImport } from './routes/autofill'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -54,6 +55,11 @@ const JobRoute = JobRouteImport.update({
   path: '/job',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AutofillRoute = AutofillRouteImport.update({
+  id: '/autofill',
+  path: '/autofill',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutRoute = AboutRouteImport.update({
   id: '/about',
   path: '/about',
@@ -68,6 +74,7 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/autofill': typeof AutofillRoute
   '/job': typeof JobRoute
   '/login': typeof LoginRoute
   '/new-user': typeof NewUserRoute
@@ -79,6 +86,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/autofill': typeof AutofillRoute
   '/job': typeof JobRoute
   '/login': typeof LoginRoute
   '/new-user': typeof NewUserRoute
@@ -91,6 +99,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
+  '/autofill': typeof AutofillRoute
   '/job': typeof JobRoute
   '/login': typeof LoginRoute
   '/new-user': typeof NewUserRoute
@@ -104,6 +113,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/about'
+    | '/autofill'
     | '/job'
     | '/login'
     | '/new-user'
@@ -115,6 +125,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/about'
+    | '/autofill'
     | '/job'
     | '/login'
     | '/new-user'
@@ -126,6 +137,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/about'
+    | '/autofill'
     | '/job'
     | '/login'
     | '/new-user'
@@ -138,6 +150,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
+  AutofillRoute: typeof AutofillRoute
   JobRoute: typeof JobRoute
   LoginRoute: typeof LoginRoute
   NewUserRoute: typeof NewUserRoute
@@ -198,6 +211,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof JobRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/autofill': {
+      id: '/autofill'
+      path: '/autofill'
+      fullPath: '/autofill'
+      preLoaderRoute: typeof AutofillRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about': {
       id: '/about'
       path: '/about'
@@ -218,6 +238,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
+  AutofillRoute: AutofillRoute,
   JobRoute: JobRoute,
   LoginRoute: LoginRoute,
   NewUserRoute: NewUserRoute,

@@ -129,7 +129,7 @@ function RootComponent() {
           <span>Jobs</span>
         </Link>
         <Link
-          to="/job"
+          to="/autofill"
           className={styles.navItem}
           activeProps={{ className: `${styles.navItem} ${styles.navItemActive}` }}
         >

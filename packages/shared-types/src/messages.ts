@@ -53,4 +53,5 @@ export type ExtensionMessage =
   | { action: 'UPDATE_RESUME'; payload: UpdateResumeParams }
   | { action: 'DELETE_RESUME'; payload: DeleteResumeParams }
   | { action: 'GET_RESUME_BY_ID'; payload: GetResumeByIdParams }
-  | { action: 'PARSE_FILE_RESUME'; payload: { file: FileDataPayload } };
+  | { action: 'PARSE_FILE_RESUME'; payload: { file: FileDataPayload } }
+  | { action: 'ANALYZE_RESUME'; payload: { jobId: string; resumeId: string } };

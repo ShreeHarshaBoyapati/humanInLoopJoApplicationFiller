@@ -10,9 +10,11 @@
 .header {
   align-items: center;
   display: flex;
-  justify-content: space-between;
+  gap: calc(var(--spacing) * 6);
+  margin: 0;
   padding: calc(var(--spacing) * 5);
   padding-bottom: 0;
+  padding-right: calc(calc(var(--spacing) * 5) - 8px);
 }
 
 .title {
@@ -112,4 +114,64 @@
   font-size: 0.8rem;
   margin-top: 0.25rem;
   padding: 0 1.25rem;
+}
+
+/* ─── Stepper Container ─── */
+
+.stepperContainer {
+  margin: calc(var(--spacing) * 4) 0;
+  padding: 0 calc(var(--spacing) * 4);
+}
+
+/* ─── Step Content Placeholders ─── */
+
+.stepContent {
+  align-items: center;
+  color: var(--white-700);
+  display: flex;
+  flex-direction: column;
+  padding: calc(var(--spacing) * 8);
+  text-align: center;
+}
+
+.stepTitle {
+  color: var(--white-900);
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: calc(var(--spacing) * 4);
+}
+
+.stepText {
+  color: var(--white-700);
+  font-size: 0.875rem;
+}
+
+.stepJobId {
+  color: var(--white-700);
+  font-size: 0.875rem;
+  margin-top: calc(var(--spacing) * 2);
+}
+
+/* ─── Autofill Buttons ─── */
+
+.autofillButtons {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.backBtn {
+  align-items: center;
+  background: none;
+  border: none;
+  color: var(--white-900);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  padding: 0;
+  transition: opacity 0.2s;
+}
+
+.backBtn:hover {
+  opacity: 0.8;
 }

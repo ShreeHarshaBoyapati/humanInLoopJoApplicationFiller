@@ -1,26 +1,48 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
-import { AiProvidersSection } from '../components/AiProvidersSection';
+import { AiProvidersSection } from '../components/ai-providers-section';
 import styles from './style/settings.module.css';
-import { PersonasSection } from '../components/PersonasSection';
+import { PersonasSection } from '../components/personas-section';
+
+export interface SettingsSearch {
+  returnTo?: string;
+  jobId?: string;
+  step?: number;
+  mode?: 'autofill' | 'update';
+}
 
 export const Route = createFileRoute('/settings')({
+  validateSearch: (search: Record<string, unknown>): SettingsSearch => {
+    return {
+      returnTo: search.returnTo as string | undefined,
+      jobId: search.jobId as string | undefined,
+      step: search.step ? Number(search.step) : undefined,
+    };
+  },
   component: SettingsComponent,
 });
 
 function SettingsComponent() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
+
+  const handleBack = () => {
+    if (search.returnTo) {
+      navigate({
+        to: search.returnTo,
+        search: { jobId: search.jobId, step: search.step } as Record<string, unknown>,
+      });
+    } else {
+      navigate({ to: '/' });
+    }
+  };
 
   return (
     <div className={styles.container}>
       {/* Header */}
       <div className={styles.header}>
-        <button
-          className={styles.backBtn}
-          onClick={() => navigate({ to: '/' })}
-          aria-label="Go back"
-        >
+        <button className={styles.backBtn} onClick={handleBack} aria-label="Go back">
           <ArrowBackIcon />
         </button>
         <h1 className={styles.headerTitle}>Settings</h1>
