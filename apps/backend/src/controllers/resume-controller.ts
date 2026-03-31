@@ -7,18 +7,9 @@ import type {
   CreateResumeInput,
 } from '../middlewares/resume.js';
 import { ApiResponse } from '@repo/shared-types';
-import type { ResumeData } from '@repo/shared-types';
+import type { ResumeData, ResumeMetadata } from '@repo/shared-types';
 import { parseFile } from '../utils/file-parser.js';
 import { parseResume as parseResumeWithAI } from '../services/resume-parser.js';
-
-interface ResumeMetadataResponse {
-  id: string;
-  fileName: string;
-  fileSize: number;
-  keywords: string[];
-  createdAt: Date;
-  updatedAt: Date;
-}
 
 interface ResumeFullResponse {
   id: string;
@@ -91,7 +82,7 @@ class ResumeController {
 
     await resumeRepository.save(resume);
 
-    const data: ApiResponse<ResumeMetadataResponse> = {
+    const data: ApiResponse<ResumeMetadata> = {
       success: true,
       message: 'Resume created successfully',
       data: {
@@ -99,6 +90,7 @@ class ResumeController {
         fileName: resume.fileName,
         fileSize: resume.fileSize,
         keywords: resume.keywords,
+        active: resume.active,
         createdAt: resume.createdAt,
         updatedAt: resume.updatedAt,
       },
@@ -152,13 +144,14 @@ class ResumeController {
 
     await resumeRepository.save(resume);
 
-    const data: ApiResponse<ResumeMetadataResponse> = {
+    const data: ApiResponse<ResumeMetadata> = {
       success: true,
       message: 'Resume updated successfully',
       data: {
         id: resume.id,
         fileName: resume.fileName,
         fileSize: resume.fileSize,
+        active: resume.active,
         keywords: resume.keywords,
         createdAt: resume.createdAt,
         updatedAt: resume.updatedAt,
@@ -222,6 +215,7 @@ class ResumeController {
         'resume.fileName',
         'resume.fileSize',
         'resume.keywords',
+        'resume.active',
         'resume.createdAt',
         'resume.updatedAt',
       ]);
@@ -232,16 +226,17 @@ class ResumeController {
 
     const resumes = await queryBuilder.getMany();
 
-    const resumeResponses: ResumeMetadataResponse[] = resumes.map((r) => ({
+    const resumeResponses: ResumeMetadata[] = resumes.map((r) => ({
       id: r.id,
       fileName: r.fileName,
       fileSize: r.fileSize,
       keywords: r.keywords,
+      active: r.active,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
     }));
 
-    const data: ApiResponse<ResumeMetadataResponse[]> = {
+    const data: ApiResponse<ResumeMetadata[]> = {
       success: true,
       data: resumeResponses,
     };
@@ -397,7 +392,7 @@ class ResumeController {
     resume.active = true;
     await resumeRepository.save(resume);
 
-    const data: ApiResponse<ResumeMetadataResponse> = {
+    const data: ApiResponse<ResumeMetadata> = {
       success: true,
       message: 'Resume set as active successfully',
       data: {
@@ -405,6 +400,7 @@ class ResumeController {
         fileName: resume.fileName,
         fileSize: resume.fileSize,
         keywords: resume.keywords,
+        active: resume.active,
         createdAt: resume.createdAt,
         updatedAt: resume.updatedAt,
       },

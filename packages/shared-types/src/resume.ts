@@ -66,7 +66,7 @@ export interface ResumeMetadata {
   fileName: string;
   fileSize: number;
   keywords: string[];
-  active?: boolean;
+  active: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
