@@ -5,6 +5,7 @@ import {
   UpdateResumeParams,
   DeleteResumeParams,
   GetResumeByIdParams,
+  SetActiveResumeParams,
   FileDataPayload,
 } from './resume';
 
@@ -54,4 +55,5 @@ export type ExtensionMessage =
   | { action: 'DELETE_RESUME'; payload: DeleteResumeParams }
   | { action: 'GET_RESUME_BY_ID'; payload: GetResumeByIdParams }
   | { action: 'PARSE_FILE_RESUME'; payload: { file: FileDataPayload } }
-  | { action: 'ANALYZE_RESUME'; payload: { jobId: string; resumeId: string } };
+  | { action: 'ANALYZE_RESUME'; payload: { jobId: string; resumeId: string } }
+  | { action: 'SET_ACTIVE_RESUME'; payload: SetActiveResumeParams };

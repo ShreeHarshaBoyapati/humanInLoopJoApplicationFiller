@@ -29,6 +29,9 @@ export default class Resume {
   @Column('simple-array', { default: [] })
   keywords!: string[];
 
+  @Column('boolean', { default: false })
+  active!: boolean;
+
   @Column('jsonb', { nullable: true })
   parsedData!: Record<string, unknown> | null;
 

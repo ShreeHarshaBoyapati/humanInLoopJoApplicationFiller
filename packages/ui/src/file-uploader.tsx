@@ -6,6 +6,11 @@ import CloseIcon from '@mui/icons-material/Close';
 import { EnhancedButton } from './button';
 import styleConstants from './constants/style-constants';
 
+export interface FileDisplayFile {
+  name: string;
+  size: number;
+}
+
 export interface FileUploaderProps {
   onFilesSelected?: (files: File[]) => void;
   onError?: (error: string) => void;
@@ -14,6 +19,8 @@ export interface FileUploaderProps {
   maxSizeMB?: number;
   testId?: string;
   disabled?: boolean;
+  showFilesOnly?: boolean;
+  displayFiles?: FileDisplayFile[];
   customProps?: {
     props?: Omit<React.HTMLAttributes<HTMLDivElement>, 'id' | 'onClick' | 'disabled' | 'className'>;
     childProps?: {
@@ -120,6 +127,8 @@ export const FileUploader = ({
   maxSizeMB = 5,
   testId = '',
   disabled = false,
+  showFilesOnly = false,
+  displayFiles,
   customProps,
 }: FileUploaderProps) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -228,72 +237,79 @@ export const FileUploader = ({
 
   const formatLabel = acceptedFormats.map((f) => f.replace('.', '').toUpperCase()).join(', ');
 
+  // Determine which files to show
+  const filesToShow = showFilesOnly && displayFiles ? displayFiles : selectedFiles;
+
   return (
     <Box data-testid={testId} {...(customProps?.props || {})}>
-      <UploadContainer
-        isDragging={isDragging}
-        disabled={disabled}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onClick={handleContainerClick}
-        {...(customProps?.childProps?.uploadContainer || {})}
-      >
-        <IconWrapper {...(customProps?.childProps?.iconWrapper || {})}>
-          <CloudUploadIcon sx={{ fontSize: 48 }} />
-        </IconWrapper>
+      {!showFilesOnly && (
+        <>
+          <UploadContainer
+            isDragging={isDragging}
+            disabled={disabled}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={handleContainerClick}
+            {...(customProps?.childProps?.uploadContainer || {})}
+          >
+            <IconWrapper {...(customProps?.childProps?.iconWrapper || {})}>
+              <CloudUploadIcon sx={{ fontSize: 48 }} />
+            </IconWrapper>
 
-        <Typography
-          variant="body1"
-          sx={{
-            color: styleConstants.white700,
-            textAlign: 'center',
-          }}
-        >
-          Drag & drop files here, or click to browse
-        </Typography>
+            <Typography
+              variant="body1"
+              sx={{
+                color: styleConstants.white700,
+                textAlign: 'center',
+              }}
+            >
+              Drag & drop files here, or click to browse
+            </Typography>
 
-        <Typography
-          variant="body2"
-          sx={{
-            color: styleConstants.grey500,
-            textAlign: 'center',
-          }}
-        >
-          Supported formats: {formatLabel}
-        </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: styleConstants.grey500,
+                textAlign: 'center',
+              }}
+            >
+              Supported formats: {formatLabel}
+            </Typography>
 
-        <Typography
-          variant="body2"
-          sx={{
-            color: styleConstants.grey500,
-            textAlign: 'center',
-          }}
-        >
-          Max file size: {maxSizeMB}MB
-        </Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: styleConstants.grey500,
+                textAlign: 'center',
+              }}
+            >
+              Max file size: {maxSizeMB}MB
+            </Typography>
 
-        <EnhancedButton
-          label="Browse Files"
-          colorTheme="secondary"
-          onClick={handleButtonClick}
-          disabled={disabled}
-          {...(customProps?.childProps?.button || {})}
-        />
-      </UploadContainer>
+            <EnhancedButton
+              label="Browse Files"
+              colorTheme="secondary"
+              onClick={handleButtonClick}
+              disabled={disabled}
+              {...(customProps?.childProps?.button || {})}
+            />
+          </UploadContainer>
 
-      <HiddenInput
-        ref={fileInputRef}
-        type="file"
-        accept={acceptedFormats.join(',')}
-        onChange={handleFileChange}
-        disabled={disabled}
-        multiple={maxFiles > 1}
-      />
+          <HiddenInput
+            ref={fileInputRef}
+            type="file"
+            accept={acceptedFormats.join(',')}
+            onChange={handleFileChange}
+            disabled={disabled}
+            multiple={maxFiles > 1}
+          />
+        </>
+      )}
 
-      {selectedFiles.length > 0 && (
+      {(selectedFiles.length > 0 || (showFilesOnly && displayFiles && displayFiles.length > 0)) && (
         <FilesList {...(customProps?.childProps?.filesList || {})}>
-          {selectedFiles.map((file, index) => (
+          {filesToShow.map((file, index) => (
             <FileItem key={`${file.name}-${index}`} {...(customProps?.childProps?.fileItem || {})}>
               <FileInfo {...(customProps?.childProps?.fileInfo || {})}>
                 <InsertDriveFileIcon
@@ -324,16 +340,18 @@ export const FileUploader = ({
                   </Typography>
                 </Box>
               </FileInfo>
-              <RemoveButton
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRemoveFile(index);
-                }}
-                type="button"
-                {...(customProps?.childProps?.removeButton || {})}
-              >
-                <CloseIcon sx={{ fontSize: 18 }} />
-              </RemoveButton>
+              {!showFilesOnly && (
+                <RemoveButton
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRemoveFile(index);
+                  }}
+                  type="button"
+                  {...(customProps?.childProps?.removeButton || {})}
+                >
+                  <CloseIcon sx={{ fontSize: 18 }} />
+                </RemoveButton>
+              )}
             </FileItem>
           ))}
         </FilesList>

@@ -74,6 +74,11 @@ class ResumeController {
     const keywords = req.body.keywords || [];
     const parsedData = req.body.parsedData || null;
 
+    // Check if this is the first resume for this persona
+    const existingResumesCount = await resumeRepository.count({
+      where: { persona: { id: personaId } },
+    });
+
     const resume = resumeRepository.create({
       file: req.file.buffer,
       fileName: req.file.originalname,
@@ -81,6 +86,7 @@ class ResumeController {
       keywords,
       parsedData,
       persona,
+      active: existingResumesCount === 0,
     });
 
     await resumeRepository.save(resume);
@@ -351,6 +357,57 @@ class ResumeController {
       success: true,
       message: 'File parsed successfully',
       data: parseResult.data as ResumeData,
+    };
+    res.status(200).json(data);
+  }
+
+  async setActive(req: AuthenticatedTypedRequest<{ id: string }>, res: Response) {
+    const resumeRepository = getResumeRepository();
+
+    const userId = req.userId;
+    const { id } = req.body;
+
+    const resume = await resumeRepository.findOne({
+      where: { id },
+      relations: ['persona', 'persona.user'],
+    });
+
+    if (!resume) {
+      const data: ApiResponse = {
+        success: false,
+        message: 'Resume not found',
+      };
+      res.status(404).json(data);
+      return;
+    }
+
+    if (resume.persona.user.id !== userId) {
+      const data: ApiResponse = {
+        success: false,
+        message: 'You are not authorized to update this resume',
+      };
+      res.status(403).json(data);
+      return;
+    }
+
+    // Set all resumes of this persona to inactive
+    await resumeRepository.update({ persona: { id: resume.persona.id } }, { active: false });
+
+    // Set the selected resume to active
+    resume.active = true;
+    await resumeRepository.save(resume);
+
+    const data: ApiResponse<ResumeMetadataResponse> = {
+      success: true,
+      message: 'Resume set as active successfully',
+      data: {
+        id: resume.id,
+        fileName: resume.fileName,
+        fileSize: resume.fileSize,
+        keywords: resume.keywords,
+        createdAt: resume.createdAt,
+        updatedAt: resume.updatedAt,
+      },
     };
     res.status(200).json(data);
   }

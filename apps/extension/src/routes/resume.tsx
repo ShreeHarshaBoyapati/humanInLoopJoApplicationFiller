@@ -9,9 +9,11 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import EditIcon from '@mui/icons-material/Edit';
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
 import {
   EnhancedButton,
   FileUploader,
@@ -102,10 +104,13 @@ function ResumeComponent() {
   const [parsedData, setParsedData] = useState<ResumeData | null>(null);
   const [keywords, setKeywords] = useState<string[]>([]);
   const [keywordInput, setKeywordInput] = useState('');
+  const [activeLoading, setActiveLoading] = useState<boolean>(false);
+  const [editingResume, setEditingResume] = useState<ResumeMetadata | null>(null);
 
   // Computed step enables (similar to AiProvidersSection pattern)
   const step2Enabled = selectedFiles.length > 0; // File selected, can parse
-  const step3Enabled = parsedData !== null; // File parsed, can save
+  const step3Enabled = parsedData !== null || editingResume !== null; // File parsed or editing, can save
+  const isEditMode = editingResume !== null;
 
   const handleFilesSelected = (files: File[]) => {
     setSelectedFiles(files);
@@ -188,6 +193,49 @@ function ResumeComponent() {
   };
 
   const handleSave = async () => {
+    // In edit mode, we only update keywords
+    if (isEditMode && editingResume) {
+      setIsSaving(true);
+      setSaveStatus(null);
+
+      try {
+        if (typeof chrome !== 'undefined' && chrome.runtime) {
+          chrome.runtime.sendMessage(
+            {
+              action: 'UPDATE_RESUME',
+              payload: {
+                id: editingResume.id,
+                keywords: keywords.length > 0 ? keywords : undefined,
+              },
+            },
+            (res: ApiResponse<ResumeMetadata>) => {
+              if (res?.success && res.data) {
+                setSaveStatus({ type: 'success', text: 'Resume updated successfully' });
+                setResumes((prev) =>
+                  prev.map((r) =>
+                    r.id === editingResume.id ? { ...r, keywords: res.data!.keywords } : r
+                  )
+                );
+                resetForm();
+              } else {
+                setSaveStatus({ type: 'error', text: res?.message || 'Failed to update resume' });
+              }
+              setIsSaving(false);
+            }
+          );
+        } else {
+          setSaveStatus({ type: 'error', text: 'Extension context not available' });
+          setIsSaving(false);
+        }
+      } catch (error) {
+        console.log('Error updating resume', error);
+        setSaveStatus({ type: 'error', text: 'An error occurred while updating' });
+        setIsSaving(false);
+      }
+      return;
+    }
+
+    // Original create resume logic
     if (selectedFiles.length === 0) {
       setSaveStatus({ type: 'error', text: 'Please select a file to upload' });
       return;
@@ -273,12 +321,45 @@ function ResumeComponent() {
     }
   };
 
+  const handleSetActive = (resumeId: string) => {
+    if (typeof chrome !== 'undefined' && chrome.runtime) {
+      setActiveLoading(true);
+      chrome.runtime.sendMessage(
+        { action: 'SET_ACTIVE_RESUME', payload: { id: resumeId } },
+        (res: { success: boolean; message?: string }) => {
+          setActiveLoading(false);
+          if (res?.success) {
+            setResumes((prevResumes) =>
+              prevResumes.map((r) => ({
+                ...r,
+                active: r.id === resumeId,
+              }))
+            );
+          } else {
+            setSaveStatus({ type: 'error', text: res?.message || 'Failed to set active resume' });
+          }
+        }
+      );
+    }
+  };
+
+  const handleEditResume = (resume: ResumeMetadata) => {
+    setEditingResume(resume);
+    setIsAddingResume(true);
+    setKeywords(resume.keywords || []);
+    setKeywordInput('');
+    setSelectedFiles([]);
+    setParsedData(null);
+    setSaveStatus(null);
+  };
+
   const resetForm = () => {
     setSelectedFiles([]);
     setParsedData(null);
     setKeywords([]);
     setKeywordInput('');
     setIsAddingResume(false);
+    setEditingResume(null);
     setSaveStatus(null);
   };
 
@@ -446,37 +527,50 @@ function ResumeComponent() {
           <div className={styles.addProviderForm}>
             {/* Step 1: File Upload */}
             <div className={styles.formField}>
-              <FileUploader
-                onFilesSelected={handleFilesSelected}
-                onError={(err) => {
-                  if (err) {
-                    setSaveStatus({ type: 'error', text: err });
-                  } else {
-                    setSaveStatus(null);
-                  }
-                }}
-                acceptedFormats={['.pdf', '.txt', '.docx']}
-                maxFiles={1}
-                maxSizeMB={10}
-                testId="resume-uploader"
-              />
+              {isEditMode && editingResume ? (
+                <FileUploader
+                  showFilesOnly={true}
+                  displayFiles={[{ name: editingResume.fileName, size: editingResume.fileSize }]}
+                  acceptedFormats={['.pdf', '.txt', '.docx']}
+                  maxFiles={1}
+                  maxSizeMB={10}
+                  testId="resume-uploader"
+                />
+              ) : (
+                <FileUploader
+                  onFilesSelected={handleFilesSelected}
+                  onError={(err) => {
+                    if (err) {
+                      setSaveStatus({ type: 'error', text: err });
+                    } else {
+                      setSaveStatus(null);
+                    }
+                  }}
+                  acceptedFormats={['.pdf', '.txt', '.docx']}
+                  maxFiles={1}
+                  maxSizeMB={10}
+                  testId="resume-uploader"
+                />
+              )}
             </div>
 
-            {/* Step 2: Parse Button */}
-            <div className={styles.formField}>
-              <div className={styles.testConnectionRow}>
-                <EnhancedButton
-                  colorTheme="secondary"
-                  className={styles.testBtn}
-                  onClick={handleParseFile}
-                  disabled={!step2Enabled || isParsing || isSaving}
-                  label={isParsing ? 'Parsing…' : 'Parse'}
-                  size="medium"
-                  startIcon={<AutoAwesomeIcon fontSize="small" />}
-                  customProps={{ props: { sx: { width: '100%', maxWidth: '100%' } } }}
-                />
+            {/* Step 2: Parse Button - Hidden in edit mode */}
+            {!isEditMode && (
+              <div className={styles.formField}>
+                <div className={styles.testConnectionRow}>
+                  <EnhancedButton
+                    colorTheme="secondary"
+                    className={styles.testBtn}
+                    onClick={handleParseFile}
+                    disabled={!step2Enabled || isParsing || isSaving}
+                    label={isParsing ? 'Parsing…' : 'Parse'}
+                    size="medium"
+                    startIcon={<AutoAwesomeIcon fontSize="small" />}
+                    customProps={{ props: { sx: { width: '100%', maxWidth: '100%' } } }}
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Step 3: Keywords Section (shown after parse) */}
 
@@ -547,7 +641,9 @@ function ResumeComponent() {
             {/* Actions */}
             <div className={styles.formActions}>
               <EnhancedButton
-                label={isSaving ? 'Saving…' : 'Save'}
+                label={
+                  isSaving ? (isEditMode ? 'Updating…' : 'Saving…') : isEditMode ? 'Update' : 'Save'
+                }
                 colorTheme="primary"
                 onClick={handleSave}
                 disabled={!step3Enabled || isSaving || isParsing}
@@ -567,19 +663,25 @@ function ResumeComponent() {
           <span className={styles.usageText}>No resumes uploaded yet.</span>
         </div>
       ) : (
-        <div className={styles.providerList} style={{ marginTop: 0 }}>
+        <div className={styles.resumeListContainer}>
           {resumes.map((resume) => (
-            <div key={resume.id} className={styles.resumeItemWrapper}>
-              <div className={styles.providerItem}>
-                <div className={styles.providerInfo}>
-                  <div
-                    className={styles.providerDetails}
-                    style={{ overflow: 'hidden', minWidth: 0 }}
-                  >
-                    <div
-                      className={styles.providerNameRow}
-                      style={{ overflow: 'hidden', minWidth: 0, width: '100%' }}
-                    >
+            <div key={resume.id} className={styles.resumeCard}>
+              {/* Section Above Divider - Clickable for Set Active */}
+              <div
+                className={`${styles.resumeCardInner} ${resume.active ? styles.resumeCardActive : ''}`}
+                onClick={() => {
+                  if (!resume.active && !activeLoading) {
+                    handleSetActive(resume.id);
+                  }
+                }}
+                style={{ cursor: resume.active || activeLoading ? 'default' : 'pointer' }}
+              >
+                <div className={styles.resumeRow1}>
+                  <div className={styles.resumeIconWrapper}>
+                    <InsertDriveFileIcon fontSize="small" />
+                  </div>
+                  <div className={styles.resumeFileInfo}>
+                    <span className={styles.resumeFileNameRow}>
                       <EnhancedTooltipWithText
                         description={resume.fileName}
                         showIcon={false}
@@ -587,65 +689,95 @@ function ResumeComponent() {
                         customProps={{
                           childProps: {
                             childrenBox: {
-                              sx: { minWidth: 0, flex: 1, overflow: 'hidden', width: '100%' },
+                              sx: { minWidth: 0, flex: 1 },
                             },
                           },
                         }}
                       >
-                        <span
-                          className={styles.providerName}
-                          style={{
-                            display: 'block',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            width: '100%',
-                          }}
-                        >
-                          {resume.fileName}
-                        </span>
+                        <span className={styles.resumeFileName}>{resume.fileName}</span>
                       </EnhancedTooltipWithText>
-                    </div>
-                    <span className={styles.usageText} style={{ display: 'block' }}>
-                      {formatFileSize(resume.fileSize)}
+                      {resume.active && <span className={styles.activeTag}>ACTIVE</span>}
                     </span>
+                    <div className={styles.resumeMetaRow}>
+                      <span className={styles.resumeFileSize}>
+                        {formatFileSize(resume.fileSize)}
+                      </span>
+                      <span className={styles.resumeSeparator}>•</span>
+                      <span className={styles.resumeDateTime}>
+                        {resume.createdAt
+                          ? new Date(resume.createdAt).toLocaleString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })
+                          : 'Unknown date'}
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div className={styles.resumeActions}>
-                  <button
-                    className={styles.settingsBtn}
-                    aria-label="View resume"
-                    onClick={() => handleViewResume(resume.id)}
-                    title="View resume in new tab"
-                  >
-                    <VisibilityIcon fontSize="small" />
-                  </button>
-                  <button
-                    className={styles.settingsBtn}
-                    aria-label="Delete resume"
-                    onClick={() => handleDeleteResume(resume.id)}
-                    style={{
-                      color: styleConstants.red700,
-                    }}
-                  >
-                    <DeleteOutlineIcon fontSize="small" />
-                  </button>
-                </div>
               </div>
-              <button
-                className={styles.keywordsToggle}
+
+              {/* Row 2: Action Buttons */}
+              <div className={styles.resumeRow2}>
+                <EnhancedButton
+                  colorTheme="tertiary"
+                  size="small"
+                  label="View"
+                  startIcon={<VisibilityIcon fontSize="small" />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleViewResume(resume.id);
+                  }}
+                />
+                <EnhancedButton
+                  colorTheme="tertiary"
+                  size="small"
+                  label="Edit"
+                  startIcon={<EditIcon fontSize="small" />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEditResume(resume);
+                  }}
+                />
+                <EnhancedButton
+                  colorTheme="negativeSecondary"
+                  size="small"
+                  label="Delete"
+                  startIcon={<DeleteOutlineIcon fontSize="small" />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteResume(resume.id);
+                  }}
+                />
+              </div>
+
+              {/* Divider */}
+              <div className={styles.resumeDivider} />
+
+              {/* Section Below Divider - Clickable for Keywords Toggle */}
+              <div
+                className={styles.resumeRow3}
                 onClick={() => toggleKeywords(resume.id)}
-                aria-label={expandedKeywords.has(resume.id) ? 'Hide keywords' : 'Show keywords'}
+                style={{ cursor: 'pointer' }}
               >
+                <button
+                  className={styles.resumeKeywordsToggle}
+                  aria-label={expandedKeywords.has(resume.id) ? 'Hide keywords' : 'Show keywords'}
+                >
+                  <span>Keywords ({resume.keywords?.length || 0})</span>
+                </button>
                 {expandedKeywords.has(resume.id) ? (
                   <KeyboardArrowUpIcon fontSize="small" />
                 ) : (
                   <KeyboardArrowDownIcon fontSize="small" />
                 )}
-                <span>Keywords ({resume.keywords?.length || 0})</span>
-              </button>
+              </div>
+
+              {/* Keywords Container (shown when expanded) */}
               {expandedKeywords.has(resume.id) && resume.keywords && resume.keywords.length > 0 && (
-                <div className={styles.keywordsContainer}>
+                <div className={styles.resumeKeywordsContainer}>
                   {resume.keywords.map((keyword, index) => (
                     <EnhancedChip
                       key={`${keyword}-${index}`}
@@ -659,7 +791,7 @@ function ResumeComponent() {
               )}
               {expandedKeywords.has(resume.id) &&
                 (!resume.keywords || resume.keywords.length === 0) && (
-                  <span className={styles.noKeywords}>No keywords extracted</span>
+                  <div className={styles.resumeNoKeywords}>No keywords extracted</div>
                 )}
             </div>
           ))}

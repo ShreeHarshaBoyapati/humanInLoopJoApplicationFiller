@@ -289,9 +289,11 @@
 }
 
 .activeTag {
-  background-color: var(--green-500);
+  background: color-mix(in srgb, var(--green-400) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--green-400) 35%, transparent);
   border-radius: 4px;
-  color: var(--green-600);
+  color: var(--green-400);
+  flex-shrink: 0;
   font-size: 0.6rem;
   font-weight: 700;
   padding: 2px 6px;
@@ -317,6 +319,197 @@
 .settingsBtn:hover {
   background-color: var(--black-700);
   border-radius: 50%;
+}
+
+/* Resume List Styles */
+.resumeListContainer {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 3);
+}
+
+.resumeCard {
+  background-color: var(--black-800);
+  border: 1px solid var(--grey-700);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.resumeCard:hover {
+  background-color: var(--grey-300);
+}
+
+.resumeCardActive {
+  border-color: var(--blue-500);
+}
+
+.resumeCardInner {
+  display: flex;
+  gap: calc(var(--spacing) * 4);
+  padding: calc(var(--spacing) * 4);
+}
+
+/* Row 1: Icon + File Name + Active Badge */
+.resumeRow1 {
+  align-items: flex-start;
+  display: flex;
+  gap: calc(var(--spacing) * 3);
+}
+
+.resumeIconWrapper {
+  align-items: center;
+  background-color: var(--black-700);
+  border-radius: var(--border-radius);
+  color: var(--blue-500);
+  display: flex;
+  flex-shrink: 0;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
+}
+
+.resumeCardActive .resumeIconWrapper {
+  background-color: color-mix(in srgb, var(--blue-500) 15%, transparent);
+  color: var(--blue-500);
+}
+
+.resumeFileInfo {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 1);
+  min-width: 0;
+}
+
+.resumeFileNameRow {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  flex-wrap: nowrap;
+  gap: calc(var(--spacing) * 2);
+  min-width: 0;
+  overflow: hidden;
+  width: 100%;
+}
+
+.resumeFileName {
+  color: var(--white-900);
+  display: block;
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 700;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.resumeMetaRow {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--spacing) * 2);
+  min-width: 0;
+}
+
+.resumeFileSize {
+  color: var(--white-700);
+  font-size: 0.75rem;
+}
+
+.resumeSeparator {
+  color: var(--grey-700);
+  font-size: 0.75rem;
+}
+
+.resumeDateTime {
+  color: var(--white-700);
+  font-size: 0.75rem;
+}
+
+.resumeActiveTagInline {
+  background: color-mix(in srgb, var(--green-400) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--green-400) 35%, transparent);
+  border-radius: 4px;
+  color: var(--green-400);
+  flex-shrink: 0;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 2px 6px;
+}
+
+/* Row 2: Action Buttons */
+.resumeRow2 {
+  align-items: center;
+  display: flex;
+  gap: calc(var(--spacing) * 2);
+  margin-top: calc(var(--spacing) * 3);
+}
+
+.resumeActionsWrapper {
+  align-items: center;
+  display: flex;
+  gap: calc(var(--spacing) * 2);
+}
+
+/* Divider between Row 2 and Row 3 */
+.resumeDivider {
+  border-top: 1px solid var(--grey-700);
+  margin-top: calc(var(--spacing) * 3);
+}
+
+/* Row 3: Keywords Toggle */
+.resumeRow3 {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  min-height: 36px;
+  padding-bottom: calc(var(--spacing) * 2);
+  padding-top: calc(var(--spacing) * 2);
+}
+
+.resumeKeywordsToggle {
+  align-items: center;
+  background: none;
+  border: none;
+  color: var(--white-700);
+  cursor: pointer;
+  display: flex;
+  font-size: 0.875rem;
+  font-weight: 500;
+  gap: calc(var(--spacing) * 1);
+  padding: 0;
+}
+
+.resumeKeywordsToggle:hover {
+  color: var(--white-900);
+}
+
+.resumeKeywordsContainer {
+  background-color: var(--black-700);
+  border: 1px solid var(--grey-700);
+  border-radius: calc(var(--border-radius) - 2px);
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--spacing) * 2);
+  margin-bottom: calc(var(--spacing) * 2);
+  margin-left: calc(var(--spacing) * 2);
+  margin-right: calc(var(--spacing) * 4);
+  padding: calc(var(--spacing) * 3);
+}
+
+.resumeNoKeywords {
+  background-color: var(--black-700);
+  border: 1px solid var(--grey-700);
+  border-radius: calc(var(--border-radius) - 2px);
+  color: var(--white-700);
+  font-size: 0.75rem;
+  margin-bottom: calc(var(--spacing) * 2);
+  margin-left: calc(var(--spacing) * 2);
+  margin-right: calc(var(--spacing) * 4);
+  padding: calc(var(--spacing) * 3);
 }
 
 /* Step 3 — test connection layout: button on left, result on right */

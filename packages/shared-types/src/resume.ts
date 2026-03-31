@@ -9,19 +9,41 @@ export interface PersonalInfo {
   phone: string | null;
   location: string | null;
   linkedin: string | null;
+  websites: string[] | null;
 }
 
 export interface Education {
   degree: string | null;
+  field: string | null;
   institution: string | null;
   year: string | null;
+  gpa: string | null;
 }
 
 export interface Experience {
   company: string | null;
   role: string | null;
   duration: string | null;
-  summary: string | null;
+  location: string | null;
+  bullets: string[];
+}
+
+export interface Certification {
+  name: string | null;
+  issuer: string | null;
+  year: string | null;
+}
+
+export interface Project {
+  name: string | null;
+  description: string | null;
+  technologies: string[];
+  url: string | null;
+}
+
+export interface ExtraSection {
+  section: string;
+  items: string[];
 }
 
 export interface ResumeData {
@@ -33,6 +55,9 @@ export interface ResumeData {
   tools: string[];
   education: Education[];
   experience: Experience[];
+  certifications: Certification[];
+  projects: Project[];
+  extra: ExtraSection[];
   keywords?: string[];
 }
 
@@ -41,6 +66,7 @@ export interface ResumeMetadata {
   fileName: string;
   fileSize: number;
   keywords: string[];
+  active?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -78,6 +104,10 @@ export interface DeleteResumeParams {
 }
 
 export interface GetResumeByIdParams {
+  id: string;
+}
+
+export interface SetActiveResumeParams {
   id: string;
 }
 

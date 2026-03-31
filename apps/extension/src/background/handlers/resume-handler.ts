@@ -9,6 +9,7 @@ import type {
   UpdateResumeParams,
   DeleteResumeParams,
   GetResumeByIdParams,
+  SetActiveResumeParams,
   ResumeData,
 } from '@repo/shared-types';
 
@@ -224,6 +225,27 @@ export function handleResumeMessage(
           sendResponse({ success: false, message: error.response?.data?.message || error.message });
         });
     })();
+
+    return true;
+  }
+
+  if (message.action === 'SET_ACTIVE_RESUME') {
+    const payload = message.payload as SetActiveResumeParams;
+
+    api
+      .post<ApiResponse<null>>('/resume/set-active', payload)
+      .then((response) => {
+        const { data } = response;
+        if (data.success) {
+          sendResponse({ success: true, message: data.message });
+        } else {
+          sendResponse({ success: false, message: data.message || 'Failed to set active resume' });
+        }
+      })
+      .catch((error: AxiosError<ApiResponse>) => {
+        console.error('Set active resume error:', error);
+        sendResponse({ success: false, message: error.response?.data?.message || error.message });
+      });
 
     return true;
   }

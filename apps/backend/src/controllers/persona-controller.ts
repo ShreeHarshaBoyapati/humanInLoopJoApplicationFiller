@@ -28,10 +28,17 @@ class PersonaController {
       return;
     }
 
+    // Check if this is the user's first persona
+    const existingPersonasCount = await personaRepository.count({
+      where: { user: { id: userId } },
+    });
+    const isFirstPersona = existingPersonasCount === 0;
+
     const persona = personaRepository.create({
       title,
       keywords: keywords || [],
       user: { id: userId },
+      active: isFirstPersona ? true : false,
     });
 
     await personaRepository.save(persona);

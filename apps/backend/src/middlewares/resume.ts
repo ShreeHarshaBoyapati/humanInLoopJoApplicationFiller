@@ -31,11 +31,17 @@ const CreateResumeSchema = z.object({
   parsedData: z.record(z.string(), z.unknown()).optional(),
 });
 
+// Schema for setting active resume
+const SetActiveResumeSchema = z.object({
+  id: z.uuidv4('Invalid resume ID'),
+});
+
 export type GetResumeByIdInput = z.input<typeof GetResumeByIdSchema>;
 export type DeleteResumeInput = z.input<typeof DeleteResumeSchema>;
 export type UpdateResumeInput = z.input<typeof UpdateResumeSchema>;
 export type CreateResumeInput = z.input<typeof CreateResumeSchema>;
 export type ParseResumeInput = z.input<typeof ParseResumeSchema>;
+export type SetActiveResumeInput = z.input<typeof SetActiveResumeSchema>;
 
 export function getResumeByIdValidation(req: Request, res: Response, next: NextFunction) {
   try {
@@ -188,4 +194,27 @@ export function parseFileResumeValidation(req: Request, res: Response, next: Nex
     return;
   }
   next();
+}
+
+export function setActiveResumeValidation(req: Request, res: Response, next: NextFunction) {
+  try {
+    req.body = SetActiveResumeSchema.parse(req.body);
+    next();
+  } catch (error) {
+    if (error instanceof ZodError) {
+      const data: ApiResponse = {
+        success: false,
+        message: flattenZodErrorToString(error),
+      };
+      res.status(400).json(data);
+      return;
+    }
+
+    const data: ApiResponse = {
+      success: false,
+      message: 'Invalid input',
+    };
+    res.status(400).json(data);
+    return;
+  }
 }

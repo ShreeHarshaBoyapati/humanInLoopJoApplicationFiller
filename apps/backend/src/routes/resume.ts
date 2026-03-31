@@ -8,6 +8,7 @@ import {
   deleteResumeValidation,
   getResumeByIdValidation,
   parseFileResumeValidation,
+  setActiveResumeValidation,
 } from '../middlewares/resume.js';
 import { asHandler } from '../types/api.js';
 import type { Request, Response, NextFunction } from 'express';
@@ -82,5 +83,11 @@ router.post(
 
 router.get('/:id', authMiddleware, getResumeByIdValidation, asHandler(ResumeController.getById));
 router.get('/', authMiddleware, asHandler(ResumeController.getAll));
+router.post(
+  '/set-active',
+  authMiddleware,
+  setActiveResumeValidation,
+  asHandler(ResumeController.setActive)
+);
 
 export default router;
