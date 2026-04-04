@@ -91,9 +91,10 @@
 
 /* Pulse ring for first-time attention */
 .jfpPulseRing {
-  animation: jfp-pulse 2s ease-out 0.5s 3;
+  animation: jfp-pulse 2s ease-out infinite;
   border: 2px solid rgb(99 102 241 / 50%);
   border-radius: 50%;
+  display: none;
   height: 52px;
   left: 50%;
   pointer-events: none;
@@ -101,6 +102,11 @@
   top: 50%;
   transform: translate(-50%, -50%);
   width: 52px;
+}
+
+/* Only show and animate the ring when the button is in the 'ready' state */
+.jfpReady .jfpPulseRing {
+  display: block;
 }
 
 /* ===== Keyframes ===== */

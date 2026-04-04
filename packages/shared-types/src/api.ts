@@ -16,3 +16,19 @@ export type ApiResponse<TData = never, TErrors = never> =
       message: string;
       errors?: TErrors;
     };
+
+/**
+ * Result returned by the AI resume-job analysis endpoint.
+ */
+export interface AnalysisResult {
+  /** ATS match score 0-100 */
+  score: number;
+  /** Keywords / skills present in job but absent in resume */
+  missingFields: string[];
+  /** Top 5 keywords most strongly matched in the resume */
+  highlyMatchedKeys: string[];
+  /** Up to 3 actionable improvement tips */
+  suggestions: string[];
+  /** One-sentence AI-generated summary of overall fit */
+  overallVerdict: string;
+}

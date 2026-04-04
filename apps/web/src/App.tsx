@@ -6,6 +6,8 @@ import { EnhancedButton as Button } from '@repo/ui/button.tsx';
 import { EnhancedChip as Chip } from '@repo/ui/chip.tsx';
 import { EnhancedSelectDropdown as SelectDropdown } from '@repo/ui/select-dropdown.tsx';
 import { EnhancedTextInputArea as TextInputArea } from '@repo/ui/text-input-area.tsx';
+import { FileUploader } from '@repo/ui/file-uploader.tsx';
+import { EnhancedStepper } from '@repo/ui/stepper.tsx';
 import scrollbarStyles from '@repo/ui/scroll-bar.module.css';
 
 // API URL: In production, frontend and backend are on same origin
@@ -499,6 +501,28 @@ function App() {
       </section>
 
       <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Buttons - View More</h2>
+        <div className={styles.grid}>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Default</span>
+            <Button label="View More" colorTheme="text" />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>With End Icon</span>
+            <Button
+              label="View More"
+              colorTheme="text"
+              endIcon={<span style={{ fontSize: '16px' }}>▼</span>}
+            />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Disabled</span>
+            <Button label="View More" colorTheme="text" disabled />
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Chips</h2>
         <div className={styles.grid}>
           <div className={styles.variantContainer}>
@@ -534,6 +558,91 @@ function App() {
               customProps={{ chipProps: { disabled: true } }}
               id="check-4"
               testId="check-4"
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>File Uploader</h2>
+        <div className={styles.grid}>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Default (PDF, DOC, DOCX)</span>
+            <FileUploader
+              onFilesSelected={(files) => console.log('Selected files:', files)}
+              testId="file-uploader-default"
+            />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Custom Formats (Images)</span>
+            <FileUploader
+              acceptedFormats={['.jpg', '.jpeg', '.png', '.gif']}
+              maxFiles={3}
+              maxSizeMB={10}
+              onFilesSelected={(files) => console.log('Selected images:', files)}
+              testId="file-uploader-images"
+            />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Multiple Files</span>
+            <FileUploader
+              acceptedFormats={['.pdf', '.doc', '.docx']}
+              maxFiles={5}
+              onFilesSelected={(files) => console.log('Selected multiple:', files)}
+              testId="file-uploader-multiple"
+            />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Disabled State</span>
+            <FileUploader disabled={true} testId="file-uploader-disabled" />
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>Stepper</h2>
+        <div className={styles.grid}>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Basic Stepper (Active Step 1)</span>
+            <EnhancedStepper
+              steps={['Select campaign settings', 'Create an ad group', 'Create an ad']}
+              activeStep={1}
+              testId="stepper-basic"
+            />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>With Optional Step</span>
+            <EnhancedStepper
+              steps={['Select campaign settings', 'Create an ad group', 'Create an ad']}
+              activeStep={0}
+              optionalSteps={[1]}
+              testId="stepper-optional"
+            />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Completed Steps (Active Step 2)</span>
+            <EnhancedStepper
+              steps={['Select campaign settings', 'Create an ad group', 'Create an ad']}
+              activeStep={2}
+              testId="stepper-completed"
+            />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>With Error Step</span>
+            <EnhancedStepper
+              steps={['Select campaign settings', 'Create an ad group', 'Create an ad']}
+              activeStep={1}
+              errorSteps={[1]}
+              testId="stepper-error"
+            />
+          </div>
+          <div className={styles.variantContainer}>
+            <span className={styles.variantLabel}>Disabled State</span>
+            <EnhancedStepper
+              steps={['Step 1', 'Step 2', 'Step 3']}
+              activeStep={1}
+              disabled={true}
+              testId="stepper-disabled"
             />
           </div>
         </div>

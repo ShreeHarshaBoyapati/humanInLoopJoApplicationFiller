@@ -1,8 +1,13 @@
-import { createFileRoute, Link, useNavigate, ErrorComponent } from '@tanstack/react-router';
+import { createFileRoute, useNavigate, ErrorComponent } from '@tanstack/react-router';
 import { useState } from 'react';
 import { EnhancedButton } from '@repo/ui';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import type { Job, JobList } from '@repo/shared-types';
 import styles from './style/recent-jobs.module.css';
+import styleConstants from '@repo/ui/constants/style-constants.js';
+import AddIcon from '@mui/icons-material/Add';
 
 type JobFetchList = { success: false; error: string } | { success: true; data: JobList };
 
@@ -28,7 +33,7 @@ export const Route = createFileRoute('/recent-jobs')({
   },
   component: RecentJobsComponent,
   pendingComponent: () => (
-    <div style={{ color: '#fff', padding: '1rem' }}>Loading recent jobs...</div>
+    <div style={{ color: styleConstants.white900, padding: '1rem' }}>Loading recent jobs...</div>
   ),
   errorComponent: ErrorComponent,
 });
@@ -63,27 +68,24 @@ function RecentJobsComponent() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
-        <h1 className={styles.title}>Recent Jobs</h1>
-        <Link to="/" className={styles.link}>
-          Back to Home
-        </Link>
+      <div className={styles.mainHeader}>
+        <div className={styles.header}>
+          <h1 className={styles.headerTitle}>Recent Jobs</h1>
+        </div>
+        <EnhancedButton
+          label="Create a Job"
+          colorTheme="tertiary"
+          size="small"
+          startIcon={<AddIcon fontSize="small" />}
+          onClick={() => navigate({ to: '/job' })}
+        />
       </div>
 
       <div className={styles.listContainer}>
         {error && <div className={styles.error}>{error}</div>}
 
         {jobs.length === 0 && !error && (
-          <div className={styles.emptyState}>
-            You haven&apos;t tracked any jobs yet.
-            <br />
-            <br />
-            <EnhancedButton
-              label="Track a Job"
-              colorTheme="primary"
-              onClick={() => navigate({ to: '/job' })}
-            />
-          </div>
+          <div className={styles.emptyState}>You haven&apos;t tracked any jobs yet.</div>
         )}
 
         {jobs.map((job) => (
@@ -102,19 +104,41 @@ function RecentJobsComponent() {
               </div>
             </div>
 
-            <div className={styles.jobActions}>
-              <EnhancedButton
-                label="Edit"
-                colorTheme="tertiary"
-                size="small"
-                onClick={() => navigate({ to: '/job', search: { jobId: job.id } })}
-              />
-              <EnhancedButton
-                label="Delete"
-                colorTheme="negativeSecondary"
-                size="small"
-                onClick={() => handleDelete(job.id)}
-              />
+            <div className={styles.actionContainer}>
+              <button
+                className={styles.jobActions}
+                aria-label="Analyze"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate({ to: '/autofill', search: { jobId: job.id } });
+                }}
+                title="Analyze"
+              >
+                <AutoAwesomeIcon fontSize="small" />
+              </button>
+              <button
+                className={styles.jobActions}
+                aria-label="Edit persona"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate({ to: '/job', search: { jobId: job.id } });
+                }}
+              >
+                <EditOutlinedIcon fontSize="small" />
+              </button>
+              <button
+                className={styles.jobActions}
+                aria-label="Delete persona"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(job.id);
+                }}
+                style={{
+                  color: styleConstants.red700,
+                }}
+              >
+                <DeleteOutlineIcon fontSize="small" />
+              </button>
             </div>
           </div>
         ))}

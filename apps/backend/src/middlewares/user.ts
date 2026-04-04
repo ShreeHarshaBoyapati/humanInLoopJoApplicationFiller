@@ -40,7 +40,12 @@ export async function authMiddleware(
   next: NextFunction
 ): Promise<void> {
   try {
-    const token = req.cookies?.token;
+    let token = req.cookies?.token;
+
+    // Fallback to Authorization header if no cookie (used by Extension)
+    if (!token && req.headers.authorization?.startsWith('Bearer ')) {
+      token = req.headers.authorization.split(' ')[1];
+    }
 
     if (!token) {
       res.status(401).json({

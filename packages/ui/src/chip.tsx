@@ -67,7 +67,7 @@ export const EnhancedChip = React.forwardRef<HTMLInputElement, EnhancedChipProps
     return (
       <StyledChip
         id={id}
-        data-testId={testId}
+        data-testid={testId}
         ref={ref}
         label={label}
         onDelete={onDelete}

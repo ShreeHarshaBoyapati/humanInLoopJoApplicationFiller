@@ -207,6 +207,35 @@ class UserController {
       message: 'User deleted successfully',
     });
   }
+
+  /**
+   * Get current authenticated user
+   * GET /api/user/me
+   */
+  async me(req: AuthenticatedTypedRequest<null>, res: Response) {
+    const userId = req.userId!;
+    const userRepository = getUserRepository();
+
+    const user = await userRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+      return;
+    }
+
+    const response: ApiResponse<UserPublic> = {
+      success: true,
+      message: 'User retrieved successfully',
+      data: {
+        id: user.id,
+        email: user.email,
+      },
+    };
+    res.status(200).json(response);
+  }
 }
 
 export default new UserController();

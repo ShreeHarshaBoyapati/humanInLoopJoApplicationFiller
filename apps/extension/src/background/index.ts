@@ -1,7 +1,12 @@
-import axios from 'axios';
-import type { ExtensionMessage } from '@repo/shared-types';
+import axios, { AxiosError } from 'axios';
+import type { ExtensionMessage, ApiResponse } from '@repo/shared-types';
 import { handleUserMessage } from './handlers/user-handler.js';
 import { handleJobMessage } from './handlers/job-handler.js';
+import { handleContentMessages } from './handlers/content-handler.js';
+import { handleApiKeyMessage } from './handlers/api-key-handler.js';
+import { handlePersonaMessage } from './handlers/persona-handler.js';
+import { handleResumeMessage } from './handlers/resume-handler.js';
+import { handleAiMessage } from './handlers/ai-handler.js';
 
 console.log('Background service worker started');
 
@@ -32,34 +37,51 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError<ApiResponse>) => {
+    if (error.response && error.response.status === 401) {
+      const message = error.response.data?.message || 'Session expired. Please log in again.';
+      chrome.storage.local.remove('token', () => {
+        chrome.runtime
+          .sendMessage({
+            action: 'LOGOUT_TRIGGERED',
+            payload: { message },
+          })
+          .catch(() => {
+            // Ignore error if no listeners are active
+          });
+      });
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Listen for messages from the UI and content scripts — dispatch to entity handlers
 chrome.runtime.onMessage.addListener((message: ExtensionMessage, sender, sendResponse) => {
-  // Quick Save from content script
-  if (message.action === 'OPEN_SIDE_PANEL') {
-    const url = message.payload?.url || '';
-    chrome.storage.local.set({ quickSaveUrl: url }, () => {
-      const tabId = sender.tab?.id;
-      if (tabId) {
-        chrome.sidePanel
-          .open({ tabId })
-          .then(() => sendResponse({ success: true }))
-          .catch((err) => {
-            console.error('Failed to open side panel:', err);
-            sendResponse({ success: false, error: String(err) });
-          });
-      } else {
-        sendResponse({ success: false, error: 'No tab id' });
-      }
-    });
-    return true;
-  }
-
+  const contentHandled = handleContentMessages(message, sender, sendResponse);
+  if (contentHandled) return true;
   // User-related actions
   const handled = handleUserMessage(message, sendResponse, api);
   if (handled) return true;
-  console.log('==========got here======+>>>>>>>');
 
   // Job-related actions
   const jobHandled = handleJobMessage(message, sendResponse, api);
   if (jobHandled) return true;
+
+  // API key-related actions
+  const apiKeyHandled = handleApiKeyMessage(message, sendResponse, api);
+  if (apiKeyHandled) return true;
+
+  // Persona-related actions
+  const personaHandled = handlePersonaMessage(message, sendResponse, api);
+  if (personaHandled) return true;
+
+  // Resume-related actions
+  const resumeHandled = handleResumeMessage(message, sendResponse, api);
+  if (resumeHandled) return true;
+
+  // AI-related actions
+  const aiHandled = handleAiMessage(message, sendResponse, api);
+  if (aiHandled) return true;
 });

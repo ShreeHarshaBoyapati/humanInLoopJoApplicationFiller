@@ -12,8 +12,9 @@ const CreateJobSchema = z.object({
   acceptanceLevel: z.number().int().min(0).max(100).default(0),
   companyName: z.string().default(''),
   notes: z.string().default(''),
+  requirements: z.string().default(''),
   metaData: z.record(z.string(), z.unknown()).default({}),
-  description: z.record(z.string(), z.unknown()).default({}),
+  description: z.string().default(''),
   highlights: z.record(z.string(), z.unknown()).default({}),
   keySkills: z.array(z.string()).default([]),
 });
@@ -28,8 +29,9 @@ const UpdateJobSchema = z.object({
   acceptanceLevel: z.number().int().min(0).max(100).optional(),
   companyName: z.string().optional(),
   notes: z.string().optional(),
+  requirements: z.string().optional(),
   metaData: z.record(z.string(), z.unknown()).optional(),
-  description: z.record(z.string(), z.unknown()).optional(),
+  description: z.string().optional(),
   highlights: z.record(z.string(), z.unknown()).optional(),
   keySkills: z.array(z.string()).optional(),
 });
@@ -49,6 +51,7 @@ const validJobFields = [
   'acceptanceLevel',
   'companyName',
   'notes',
+  'requirements',
   'metaData',
   'description',
   'highlights',
@@ -64,6 +67,7 @@ const GetJobsSchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(10),
 
   // Filtering
+  id: z.uuid('Invalid job ID').optional(),
   status: z.enum(['draft', 'active', 'archived']).optional(),
   persona: z.string().optional(),
 

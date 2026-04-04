@@ -1,6 +1,12 @@
+import { SVGProps } from 'react';
 import styleConstants from '../constants/style-constants';
 
-const ClearIcon = ({ stroke = styleConstants.white700, width = 12, height = 12, ...props }) => {
+const ClearIcon = ({
+  stroke = styleConstants.white700,
+  width = 12,
+  height = 12,
+  ...props
+}: SVGProps<SVGSVGElement>) => {
   return (
     <svg
       width={width}

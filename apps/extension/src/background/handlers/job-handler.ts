@@ -1,4 +1,4 @@
-import type { AxiosInstance } from 'axios';
+import type { AxiosError, AxiosInstance } from 'axios';
 import type { ExtensionMessage, ApiResponse, JobPublic, JobList } from '@repo/shared-types';
 
 /**
@@ -14,7 +14,6 @@ export function handleJobMessage(
   if (message.action === 'CREATE_JOB') {
     try {
       const payload = message.payload;
-      console.log('Received CREATE_JOB. Payload:', Object.keys(payload));
 
       api
         .post<ApiResponse<JobPublic>>('/job', payload)
@@ -27,16 +26,16 @@ export function handleJobMessage(
             sendResponse({ success: false, error: data.message || 'Failed to create job' });
           }
         })
-        .catch((error) => {
+        .catch((error: AxiosError<ApiResponse>) => {
           console.error('Job creation error (catch):', error);
           sendResponse({
             success: false,
-            error: error.response?.data?.message || error.message || 'Unknown network error',
+            error: error.response?.data.message || error.message || 'Unknown network error',
           });
         });
-    } catch (err: any) {
+    } catch (err) {
       console.error('Job creation synchronous error:', err);
-      sendResponse({ success: false, error: err.message || 'Synchronous error' });
+      sendResponse({ success: false, error: 'Synchronous error' });
     }
     return true;
   }
@@ -54,9 +53,10 @@ export function handleJobMessage(
           sendResponse({ success: false, error: data.message || 'Failed to update job' });
         }
       })
-      .catch((error) => {
+      // TODO: need to handle the proper error messages as we can't send the error.message only
+      .catch((error: AxiosError<ApiResponse>) => {
         console.error('Job update error:', error);
-        sendResponse({ success: false, error: error.response?.data?.message || error.message });
+        sendResponse({ success: false, error: error.response?.data.message || error.message });
       });
 
     return true;

@@ -128,7 +128,7 @@ class JobController {
 
     const userId = req.userId;
 
-    const { page, limit, status, persona, search, sortBy, sortOrder, select } = (
+    const { page, limit, status, persona, search, sortBy, sortOrder, select, id } = (
       req as AuthenticatedTypedRequest<null> & { parsedQuery: GetJobsInfer }
     ).parsedQuery;
 
@@ -146,6 +146,7 @@ class JobController {
       'companyName',
       'metaData',
       'description',
+      'requirements',
       'highlights',
       'keySkills',
       'createdAt',
@@ -159,6 +160,10 @@ class JobController {
       .select(fieldsToSelect.map((field) => `job.${field}`))
       .leftJoin('job.user', 'user')
       .where('user.id = :userId', { userId });
+
+    if (id) {
+      queryBuilder.andWhere('job.id = :id', { id });
+    }
 
     if (status) {
       queryBuilder.andWhere('job.status = :status', { status });

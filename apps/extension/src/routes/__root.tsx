@@ -1,5 +1,17 @@
-import { Link, Outlet, createRootRoute, redirect, useRouterState } from '@tanstack/react-router';
-import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
+import {
+  Link,
+  Outlet,
+  createRootRoute,
+  redirect,
+  useRouterState,
+  useNavigate,
+} from '@tanstack/react-router';
+import { useEffect } from 'react';
+import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
+import WorkOutlineIcon from '@mui/icons-material/WorkOutline';
+import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
+import scrollStyles from '@repo/ui/scroll-bar.module.css';
 import styles from './style/__root.module.css';
 
 interface AuthCheckResponse {
@@ -31,16 +43,26 @@ export const Route = createRootRoute({
     });
 
     const { isAuthenticated } = response;
-    console.log('isAuthenticated===========', isAuthenticated);
 
     if (isAuthenticated) {
+      if (
+        location.pathname === '/login' ||
+        location.pathname === '/new-user' ||
+        location.pathname === '/'
+      ) {
+        const storage = await new Promise<{ quickSaveActive?: boolean }>((resolve) => {
+          chrome.storage.local.get(['quickSaveActive'], (res) => resolve(res));
+        });
+        if (storage.quickSaveActive) {
+          throw redirect({ to: '/job' });
+        }
+      }
+
       if (location.pathname === '/login' || location.pathname === '/new-user') {
         throw redirect({ to: '/' });
       }
     } else {
       if (location.pathname !== '/login' && location.pathname !== '/new-user') {
-        console.log('======got to final');
-
         throw redirect({ to: '/login' });
       }
     }
@@ -49,41 +71,80 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   const routerState = useRouterState();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (typeof chrome !== 'undefined' && chrome.runtime) {
+      const handleMessage = (message: { action: string; payload?: { message?: string } }) => {
+        if (message.action === 'LOGOUT_TRIGGERED') {
+          navigate({
+            to: '/login',
+            search: { message: message.payload?.message },
+            replace: true,
+          });
+        }
+      };
+
+      chrome.runtime.onMessage.addListener(handleMessage);
+      return () => {
+        chrome.runtime.onMessage.removeListener(handleMessage);
+      };
+    }
+  }, [navigate]);
   const isLoginPage =
     routerState.location.pathname === '/login' || routerState.location.pathname === '/new-user';
 
+  if (isLoginPage) {
+    return (
+      <div className={styles.layoutWrapper}>
+        <main className={styles.mainContent}>
+          <Outlet />
+        </main>
+      </div>
+    );
+  }
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-      {!isLoginPage && (
-        <>
-          <div className={styles.container}>
-            <Link
-              to="/"
-              className={styles.link}
-              activeProps={{
-                className: styles.activeLink,
-              }}
-              activeOptions={{ exact: true }}
-            >
-              Home
-            </Link>{' '}
-            <Link
-              to="/about"
-              className={styles.link}
-              activeProps={{
-                className: styles.activeLink,
-              }}
-            >
-              About
-            </Link>
-          </div>
-          <hr />
-        </>
-      )}
-      <main className={styles.mainContent}>
+    <div className={styles.layoutWrapper}>
+      <main className={`${styles.mainContent} ${scrollStyles.scrollbarVerticalContainer}`}>
         <Outlet />
       </main>
-      {/* <TanStackRouterDevtools position="bottom-right" /> */}
+
+      <nav className={styles.bottomNav}>
+        <Link
+          to="/"
+          className={styles.navItem}
+          activeProps={{ className: `${styles.navItem} ${styles.navItemActive}` }}
+          activeOptions={{ exact: true }}
+        >
+          <HomeRoundedIcon />
+          <span>Home</span>
+        </Link>
+        <Link
+          to="/recent-jobs"
+          className={styles.navItem}
+          activeProps={{ className: `${styles.navItem} ${styles.navItemActive}` }}
+        >
+          <WorkOutlineIcon />
+          <span>Jobs</span>
+        </Link>
+        <Link
+          to="/autofill"
+          className={styles.navItem}
+          activeProps={{ className: `${styles.navItem} ${styles.navItemActive}` }}
+        >
+          <AutoAwesomeIcon />
+          <span>Autofill</span>
+        </Link>
+        <Link
+          to="/profile"
+          className={styles.navItem}
+          activeProps={{ className: `${styles.navItem} ${styles.navItemActive}` }}
+        >
+          <PersonOutlineIcon />
+          <span>Profile</span>
+        </Link>
+      </nav>
     </div>
   );
 }
