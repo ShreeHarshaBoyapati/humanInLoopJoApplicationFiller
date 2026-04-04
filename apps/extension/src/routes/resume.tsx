@@ -26,6 +26,10 @@ import { Box } from '@mui/material';
 export interface ResumeSearch {
   personaId?: string;
   title?: string;
+  from?: string;
+  returnTo?: string;
+  step?: number;
+  jobId?: string;
 }
 
 type ResumeListResponse =
@@ -48,6 +52,10 @@ export const Route = createFileRoute('/resume')({
     return {
       personaId: search.personaId as string | undefined,
       title: search.title as string | undefined,
+      from: search.from as string | undefined,
+      returnTo: search.returnTo as string | undefined,
+      step: search.step ? Number(search.step) : undefined,
+      jobId: search.jobId as string | undefined,
     };
   },
   loaderDeps: ({ search: { personaId, title } }) => ({ personaId, title }),
@@ -93,6 +101,7 @@ export const Route = createFileRoute('/resume')({
 
 function ResumeComponent() {
   const { resumes: initialResumes, title, error: loaderError, personaId } = Route.useLoaderData();
+  const search = Route.useSearch();
   const navigate = useNavigate();
   const [resumes, setResumes] = useState<ResumeMetadata[]>(initialResumes || []);
   const [isAddingResume, setIsAddingResume] = useState<boolean>(false);
@@ -501,7 +510,16 @@ function ResumeComponent() {
       <div className={styles.header}>
         <button
           className={styles.backBtn}
-          onClick={() => navigate({ to: '/settings' })}
+          onClick={() => {
+            if (search.returnTo) {
+              navigate({
+                to: '/settings',
+                search: { returnTo: search.returnTo, step: search.step, jobId: search.jobId },
+              });
+            } else {
+              navigate({ to: '/settings' });
+            }
+          }}
           aria-label="Go back"
         >
           <ArrowBackIcon />

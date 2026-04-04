@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate, ErrorComponent } from '@tanstack/react-router';
 import { useState } from 'react';
 import { EnhancedButton } from '@repo/ui';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
@@ -67,17 +66,10 @@ function RecentJobsComponent() {
     }
   };
 
-  const handleBack = () => {
-    navigate({ to: '/' });
-  };
-
   return (
     <div className={styles.container}>
       <div className={styles.mainHeader}>
         <div className={styles.header}>
-          <button className={styles.backBtn} onClick={handleBack} aria-label="Go back">
-            <ArrowBackIcon />
-          </button>
           <h1 className={styles.headerTitle}>Recent Jobs</h1>
         </div>
         <EnhancedButton

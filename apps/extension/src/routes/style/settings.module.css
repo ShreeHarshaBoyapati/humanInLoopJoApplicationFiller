@@ -50,7 +50,7 @@
   border: 1px dashed var(--grey-700);
   border-radius: var(--border-radius);
   display: flex;
-  justify-content: space-between;
+  gap: calc(var(--spacing) * 2);
   padding: calc(var(--spacing) * 5);
 }
 

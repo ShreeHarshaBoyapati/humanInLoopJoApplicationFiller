@@ -15,5 +15,6 @@ router.post('/login', loginInputValidation, asHandler(UserController.login));
 router.post('/logout', authMiddleware, asHandler(UserController.logout));
 router.put('/', authMiddleware, updateUserValidation, asHandler(UserController.update));
 router.delete('/', authMiddleware, asHandler(UserController.delete));
+router.get('/me', authMiddleware, asHandler(UserController.me));
 
 export default router;

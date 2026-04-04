@@ -17,7 +17,15 @@ const INITIAL_VISIBLE_COUNT = 2;
 
 type ConnectionStatus = { type: 'success' | 'error'; text: string } | null;
 
-export function PersonasSection() {
+export function PersonasSection({
+  returnTo,
+  jobId,
+  step,
+}: {
+  returnTo?: string;
+  jobId?: string;
+  step?: number;
+}) {
   const navigate = useNavigate();
   const [isAddingPersona, setIsAddingPersona] = useState<boolean>(false);
   const [name, setName] = useState('');
@@ -293,7 +301,17 @@ export function PersonasSection() {
                   aria-label="View resumes"
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate({ to: '/resume', search: { personaId: p.id, title: p.title } });
+                    navigate({
+                      to: '/resume',
+                      search: {
+                        personaId: p.id,
+                        title: p.title,
+                        from: '/settings',
+                        returnTo: returnTo,
+                        jobId: jobId,
+                        step: step,
+                      },
+                    });
                   }}
                   title="View resumes"
                 >

@@ -81,6 +81,9 @@ router.post(
   asHandler(ResumeController.parseFile)
 );
 
+router.get('/active', authMiddleware, asHandler(ResumeController.getActive));
+router.get('/parsed/active', authMiddleware, asHandler(ResumeController.getActiveParsed));
+
 router.get('/:id', authMiddleware, getResumeByIdValidation, asHandler(ResumeController.getById));
 router.get('/', authMiddleware, asHandler(ResumeController.getAll));
 router.post(

@@ -23,6 +23,29 @@ export function handleResumeMessage(
   sendResponse: (response: unknown) => void,
   api: AxiosInstance
 ): boolean {
+  if (message.action === 'GET_ACTIVE_RESUME') {
+    const payload = message.payload as { personaId: string } | undefined;
+
+    api
+      .get<ApiResponse<ResumeMetadata>>('/resume/active', {
+        params: payload?.personaId ? { personaId: payload.personaId } : undefined,
+      })
+      .then((response) => {
+        const { data } = response;
+        if (data.success) {
+          sendResponse({ success: true, data: data.data });
+        } else {
+          sendResponse({ success: false, error: data.message || 'Failed to get active resume' });
+        }
+      })
+      .catch((error: AxiosError<ApiResponse>) => {
+        console.error('Get active resume error:', error);
+        sendResponse({ success: false, error: error.response?.data?.message || error.message });
+      });
+
+    return true;
+  }
+
   if (message.action === 'GET_RESUMES') {
     const payload = message.payload as GetResumeParams | undefined;
 
@@ -245,6 +268,25 @@ export function handleResumeMessage(
       .catch((error: AxiosError<ApiResponse>) => {
         console.error('Set active resume error:', error);
         sendResponse({ success: false, message: error.response?.data?.message || error.message });
+      });
+
+    return true;
+  }
+
+  if (message.action === 'GET_PARSED_RESUME') {
+    api
+      .get<ApiResponse<ResumeData>>('/resume/parsed/active')
+      .then((response) => {
+        const { data } = response;
+        if (data.success && data.data) {
+          sendResponse({ success: true, data: data.data });
+        } else {
+          sendResponse({ success: false, error: data.message || 'Failed to get parsed resume' });
+        }
+      })
+      .catch((error: AxiosError<ApiResponse>) => {
+        console.error('Get parsed resume error:', error);
+        sendResponse({ success: false, error: error.response?.data?.message || error.message });
       });
 
     return true;

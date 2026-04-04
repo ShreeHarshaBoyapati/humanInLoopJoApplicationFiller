@@ -171,6 +171,38 @@ class PersonaController {
     res.status(200).json(data);
   }
 
+  async getActive(req: AuthenticatedTypedRequest<null>, res: Response) {
+    const personaRepository = getPersonaRepository();
+
+    const userId = req.userId;
+
+    const persona = await personaRepository.findOne({
+      where: { user: { id: userId }, active: true },
+    });
+
+    if (!persona) {
+      const data: ApiResponse = {
+        success: false,
+        message: 'No active persona found',
+      };
+      res.status(404).json(data);
+      return;
+    }
+
+    const data: ApiResponse<Persona> = {
+      success: true,
+      data: {
+        id: persona.id,
+        title: persona.title,
+        keywords: persona.keywords,
+        active: persona.active,
+        createdAt: persona.createdAt,
+        updatedAt: persona.updatedAt,
+      },
+    };
+    res.status(200).json(data);
+  }
+
   async setActive(req: AuthenticatedTypedRequest<{ id: string }>, res: Response) {
     const personaRepository = getPersonaRepository();
 

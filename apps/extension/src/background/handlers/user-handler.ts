@@ -78,5 +78,24 @@ export function handleUserMessage(
     return true;
   }
 
+  if (message.action === 'GET_CURRENT_USER') {
+    api
+      .get<ApiResponse<UserPublic>>('/user/me')
+      .then((response) => {
+        const { data } = response;
+        if (data.success && data.data) {
+          sendResponse({ success: true, data: data.data });
+        } else {
+          sendResponse({ success: false, error: data.message || 'Failed to get user' });
+        }
+      })
+      .catch((error) => {
+        console.error('Get current user error:', error);
+        sendResponse({ success: false, error: error.response?.data?.message || error.message });
+      });
+
+    return true;
+  }
+
   return false;
 }

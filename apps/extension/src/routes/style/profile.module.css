@@ -1,0 +1,547 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 4);
+  padding: calc(var(--spacing) * 5);
+}
+
+.header {
+  align-items: center;
+  display: flex;
+  gap: calc(var(--spacing) * 6);
+  margin-bottom: calc(var(--spacing) * 2);
+}
+
+.backBtn {
+  align-items: center;
+  background: none;
+  border: none;
+  color: var(--white-900);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  padding: 0;
+  transition: opacity 0.2s;
+}
+
+.backBtn:hover {
+  opacity: 0.8;
+}
+
+.headerTitle {
+  color: var(--white-900);
+  font-family: var(--heading-font);
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+/* Active Persona & Resume Cards - Stacked Vertically */
+.activeCardsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 3);
+}
+
+.activeCard {
+  background-color: var(--black-800);
+  border: 1px solid var(--grey-700);
+  border-radius: var(--border-radius);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 3);
+  padding: calc(var(--spacing) * 4);
+}
+
+.activeCardHeader {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.activeCardLabel {
+  color: var(--white-700);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.activeCardBadge {
+  background: color-mix(in srgb, var(--green-400) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--green-400) 35%, transparent);
+  border-radius: 4px;
+  color: var(--green-400);
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 2px 6px;
+}
+
+.activeCardContent {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 2);
+}
+
+.activeCardTitle {
+  color: var(--white-900);
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.activeCardMeta {
+  color: var(--white-700);
+  font-size: 0.75rem;
+}
+
+/* Resume Meta Row - Size and Date */
+.resumeMetaRow {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--spacing) * 2);
+  min-width: 0;
+}
+
+.resumeFileSize {
+  color: var(--white-700);
+  font-size: 0.75rem;
+}
+
+.resumeSeparator {
+  color: var(--grey-700);
+  font-size: 0.75rem;
+}
+
+.resumeDateTime {
+  color: var(--white-700);
+  font-size: 0.75rem;
+}
+
+.changeBtn {
+  background: none;
+  border: 1px solid var(--blue-500);
+  border-radius: var(--border-radius);
+  color: var(--blue-500);
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3);
+  transition: all 0.2s;
+  width: fit-content;
+}
+
+.changeBtn:hover {
+  background-color: color-mix(in srgb, var(--blue-500) 10%, transparent);
+}
+
+.noActiveCard {
+  align-items: center;
+  background-color: var(--black-800);
+  border: 1px dashed var(--grey-700);
+  border-radius: var(--border-radius);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 2);
+  justify-content: center;
+  min-height: 120px;
+  padding: calc(var(--spacing) * 4);
+}
+
+.noActiveText {
+  color: var(--white-700);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+/* Instruction Banner */
+.instructionBanner {
+  background-color: color-mix(in srgb, var(--blue-500) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--blue-500) 30%, transparent);
+  border-radius: var(--border-radius);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 2);
+  padding: calc(var(--spacing) * 4);
+}
+
+.instructionBanner p {
+  color: var(--white-900);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.instructionBanner p:first-child {
+  font-weight: 600;
+}
+
+.instructionBanner p:last-child {
+  color: var(--white-700);
+  font-size: 0.75rem;
+}
+
+/* Sections */
+.sectionsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 3);
+}
+
+.sectionCard {
+  background-color: var(--black-800);
+  border: 1px solid var(--grey-700);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.sectionHeader {
+  align-items: center;
+  background-color: var(--black-700);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  padding: calc(var(--spacing) * 4);
+  transition: background-color 0.2s;
+}
+
+.sectionHeader:hover {
+  background-color: var(--grey-300);
+}
+
+.sectionTitle {
+  color: var(--white-900);
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.sectionContent {
+  display: flex;
+  flex-direction: column;
+  padding: calc(var(--spacing) * 2) 0;
+}
+
+/* Copyable Line Item - Column Layout */
+.copyableLine {
+  border-bottom: 1px solid var(--grey-700);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 1);
+  padding: calc(var(--spacing) * 3) calc(var(--spacing) * 4);
+  transition: background-color 0.2s;
+}
+
+.copyableLine:last-child {
+  border-bottom: none;
+}
+
+.copyableLine:hover {
+  background-color: color-mix(in srgb, var(--blue-500) 15%, transparent);
+}
+
+.copyableLine.copied {
+  background-color: color-mix(in srgb, var(--green-400) 15%, transparent);
+}
+
+.copyableLineLabel {
+  color: var(--white-700);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.copyableLineValue {
+  color: var(--white-900);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+/* Section Divider */
+.sectionDivider {
+  background-color: var(--grey-700);
+  height: 1px;
+  margin: calc(var(--spacing) * 2) calc(var(--spacing) * 4);
+}
+
+/* Experience Section - Each Line Individually Copyable */
+.experienceBlock {
+  border-bottom: 1px solid var(--grey-700);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+}
+
+.experienceBlock:last-child {
+  border-bottom: none;
+}
+
+.experienceBlock.copied {
+  background-color: color-mix(in srgb, var(--green-400) 15%, transparent);
+}
+
+.experienceLine {
+  border-bottom: 1px solid var(--grey-700);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 1);
+  padding: calc(var(--spacing) * 3) calc(var(--spacing) * 4);
+  transition: background-color 0.2s;
+}
+
+.experienceLine:last-child {
+  border-bottom: none;
+}
+
+/* Copy One - individual line hover */
+.experienceLine:hover {
+  background-color: color-mix(in srgb, var(--blue-500) 20%, transparent);
+}
+
+.experienceLine.copied {
+  background-color: color-mix(in srgb, var(--green-400) 20%, transparent);
+}
+
+.experienceLineLabel {
+  color: var(--white-700);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.experienceLineValue {
+  color: var(--white-900);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.experienceBullets {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 2);
+  margin: 0;
+  padding-left: calc(var(--spacing) * 5);
+}
+
+.experienceBullet {
+  border-radius: 4px;
+  color: var(--white-700);
+  cursor: pointer;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  list-style-type: disc;
+  margin-left: calc(var(--spacing) * 1);
+  padding: calc(var(--spacing) * 1) calc(var(--spacing) * 2);
+  transition: background-color 0.2s;
+}
+
+/* Individual bullet hover - Copy One */
+.experienceBullet:hover {
+  background-color: color-mix(in srgb, var(--blue-500) 25%, transparent);
+}
+
+.experienceBullet.copied {
+  background-color: color-mix(in srgb, var(--green-400) 20%, transparent);
+}
+
+/* Education Section - Column Layout */
+.educationBlock {
+  border-bottom: 1px solid var(--grey-700);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  transition: background-color 0.2s;
+}
+
+.educationBlock:last-child {
+  border-bottom: none;
+}
+
+.educationBlock.copied {
+  background-color: color-mix(in srgb, var(--green-400) 15%, transparent);
+}
+
+.educationLine {
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 1);
+  padding: calc(var(--spacing) * 3) calc(var(--spacing) * 4);
+  transition: background-color 0.2s;
+}
+
+.educationLine:hover {
+  background-color: color-mix(in srgb, var(--blue-500) 20%, transparent);
+}
+
+.educationLine.copied {
+  background-color: color-mix(in srgb, var(--green-400) 20%, transparent);
+}
+
+.educationLineLabel {
+  color: var(--white-700);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.educationLineValue {
+  color: var(--white-900);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* Skills Section - Column Layout */
+.skillsLine {
+  border-bottom: 1px solid var(--grey-700);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 1);
+  padding: calc(var(--spacing) * 3) calc(var(--spacing) * 4);
+  transition: background-color 0.2s;
+}
+
+.skillsLine:last-child {
+  border-bottom: none;
+}
+
+.skillsLine:hover {
+  background-color: color-mix(in srgb, var(--blue-500) 15%, transparent);
+}
+
+.skillsLine.copied {
+  background-color: color-mix(in srgb, var(--green-400) 15%, transparent);
+}
+
+.skillsLineLabel {
+  color: var(--white-700);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.skillsLineValue {
+  color: var(--white-900);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  overflow-wrap: break-word;
+}
+
+/* Certifications Section - Column Layout */
+.certificationBlock {
+  border-bottom: 1px solid var(--grey-700);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 1);
+  padding: calc(var(--spacing) * 3) calc(var(--spacing) * 4);
+  transition: background-color 0.2s;
+}
+
+.certificationBlock:last-child {
+  border-bottom: none;
+}
+
+.certificationBlock:hover {
+  background-color: color-mix(in srgb, var(--blue-500) 15%, transparent);
+}
+
+.certificationBlock.copied {
+  background-color: color-mix(in srgb, var(--green-400) 15%, transparent);
+}
+
+.certificationLabel {
+  color: var(--white-700);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.certificationValue {
+  color: var(--white-900);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  overflow-wrap: break-word;
+}
+
+/* Projects Section - Column Layout */
+.projectBlock {
+  border-bottom: 1px solid var(--grey-700);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 1);
+  padding: calc(var(--spacing) * 3) calc(var(--spacing) * 4);
+  transition: background-color 0.2s;
+}
+
+.projectBlock:last-child {
+  border-bottom: none;
+}
+
+.projectBlock:hover {
+  background-color: color-mix(in srgb, var(--blue-500) 15%, transparent);
+}
+
+.projectBlock.copied {
+  background-color: color-mix(in srgb, var(--green-400) 15%, transparent);
+}
+
+.projectLabel {
+  color: var(--white-700);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.projectValue {
+  color: var(--white-900);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  overflow-wrap: break-word;
+}
+
+/* Empty State */
+.emptyState {
+  align-items: center;
+  background-color: var(--black-800);
+  border: 1px dashed var(--grey-700);
+  border-radius: var(--border-radius);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 2);
+  justify-content: center;
+  min-height: 200px;
+  padding: calc(var(--spacing) * 5);
+}
+
+.emptyStateText {
+  color: var(--white-700);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+/* Loading */
+.loading {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.loadingText {
+  color: var(--white-700);
+  font-size: 0.875rem;
+}

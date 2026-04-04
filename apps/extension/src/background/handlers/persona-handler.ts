@@ -77,6 +77,25 @@ export function handlePersonaMessage(
     return true;
   }
 
+  if (message.action === 'GET_ACTIVE_PERSONA') {
+    api
+      .get<ApiResponse<Persona>>('/persona/active')
+      .then((response) => {
+        const { data } = response;
+        if (data.success) {
+          sendResponse({ success: true, data: data.data });
+        } else {
+          sendResponse({ success: false, error: data.message || 'Failed to get active persona' });
+        }
+      })
+      .catch((error: AxiosError<ApiResponse>) => {
+        console.error('Get active persona error:', error);
+        sendResponse({ success: false, error: error.response?.data?.message || error.message });
+      });
+
+    return true;
+  }
+
   if (message.action === 'GET_PERSONAS') {
     api
       .get<ApiResponse<Persona[]>>('/persona')

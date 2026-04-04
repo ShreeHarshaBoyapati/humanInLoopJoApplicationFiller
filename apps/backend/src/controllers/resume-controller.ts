@@ -407,6 +407,93 @@ class ResumeController {
     };
     res.status(200).json(data);
   }
+
+  async getActive(req: AuthenticatedTypedRequest<null>, res: Response) {
+    const resumeRepository = getResumeRepository();
+
+    const userId = req.userId;
+    const personaId = req.query.personaId as string | undefined;
+
+    const queryBuilder = resumeRepository
+      .createQueryBuilder('resume')
+      .leftJoin('resume.persona', 'persona')
+      .leftJoin('persona.user', 'user')
+      .where('user.id = :userId', { userId })
+      .andWhere('resume.active = :active', { active: true });
+
+    if (personaId) {
+      queryBuilder.andWhere('persona.id = :personaId', { personaId });
+    }
+
+    // Find the active resume for the user
+    const resume = await queryBuilder
+      .select([
+        'resume.id',
+        'resume.fileName',
+        'resume.fileSize',
+        'resume.keywords',
+        'resume.active',
+        'resume.createdAt',
+        'resume.updatedAt',
+      ])
+      .getOne();
+
+    if (!resume) {
+      const data: ApiResponse = {
+        success: false,
+        message: 'No active resume found',
+      };
+      res.status(404).json(data);
+      return;
+    }
+
+    const resumeResponse: ResumeMetadata = {
+      id: resume.id,
+      fileName: resume.fileName,
+      fileSize: resume.fileSize,
+      keywords: resume.keywords,
+      active: resume.active,
+      createdAt: resume.createdAt,
+      updatedAt: resume.updatedAt,
+    };
+
+    const data: ApiResponse<ResumeMetadata> = {
+      success: true,
+      data: resumeResponse,
+    };
+    res.status(200).json(data);
+  }
+
+  async getActiveParsed(req: AuthenticatedTypedRequest<null>, res: Response) {
+    const resumeRepository = getResumeRepository();
+
+    const userId = req.userId;
+
+    // Find the active resume for the user
+    const resume = await resumeRepository
+      .createQueryBuilder('resume')
+      .leftJoin('resume.persona', 'persona')
+      .leftJoin('persona.user', 'user')
+      .where('user.id = :userId', { userId })
+      .andWhere('resume.active = :active', { active: true })
+      .select(['resume.id', 'resume.parsedData'])
+      .getOne();
+
+    if (!resume) {
+      const data: ApiResponse = {
+        success: false,
+        message: 'No active resume found',
+      };
+      res.status(404).json(data);
+      return;
+    }
+
+    const data: ApiResponse<ResumeData> = {
+      success: true,
+      data: resume.parsedData as unknown as ResumeData,
+    };
+    res.status(200).json(data);
+  }
 }
 
 export default new ResumeController();
