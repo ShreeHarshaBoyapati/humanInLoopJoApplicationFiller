@@ -8,6 +8,7 @@ import {
   SetActiveResumeParams,
   FileDataPayload,
 } from './resume';
+import type { StoredAuth } from './auth-types';
 
 /**
  * Chrome extension message contracts.
@@ -18,6 +19,7 @@ import {
  */
 export type ExtensionMessage =
   | { action: 'CHECK_AUTH' }
+  | { action: 'CHECK_AUTH_WITH_TIMESTAMP' }
   | { action: 'LOGIN'; payload: { email: string; password: string } }
   | { action: 'NewUser'; payload: { email: string; password: string } }
   | { action: 'LOGOUT' }
@@ -60,4 +62,6 @@ export type ExtensionMessage =
   | { action: 'PARSE_FILE_RESUME'; payload: { file: FileDataPayload } }
   | { action: 'ANALYZE_RESUME'; payload: { jobId: string; resumeId: string } }
   | { action: 'SET_ACTIVE_RESUME'; payload: SetActiveResumeParams }
-  | { action: 'GET_PARSED_RESUME' };
+  | { action: 'GET_PARSED_RESUME' }
+  | { action: 'SYNC_AUTH_FROM_WEB'; payload: StoredAuth }
+  | { action: 'AUTH_STATE_CHANGED'; payload: StoredAuth | null };

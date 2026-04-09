@@ -8,3 +8,5 @@
 - Instead, provide the commands at the end of each task for the user to run themselves.
 - Present commands in a clear, copy-paste friendly format (e.g., in code blocks).
 - Explain what each command does before presenting it.
+
+- Never read .env file. Allows read .env.example file for reference, but do not read .env file directly.

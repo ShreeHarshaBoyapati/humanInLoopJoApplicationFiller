@@ -1,5 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import type { ExtensionMessage, ApiResponse } from '@repo/shared-types';
+import { AUTH_STORAGE_KEY, type StoredAuth } from '@repo/shared-types';
 import { handleUserMessage } from './handlers/user-handler.js';
 import { handleJobMessage } from './handlers/job-handler.js';
 import { handleContentMessages } from './handlers/content-handler.js';
@@ -18,17 +19,20 @@ chrome.runtime.onInstalled.addListener(() => {
     .catch((error) => console.error(error));
 });
 
-const API_URL = import.meta.env.VITE_EXT_BACKENDAPI || 'http://localhost:8000/api';
+const API_URL = import.meta.env.VITE_EXT_BACKENDAPI || '';
 
 const api = axios.create({
   baseURL: API_URL,
   adapter: 'fetch',
 });
 
-// Add a request interceptor to inject the token
+// Add a request interceptor to inject the token from authData
 api.interceptors.request.use(async (config) => {
   const result = await new Promise<{ token?: string }>((resolve) => {
-    chrome.storage.local.get(['token'], (res) => resolve(res as { token?: string }));
+    chrome.storage.local.get([AUTH_STORAGE_KEY], (res) => {
+      const authData = res[AUTH_STORAGE_KEY] as StoredAuth | undefined;
+      resolve({ token: authData?.token });
+    });
   });
 
   if (result.token) {
@@ -42,7 +46,7 @@ api.interceptors.response.use(
   (error: AxiosError<ApiResponse>) => {
     if (error.response && error.response.status === 401) {
       const message = error.response.data?.message || 'Session expired. Please log in again.';
-      chrome.storage.local.remove('token', () => {
+      chrome.storage.local.remove(AUTH_STORAGE_KEY, () => {
         chrome.runtime
           .sendMessage({
             action: 'LOGOUT_TRIGGERED',
@@ -61,6 +65,7 @@ api.interceptors.response.use(
 chrome.runtime.onMessage.addListener((message: ExtensionMessage, sender, sendResponse) => {
   const contentHandled = handleContentMessages(message, sender, sendResponse);
   if (contentHandled) return true;
+
   // User-related actions
   const handled = handleUserMessage(message, sendResponse, api);
   if (handled) return true;

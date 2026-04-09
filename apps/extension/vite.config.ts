@@ -13,12 +13,27 @@ const __dirname = path.dirname(__filename);
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, path.resolve(__dirname, '../..'));
   const PORT = parseInt(env.VITE_EXT_PORT || '3000');
+  const WEB_APP_URL = env.VITE_WEB_APP_URL || 'http://localhost:3001';
+
+  // Transform manifest to inject web app URL for auth sync content script
+  const transformedManifest = { ...manifest };
+
+  // Add web app domain to content_scripts for auth sync
+  if (transformedManifest.content_scripts) {
+    transformedManifest.content_scripts.push({
+      matches: [`${WEB_APP_URL}/*`],
+      js: ['./src/content/auth-sync.ts'],
+      run_at: 'document_start',
+    });
+  }
+
   return {
     plugins: [
       tanstackRouter({ target: 'react', autoCodeSplitting: true }),
       react(),
-      crx({ manifest }),
+      crx({ manifest: transformedManifest }),
     ],
+    envDir: '../..',
     server: {
       port: PORT,
       strictPort: true,

@@ -8,3 +8,4 @@ export * from './messages.js';
 export * from './job.js';
 export * from './persona.js';
 export * from './resume.js';
+export * from './auth-types.js';

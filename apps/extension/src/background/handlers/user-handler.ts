@@ -1,5 +1,6 @@
 import type { AxiosInstance } from 'axios';
 import type { ExtensionMessage, ApiResponse, UserPublic } from '@repo/shared-types';
+import { AUTH_STORAGE_KEY, type StoredAuth } from '@repo/shared-types';
 
 /**
  * Handles all user-related background messages: CHECK_AUTH, LOGIN, NewUser, LOGOUT.
@@ -12,8 +13,20 @@ export function handleUserMessage(
   api: AxiosInstance
 ): boolean {
   if (message.action === 'CHECK_AUTH') {
-    chrome.storage.local.get(['token'], (result: { token?: string }) => {
-      sendResponse({ isAuthenticated: !!result.token });
+    chrome.storage.local.get([AUTH_STORAGE_KEY], (result) => {
+      const authData = result[AUTH_STORAGE_KEY] as StoredAuth | undefined;
+      sendResponse({ isAuthenticated: !!authData?.token });
+    });
+    return true;
+  }
+
+  if (message.action === 'CHECK_AUTH_WITH_TIMESTAMP') {
+    chrome.storage.local.get([AUTH_STORAGE_KEY], (result) => {
+      const authData = result[AUTH_STORAGE_KEY] as StoredAuth | undefined;
+      sendResponse({
+        isAuthenticated: !!authData?.token,
+        authData: authData || null,
+      });
     });
     return true;
   }
@@ -47,8 +60,17 @@ export function handleUserMessage(
       .then((response) => {
         const { data } = response;
         if (data.success && data.data?.token) {
-          chrome.storage.local.set({ token: data.data.token }, () => {
-            sendResponse({ success: true, token: data.data?.token });
+          const timestamp = Date.now();
+          const authData: StoredAuth = {
+            token: data.data.token,
+            userId: data.data.id,
+            email: data.data.email,
+            timestamp,
+          };
+
+          // Store with new authData structure
+          chrome.storage.local.set({ [AUTH_STORAGE_KEY]: authData }, () => {
+            sendResponse({ success: true, token: data.data?.token, authData });
           });
         } else {
           sendResponse({ success: false, error: data.message || 'Login failed' });
@@ -66,7 +88,7 @@ export function handleUserMessage(
     api
       .post<ApiResponse>('/user/logout')
       .then(() => {
-        chrome.storage.local.remove('token', () => {
+        chrome.storage.local.remove(AUTH_STORAGE_KEY, () => {
           sendResponse({ success: true });
         });
       })

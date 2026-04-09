@@ -36,6 +36,7 @@ function HomeComponent() {
   const handleLogout = () => {
     handleClose();
     if (typeof chrome !== 'undefined' && chrome.runtime) {
+      // TODO: need to add a module for confirmation
       chrome.runtime.sendMessage({ action: 'LOGOUT' }, (response: LogoutResponse) => {
         if (response?.success) {
           window.location.reload();
