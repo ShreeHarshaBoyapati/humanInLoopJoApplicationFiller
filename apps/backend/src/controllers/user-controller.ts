@@ -1,9 +1,22 @@
 import type { Response, TypedRequest, AuthenticatedTypedRequest } from '../types/index.js';
-import type { ApiResponse, UserPublic } from '@repo/shared-types';
+import { type ApiResponse, type UserPublic, TOKEN_COOKIE_NAME } from '@repo/shared-types';
 import { v4 as uuidv4 } from 'uuid';
 import { getUserRepository } from '../database/repositories/index.js';
-import { hashPassword, comparePassword, generateToken, staticConfig } from '../utils/index.js';
-import { LoginInputType, RegisterInputType, UpdateUserInputType } from '../middlewares/user.js';
+import {
+  hashPassword,
+  comparePassword,
+  generateToken,
+  staticConfig,
+  logger,
+} from '../utils/index.js';
+import {
+  LoginInputType,
+  RegisterInputType,
+  UpdateUserInputType,
+  OAuthCallbackInputType,
+  ExtensionOAuthCallbackInputType,
+} from '../middlewares/user.js';
+import { getTokensFromCode, getUserInfo } from '../services/google-oauth-service.js';
 
 class UserController {
   /**
@@ -28,12 +41,22 @@ class UserController {
       return;
     }
 
+    if (!password) {
+      res.status(400).json({
+        success: false,
+        message: 'Password is required',
+      });
+      return;
+    }
+
     const hashedPassword = await hashPassword(password);
 
     const user = await userRepository.save({
       email: email,
       password: hashedPassword,
       sessionId: null,
+      googleId: null,
+      refreshToken: null,
     });
 
     const response: ApiResponse<UserPublic> = {
@@ -45,6 +68,298 @@ class UserController {
       },
     };
     res.status(201).json(response);
+  }
+
+  async googleAuth(req: TypedRequest<OAuthCallbackInputType>, res: Response) {
+    const { code, state, error } = req.body;
+    const userRepository = getUserRepository();
+
+    try {
+      if (error || !code) {
+        if (state) {
+          const callbackUrl = new URL(decodeURIComponent(state));
+          callbackUrl.searchParams.set('error', error || 'oauth_failed');
+          res.redirect(callbackUrl.toString());
+          return;
+        }
+        res.status(400).json({
+          success: false,
+          message: 'Google authentication failed',
+        });
+        return;
+      }
+      // Exchange code for tokens
+      const tokens = await getTokensFromCode(code);
+
+      // Get user info from Google
+      const googleUser = await getUserInfo(tokens.access_token);
+
+      // Find user by googleId
+      let user = await userRepository.findOne({
+        where: { googleId: googleUser.id },
+      });
+
+      if (user) {
+        // Case 1: User found by googleId -> login directly
+        const sessionId = uuidv4();
+        user.sessionId = sessionId;
+        if (tokens.refresh_token) {
+          user.refreshToken = tokens.refresh_token;
+        }
+        await userRepository.save(user);
+
+        const token = generateToken({
+          sessionId,
+          userId: user.id,
+        });
+
+        // Set token in cookie
+        res.cookie(TOKEN_COOKIE_NAME, token, {
+          httpOnly: staticConfig.cookie.httpOnly,
+          secure: staticConfig.cookie.secure,
+          sameSite: staticConfig.cookie.sameSite as 'lax' | 'strict' | 'none',
+          path: staticConfig.cookie.path,
+        });
+
+        // If callback URL is provided, redirect to it (token is in cookie)
+        if (state) {
+          res.redirect(decodeURIComponent(state));
+          return;
+        }
+
+        res.status(200).json({
+          success: true,
+          message: 'Google authentication successful',
+          data: {
+            token,
+            id: user.id,
+            email: user.email,
+          },
+        });
+        return;
+      }
+
+      // Check if user exists with same email
+      const existingUserByEmail = await userRepository.findOne({
+        where: { email: googleUser.email },
+      });
+
+      if (existingUserByEmail) {
+        // Case 2: User exists with email but no googleId
+        // Auto-link OAuth and login directly
+        user = existingUserByEmail;
+        user.googleId = googleUser.id;
+        if (tokens.refresh_token) {
+          user.refreshToken = tokens.refresh_token;
+        }
+
+        const sessionId = uuidv4();
+        user.sessionId = sessionId;
+        await userRepository.save(user);
+
+        const token = generateToken({
+          sessionId,
+          userId: user.id,
+        });
+
+        // Set token in cookie
+        res.cookie(TOKEN_COOKIE_NAME, token, {
+          httpOnly: staticConfig.cookie.httpOnly,
+          secure: staticConfig.cookie.secure,
+          sameSite: staticConfig.cookie.sameSite as 'lax' | 'strict' | 'none',
+          path: staticConfig.cookie.path,
+        });
+
+        // If callback URL is provided, redirect to it (token is in cookie)
+        if (state) {
+          res.redirect(decodeURIComponent(state));
+          return;
+        }
+
+        res.status(200).json({
+          success: true,
+          message: 'Google account linked and authentication successful',
+          data: {
+            token,
+            id: user.id,
+            email: user.email,
+          },
+        });
+        return;
+      }
+
+      // Case 3: No user exists -> create new user with OAuth data
+      user = await userRepository.save({
+        email: googleUser.email,
+        password: null,
+        sessionId: null,
+        googleId: googleUser.id,
+        refreshToken: tokens.refresh_token || null,
+      });
+
+      const sessionId = uuidv4();
+      user.sessionId = sessionId;
+      await userRepository.save(user);
+
+      const token = generateToken({
+        sessionId,
+        userId: user.id,
+      });
+
+      // Set token in cookie
+      res.cookie(TOKEN_COOKIE_NAME, token, {
+        httpOnly: staticConfig.cookie.httpOnly,
+        secure: staticConfig.cookie.secure,
+        sameSite: staticConfig.cookie.sameSite as 'lax' | 'strict' | 'none',
+        path: staticConfig.cookie.path,
+      });
+
+      // If callback URL is provided, redirect to it (token is in cookie)
+      if (state) {
+        res.redirect(decodeURIComponent(state));
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        message: 'Google authentication successful',
+        data: {
+          token,
+          id: user.id,
+          email: user.email,
+        },
+      });
+    } catch (error) {
+      logger.error({ err: error }, 'Google OAuth error');
+
+      if (state) {
+        const callbackUrl = new URL(decodeURIComponent(state));
+        callbackUrl.searchParams.set('error', 'oauth_failed');
+        res.redirect(callbackUrl.toString());
+        return;
+      }
+
+      res.status(400).json({
+        success: false,
+        message: 'Google authentication failed',
+      });
+    }
+  }
+
+  async extensionGoogleAuth(req: TypedRequest<ExtensionOAuthCallbackInputType>, res: Response) {
+    const { accessToken, error } = req.body;
+    const userRepository = getUserRepository();
+
+    try {
+      if (error || !accessToken) {
+        res.status(400).json({
+          success: false,
+          message: error || 'Google authentication failed',
+        });
+        return;
+      }
+
+      // Get user info from Google using the access token directly
+      // No need to exchange code for tokens - extension already has the access token
+      const googleUser = await getUserInfo(accessToken);
+
+      // Find user by googleId
+      let user = await userRepository.findOne({
+        where: { googleId: googleUser.id },
+      });
+
+      if (user) {
+        // Case 1: User found by googleId -> login directly
+        const sessionId = uuidv4();
+        user.sessionId = sessionId;
+        await userRepository.save(user);
+
+        const token = generateToken({
+          sessionId,
+          userId: user.id,
+        });
+
+        // Return token in response body (not cookie) for extension
+        res.status(200).json({
+          success: true,
+          message: 'Google authentication successful',
+          data: {
+            token,
+            id: user.id,
+            email: user.email,
+          },
+        });
+        return;
+      }
+
+      // Check if user exists with same email
+      const existingUserByEmail = await userRepository.findOne({
+        where: { email: googleUser.email },
+      });
+
+      if (existingUserByEmail) {
+        // Case 2: User exists with email but no googleId -> auto-link and login
+        user = existingUserByEmail;
+        user.googleId = googleUser.id;
+
+        const sessionId = uuidv4();
+        user.sessionId = sessionId;
+        await userRepository.save(user);
+
+        const token = generateToken({
+          sessionId,
+          userId: user.id,
+        });
+
+        // Return token in response body (not cookie) for extension
+        res.status(200).json({
+          success: true,
+          message: 'Google account linked and authentication successful',
+          data: {
+            token,
+            id: user.id,
+            email: user.email,
+          },
+        });
+        return;
+      }
+
+      // Case 3: No user exists -> create new user with OAuth data
+      user = await userRepository.save({
+        email: googleUser.email,
+        password: null,
+        sessionId: null,
+        googleId: googleUser.id,
+        refreshToken: null,
+      });
+
+      const sessionId = uuidv4();
+      user.sessionId = sessionId;
+      await userRepository.save(user);
+
+      const token = generateToken({
+        sessionId,
+        userId: user.id,
+      });
+
+      // Return token in response body (not cookie) for extension
+      res.status(200).json({
+        success: true,
+        message: 'Google authentication successful',
+        data: {
+          token,
+          id: user.id,
+          email: user.email,
+        },
+      });
+    } catch (error) {
+      logger.error({ err: error }, 'Extension Google OAuth error');
+
+      res.status(400).json({
+        success: false,
+        message: 'Google authentication failed',
+      });
+    }
   }
 
   /**
@@ -68,6 +383,12 @@ class UserController {
       return;
     }
 
+    // Password is required for login
+    if (!password || !user.password) {
+      res.status(400).json(errData);
+      return;
+    }
+
     const isPasswordValid = await comparePassword(password, user.password);
 
     if (!isPasswordValid) {
@@ -85,7 +406,7 @@ class UserController {
       userId: user.id,
     });
 
-    res.cookie('token', token, {
+    res.cookie(TOKEN_COOKIE_NAME, token, {
       httpOnly: staticConfig.cookie.httpOnly,
       secure: staticConfig.cookie.secure,
       sameSite: staticConfig.cookie.sameSite as 'lax' | 'strict' | 'none',
@@ -114,7 +435,7 @@ class UserController {
 
     await userRepository.update(userId, { sessionId: null });
 
-    res.clearCookie('token', {
+    res.clearCookie(TOKEN_COOKIE_NAME, {
       httpOnly: staticConfig.cookie.httpOnly,
       secure: staticConfig.cookie.secure,
       sameSite: staticConfig.cookie.sameSite as 'lax' | 'strict' | 'none',

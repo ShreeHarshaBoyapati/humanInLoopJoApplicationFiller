@@ -3,6 +3,7 @@
  * Central barrel export for all shared types across backend and extension.
  */
 export * from './api.js';
+export * from './api-key.js';
 export * from './user.js';
 export * from './messages.js';
 export * from './job.js';

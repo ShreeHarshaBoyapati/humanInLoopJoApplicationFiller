@@ -6,12 +6,14 @@
  *
  * Flow:
  * - Receives AUTH_SYNC messages from web app via postMessage
- * - Stores auth data in chrome.storage.local with timestamps
+ * - Sends auth data to background script via message passing
+ * - Background script stores in chrome.storage.session with timestamps
  * - Broadcasts auth changes back to web app when storage changes
  * - Handles logout synchronization
+ * - Uses session storage for sensitive data (cleared when browser closes)
  */
 
-import { AUTH_STORAGE_KEY, type StoredAuth } from '@repo/shared-types';
+import { type StoredAuth } from '@repo/shared-types';
 
 /**
  * Send message to web app via postMessage
@@ -29,9 +31,36 @@ function notifyWebApp(data: { type: string; payload: StoredAuth | null }) {
 }
 
 /**
+ * Send message to background script and handle response
+ */
+async function sendToBackground(message: {
+  action: string;
+  payload?: StoredAuth;
+}): Promise<{ success: boolean; data?: StoredAuth | null; error?: string }> {
+  return new Promise((resolve) => {
+    try {
+      chrome.runtime.sendMessage(message, (response) => {
+        if (chrome.runtime.lastError) {
+          console.error(
+            '[Auth Sync] Error sending message to background:',
+            chrome.runtime.lastError.message
+          );
+          resolve({ success: false, error: chrome.runtime.lastError.message });
+        } else {
+          resolve(response as { success: boolean; data?: StoredAuth | null; error?: string });
+        }
+      });
+    } catch (error) {
+      console.error('[Auth Sync] Exception sending message to background:', error);
+      resolve({ success: false, error: String(error) });
+    }
+  });
+}
+
+/**
  * Handle incoming postMessage from web app
  */
-function handleWebAppMessage(event: MessageEvent) {
+async function handleWebAppMessage(event: MessageEvent) {
   // Only accept messages from our web app origin
   if (event.data?.source !== import.meta.env.VITE_WEB_APP_URL) return;
 
@@ -40,64 +69,96 @@ function handleWebAppMessage(event: MessageEvent) {
   if (type === 'AUTH_SYNC' && payload?.token) {
     const authData: StoredAuth = {
       token: payload.token,
-      userId: payload.userId,
-      email: payload.email,
       timestamp: payload.timestamp || Date.now(),
     };
 
-    // Save to chrome storage
-    chrome.storage.local.set({ [AUTH_STORAGE_KEY]: authData }, () => {
+    // Send auth data to background script (background will store in chrome.storage.session)
+    const response = await sendToBackground({
+      action: 'AUTH_STORAGE_SET',
+      payload: authData,
+    });
+
+    if (response.success) {
       console.log('[Auth Sync] Saved auth data from web app:', {
-        userId: authData.userId,
+        token: authData.token.substring(0, 20) + '...',
         timestamp: authData.timestamp,
       });
-    });
+    } else {
+      console.error('[Auth Sync] Error saving auth data:', response.error);
+    }
   } else if (type === 'AUTH_LOGOUT') {
     // Web app is logging out - clear extension storage
-    chrome.storage.local.remove(AUTH_STORAGE_KEY, () => {
-      console.log('[Auth Sync] Cleared auth data from extension storage (web app logout)');
+    const response = await sendToBackground({
+      action: 'AUTH_STORAGE_REMOVE',
     });
+
+    if (response.success) {
+      console.log('[Auth Sync] Cleared auth data from extension storage (web app logout)');
+    } else {
+      console.error('[Auth Sync] Error clearing auth data:', response.error);
+    }
+  }
+}
+
+function listenForStorageChanges() {
+  try {
+    // Listen for auth state changes from background script
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    chrome.runtime.onMessage.addListener((message, _sender, _sendResponse) => {
+      if (message.action === 'AUTH_STATE_CHANGED') {
+        const authData = message.payload as StoredAuth | null;
+        if (authData === null) {
+          notifyWebApp({ type: 'AUTH_LOGOUT', payload: null });
+        } else {
+          notifyWebApp({ type: 'AUTH_SYNC', payload: authData });
+        }
+      }
+    });
+  } catch (error) {
+    console.error('[Auth Sync] Error setting up storage change listener:', error);
   }
 }
 
 /**
- * Listen for storage changes from extension background
+ * Get current auth data from background script
  */
-function listenForStorageChanges() {
-  chrome.storage.onChanged.addListener((changes) => {
-    if (AUTH_STORAGE_KEY in changes) {
-      const newValue = changes[AUTH_STORAGE_KEY].newValue as StoredAuth | undefined;
-      if (newValue === undefined || newValue === null) {
-        // Extension logged out - notify web app
-        notifyWebApp({ type: 'AUTH_LOGOUT', payload: null });
-      } else {
-        // Auth data changed - notify web app
-        notifyWebApp({ type: 'AUTH_SYNC', payload: newValue });
-      }
-    }
+async function getCurrentAuth(): Promise<StoredAuth | null> {
+  const response = await sendToBackground({
+    action: 'AUTH_STORAGE_GET',
   });
+
+  if (response.success && response.data) {
+    return response.data;
+  }
+
+  return null;
 }
 
 /**
- * Get current auth data from storage
+ * Check if extension context is valid
  */
-async function getCurrentAuth(): Promise<StoredAuth | null> {
-  return new Promise((resolve) => {
-    chrome.storage.local.get([AUTH_STORAGE_KEY], (result) => {
-      const authData = result[AUTH_STORAGE_KEY] as StoredAuth | undefined;
-      if (authData && authData.token) {
-        resolve(authData);
-      } else {
-        resolve(null);
-      }
-    });
-  });
+function isExtensionContextValid(): boolean {
+  try {
+    return (
+      typeof chrome !== 'undefined' &&
+      typeof chrome.runtime !== 'undefined' &&
+      typeof chrome.runtime.id !== 'undefined'
+    );
+  } catch {
+    return false;
+  }
 }
 
 /**
  * Initialize the auth sync content script
  */
-function init() {
+async function init() {
+  // Check if we're in a valid extension context
+  if (!isExtensionContextValid()) {
+    console.log('[Auth Sync] Not in a valid extension context, skipping initialization');
+    return;
+  }
+
   console.log('[Auth Sync] Initializing content script on web app');
 
   // Listen for messages from web app
@@ -107,12 +168,11 @@ function init() {
   listenForStorageChanges();
 
   // Check if there's existing auth data and notify web app
-  getCurrentAuth().then((authData) => {
-    if (authData) {
-      console.log('[Auth Sync] Found existing auth data, notifying web app');
-      notifyWebApp({ type: 'AUTH_SYNC', payload: authData });
-    }
-  });
+  const authData = await getCurrentAuth();
+  if (authData) {
+    console.log('[Auth Sync] Found existing auth data, notifying web app');
+    notifyWebApp({ type: 'AUTH_SYNC', payload: authData });
+  }
 }
 
 // Initialize when DOM is ready

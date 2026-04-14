@@ -1,29 +1,42 @@
 import { useEffect, useState } from 'react';
-import { Link, Outlet, createRootRoute, redirect, useNavigate } from '@tanstack/react-router';
+import {
+  Link,
+  Outlet,
+  createRootRoute,
+  redirect,
+  useNavigate,
+  useRouterState,
+} from '@tanstack/react-router';
 import { axiosInstance } from '../utils/axios.ts';
 import styles from './style/__root.module.css';
 import { LogoutConfirmModal } from '../components/logout-confirm-modal.tsx';
 import {
   listenForExtensionAuth,
-  getLocalStorageAuth,
-  setLocalStorageAuth,
-  clearLocalStorageAuth,
+  getTokenFromCookie,
   notifyExtensionLogout,
+  clearTokenAuth,
 } from '../utils/auth-sync.ts';
 import type { StoredAuth } from '@repo/shared-types';
 
 export const Route = createRootRoute({
   component: RootComponent,
   loader: async ({ location }) => {
-    const auth = getLocalStorageAuth();
+    const auth = getTokenFromCookie();
     const isAuthenticated = !!auth;
-    const isLoginPage = location.pathname === '/login';
+    const pathname = location.pathname;
+
+    // Public routes that don't require authentication
+    const isPublicRoute =
+      pathname === '/login' || pathname === '/sign-up' || pathname === '/google-callback';
+
     if (isAuthenticated) {
-      if (isLoginPage) {
+      // If authenticated and on a public route, redirect to home
+      if (isPublicRoute) {
         throw redirect({ to: '/' });
       }
     } else {
-      if (!isLoginPage) {
+      // If not authenticated and not on a public route, redirect to login
+      if (!isPublicRoute) {
         throw redirect({ to: '/login' });
       }
     }
@@ -32,31 +45,40 @@ export const Route = createRootRoute({
 
 function RootComponent() {
   const navigate = useNavigate();
+  const routerState = useRouterState();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  const pathname = routerState.location.pathname;
+  const isPublicRoute =
+    pathname === '/login' || pathname === '/sign-up' || pathname === '/google-callback';
 
   // Listen for extension auth changes
   useEffect(() => {
     const cleanup = listenForExtensionAuth((authData: StoredAuth | null) => {
+      console.log('==cleanup is getting called========');
+
       if (authData) {
-        // Extension has auth data - update localStorage
-        setLocalStorageAuth(authData);
         setIsAuthenticated(true);
-        navigate({ to: '/' });
+        // Only navigate to home if not on a public route
+        if (!isPublicRoute) {
+          navigate({ to: '/' });
+        }
       } else {
-        // Extension logged out - clear localStorage and redirect
-        clearLocalStorageAuth();
         setIsAuthenticated(false);
-        navigate({ to: '/login' });
+        // Only navigate to login if not on a public route
+        if (!isPublicRoute) {
+          navigate({ to: '/login' });
+        }
       }
     });
 
     return cleanup;
-  }, [navigate]);
+  }, [navigate, isPublicRoute]);
 
   // Check existing auth on mount
   useEffect(() => {
-    const auth = getLocalStorageAuth();
+    const auth = getTokenFromCookie();
     if (auth) {
       setIsAuthenticated(true);
     }
@@ -70,20 +92,14 @@ function RootComponent() {
     setShowLogoutModal(false);
 
     try {
-      // Call backend logout
       await axiosInstance.post('/user/logout');
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      // Clear local auth
-      clearLocalStorageAuth();
+      clearTokenAuth();
       setIsAuthenticated(false);
 
-      // Notify extension
       notifyExtensionLogout();
-
-      // Redirect to login
       navigate({ to: '/login' });
+    } catch (error) {
+      console.error('Logout error:', error);
     }
   };
 

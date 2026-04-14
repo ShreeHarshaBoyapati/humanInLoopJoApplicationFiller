@@ -1,4 +1,10 @@
 import type { Response, AuthenticatedTypedRequest } from '../types/index.js';
+import type {
+  ApiResponse,
+  ApiKeyData,
+  TestConnectionResponse,
+  ModelOption,
+} from '@repo/shared-types';
 import { getApiKeyRepository, getUserRepository } from '../database/repositories/index.js';
 import { encryptText, decryptText } from '../utils/encryption.js';
 import { UpdateApiKeyInputType, TestConnectionInputType } from '../middlewares/api-key.js';
@@ -81,13 +87,15 @@ class ApiKeyController {
         await apiKeyRepository.save(newKey);
       }
 
-      res.status(200).json({
+      const response: ApiResponse = {
         success: true,
         message: `API Key for ${providerName} saved successfully`,
-      });
+      };
+      res.status(200).json(response);
     } catch (error: unknown) {
       console.error('Error saving API Key:', error);
-      res.status(500).json({ success: false, message: 'Failed to save API Key' });
+      const response: ApiResponse = { success: false, message: 'Failed to save API Key' };
+      res.status(500).json(response);
     }
   }
 
@@ -150,13 +158,12 @@ class ApiKeyController {
         })
       );
 
-      res.status(200).json({
-        success: true,
-        data,
-      });
+      const response: ApiResponse<ApiKeyData[]> = { success: true, data };
+      res.status(200).json(response);
     } catch (error: unknown) {
       console.error('Error fetching API Keys:', error);
-      res.status(500).json({ success: false, message: 'Failed to fetch API Keys' });
+      const response: ApiResponse = { success: false, message: 'Failed to fetch API Keys' };
+      res.status(500).json(response);
     }
   }
 
@@ -176,14 +183,20 @@ class ApiKeyController {
         );
       }
       const models = await ApiKeyService.testConnection(providerName, decryptedCredentials);
-      res.status(200).json({ success: true, message: 'Connection successful', data: { models } });
+      const response: ApiResponse<TestConnectionResponse> = {
+        success: true,
+        message: 'Connection successful',
+        data: { models: models as ModelOption[] },
+      };
+      res.status(200).json(response);
     } catch (error: unknown) {
       let message = 'Connection failed';
       if (error instanceof Error) {
         message = error.message;
         logger.error({ error: error }, 'Connection failed');
       }
-      res.status(200).json({ success: false, message: message });
+      const response: ApiResponse = { success: false, message };
+      res.status(200).json(response);
     }
   }
 
@@ -202,19 +215,19 @@ class ApiKeyController {
       });
 
       if (!key) {
-        res.status(404).json({ success: false, message: 'Provider not found' });
+        const response: ApiResponse = { success: false, message: 'Provider not found' };
+        res.status(404).json(response);
         return;
       }
 
       await apiKeyRepository.remove(key);
 
-      res.status(200).json({
-        success: true,
-        message: 'Provider deleted successfully',
-      });
+      const response: ApiResponse = { success: true, message: 'Provider deleted successfully' };
+      res.status(200).json(response);
     } catch (error: unknown) {
       console.error('Error deleting API Key:', error);
-      res.status(500).json({ success: false, message: 'Failed to delete Provider' });
+      const response: ApiResponse = { success: false, message: 'Failed to delete Provider' };
+      res.status(500).json(response);
     }
   }
 
@@ -230,7 +243,8 @@ class ApiKeyController {
 
       const targetKey = keys.find((obj) => obj.id === id);
       if (!targetKey) {
-        res.status(404).json({ success: false, message: 'Provider not found' });
+        const response: ApiResponse = { success: false, message: 'Provider not found' };
+        res.status(404).json(response);
         return;
       }
 
@@ -240,13 +254,12 @@ class ApiKeyController {
 
       await apiKeyRepository.save(keys);
 
-      res.status(200).json({
-        success: true,
-        message: 'Provider selected successfully',
-      });
+      const response: ApiResponse = { success: true, message: 'Provider selected successfully' };
+      res.status(200).json(response);
     } catch (error: unknown) {
       console.error('Error selecting API Key:', error);
-      res.status(500).json({ success: false, message: 'Failed to select Provider' });
+      const response: ApiResponse = { success: false, message: 'Failed to select Provider' };
+      res.status(500).json(response);
     }
   }
 }

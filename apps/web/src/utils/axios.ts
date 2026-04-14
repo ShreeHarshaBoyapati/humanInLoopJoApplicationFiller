@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { WEB_APP_MESSAGE_KEY } from '@repo/shared-types';
+import { clearTokenAuth } from './auth-sync';
 
 const API_URL = import.meta.env.VITE_WEB_BACKENDAPI || '';
 
@@ -8,22 +8,12 @@ export const axiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
 });
 
 // Request interceptor to add auth token
 axiosInstance.interceptors.request.use(
   (config) => {
-    const stored = localStorage.getItem(WEB_APP_MESSAGE_KEY);
-    if (stored) {
-      try {
-        const authData = JSON.parse(stored);
-        if (authData.token) {
-          config.headers.Authorization = `Bearer ${authData.token}`;
-        }
-      } catch {
-        // Invalid stored data, skip adding token
-      }
-    }
     return config;
   },
   (error) => {
@@ -37,7 +27,7 @@ axiosInstance.interceptors.response.use(
   (error) => {
     // Handle 401 unauthorized globally
     if (error.response?.status === 401) {
-      localStorage.removeItem(WEB_APP_MESSAGE_KEY);
+      clearTokenAuth();
       window.location.href = '/login';
     }
     return Promise.reject(error);

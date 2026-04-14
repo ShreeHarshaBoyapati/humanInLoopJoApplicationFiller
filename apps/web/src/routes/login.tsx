@@ -1,24 +1,36 @@
 import { useState } from 'react';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router';
 import axios from 'axios';
 import styles from './style/login.module.css';
 import { EnhancedTextField as TextField } from '@repo/ui/text-field.tsx';
 import { EnhancedButton as Button } from '@repo/ui/button.tsx';
 import type { ApiResponse, UserPublic } from '@repo/shared-types';
-import { syncAuthToExtension, setLocalStorageAuth } from '../utils/auth-sync.ts';
+import { syncAuthToExtension } from '../utils/auth-sync.ts';
 
 const API_URL = import.meta.env.VITE_WEB_BACKENDAPI || '';
 
+interface LoginSearchSchema {
+  error?: string;
+}
+
 export const Route = createFileRoute('/login')({
   component: LoginComponent,
+  validateSearch: (search: Record<string, unknown>): LoginSearchSchema => {
+    return {
+      error: search.error as string | undefined,
+    };
+  },
 });
 
 function LoginComponent() {
   const navigate = useNavigate();
+  const searchParams = useSearch({ from: '/login' }) as LoginSearchSchema;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const apiError = searchParams.error || '';
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,9 +51,6 @@ function LoginComponent() {
           email: response.data.data.email,
           timestamp,
         };
-
-        // Store in localStorage
-        setLocalStorageAuth(authData);
 
         // Sync to extension
         syncAuthToExtension(authData);
@@ -142,7 +151,12 @@ function LoginComponent() {
                   label="Log in with Google"
                   colorTheme="secondary"
                   size="medium"
-                  onClick={() => console.log('Google OAuth login clicked')}
+                  onClick={() => {
+                    const callbackUrl = encodeURIComponent(
+                      `${window.location.origin}/google-callback?from=${encodeURIComponent('/login')}`
+                    );
+                    window.location.href = `${API_URL}/user/google?callback=${callbackUrl}`;
+                  }}
                   testId="google-login-button"
                   startIcon={
                     <svg
@@ -170,12 +184,15 @@ function LoginComponent() {
                   }
                 />
               </div>
+              {apiError && <div className={styles.apiError}>{apiError}</div>}
               <div className={styles.signUpLink}>
                 <span className={styles.linkText}>New to Job Filler? </span>
                 <button
                   type="button"
                   className={styles.linkButton}
-                  onClick={() => navigate({ to: '/sign-up' })}
+                  onClick={() =>
+                    navigate({ to: '/sign-up', search: { error: undefined } as { error?: string } })
+                  }
                   data-testid="sign-up-link"
                 >
                   Sign Up

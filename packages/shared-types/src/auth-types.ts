@@ -8,10 +8,6 @@
 export interface StoredAuth {
   /** JWT authentication token */
   token: string;
-  /** User ID from the backend */
-  userId: string;
-  /** User email (optional, for display purposes) */
-  email?: string;
   /** Unix timestamp in milliseconds - used for "newest wins" conflict resolution */
   timestamp: number;
 }
@@ -23,8 +19,6 @@ export interface AuthSyncMessage {
   type: 'AUTH_SYNC' | 'AUTH_LOGOUT';
   payload: {
     token?: string;
-    userId?: string;
-    email?: string;
     timestamp?: number;
   };
 }
@@ -38,3 +32,8 @@ export const AUTH_STORAGE_KEY = 'authData';
  * postMessage origin for web app communication
  */
 export const WEB_APP_MESSAGE_KEY = 'JFP_AUTH_SYNC';
+
+/**
+ * Cookie name for token
+ */
+export const TOKEN_COOKIE_NAME = 'jfp_token';

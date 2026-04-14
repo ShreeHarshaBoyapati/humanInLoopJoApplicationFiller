@@ -2,8 +2,9 @@ import type { Request, Response, NextFunction, AuthenticatedTypedRequest } from 
 import { verifyToken } from '../utils/auth.js';
 import { getUserRepository } from '../database/repositories/index.js';
 import * as z from 'zod';
-import { ApiResponse } from '@repo/shared-types';
+import { ApiResponse, TOKEN_COOKIE_NAME } from '@repo/shared-types';
 import { flattenZodErrorToString } from '../utils/validations.js';
+import logger from '../utils/logger.js';
 
 const UserObj = z.object({
   email: z.email(),
@@ -14,7 +15,19 @@ const UserObj = z.object({
     .regex(
       /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/,
       'Password must contain at least 1 special character'
-    ),
+    )
+    .optional(),
+});
+
+const OAuthCallbackObj = z.object({
+  code: z.string().min(1, 'Authorization code is required').optional(),
+  state: z.string().optional(),
+  error: z.string().optional(),
+});
+
+const ExtensionOAuthCallbackObj = z.object({
+  accessToken: z.string().min(1, 'Access token is required').optional(),
+  error: z.string().optional(),
 });
 
 const UpdateUserObj = z
@@ -40,8 +53,7 @@ export async function authMiddleware(
   next: NextFunction
 ): Promise<void> {
   try {
-    let token = req.cookies?.token;
-
+    let token = req.cookies?.[TOKEN_COOKIE_NAME] || req.cookies?.token;
     // Fallback to Authorization header if no cookie (used by Extension)
     if (!token && req.headers.authorization?.startsWith('Bearer ')) {
       token = req.headers.authorization.split(' ')[1];
@@ -123,6 +135,50 @@ export function loginInputValidation(req: Request, res: Response, next: NextFunc
     const data: ApiResponse = {
       success: false,
       message: 'Invalid email or password',
+    };
+    res.status(400).json(data);
+    return;
+  }
+}
+
+export type OAuthCallbackInputType = z.infer<typeof OAuthCallbackObj>;
+export function oauthCallbackValidation(req: Request, res: Response, next: NextFunction) {
+  try {
+    // Google sends OAuth callback as GET with query params, not POST with body
+    const data = req.method === 'GET' ? req.query : req.body;
+    req.body = OAuthCallbackObj.parse(data);
+    next();
+  } catch (error) {
+    logger.error({ err: error }, 'Invalid OAuth callback data');
+    try {
+      const { state } = req.body;
+      if (state) {
+        const callbackUrl = new URL(decodeURIComponent(state));
+        callbackUrl.searchParams.set('error', 'oauth_failed');
+        res.redirect(callbackUrl.toString());
+        return;
+      }
+    } catch {
+      const data: ApiResponse = {
+        success: false,
+        message: 'Invalid OAuth callback',
+      };
+      res.status(400).json(data);
+      return;
+    }
+  }
+}
+
+export type ExtensionOAuthCallbackInputType = z.infer<typeof ExtensionOAuthCallbackObj>;
+export function extensionOAuthCallbackValidation(req: Request, res: Response, next: NextFunction) {
+  try {
+    req.body = ExtensionOAuthCallbackObj.parse(req.body);
+    next();
+  } catch (error) {
+    logger.error({ err: error }, 'Invalid extension OAuth callback data');
+    const data: ApiResponse = {
+      success: false,
+      message: 'Invalid extension OAuth callback',
     };
     res.status(400).json(data);
     return;

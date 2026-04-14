@@ -1,7 +1,7 @@
 import React from 'react';
 import { Chip, type ChipProps, styled } from '@mui/material';
 import styleConstants from './constants/style-constants';
-import { CloseIcon, CloseIconProps } from './icons/close-icon';
+import { CloseIcon, type CloseIconProps } from './icons/close-icon';
 
 const StyledChip = styled(Chip)(() => ({
   minHeight: '28px',

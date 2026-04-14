@@ -22,6 +22,7 @@ export type ExtensionMessage =
   | { action: 'CHECK_AUTH_WITH_TIMESTAMP' }
   | { action: 'LOGIN'; payload: { email: string; password: string } }
   | { action: 'NewUser'; payload: { email: string; password: string } }
+  | { action: 'GOOGLE_LOGIN_INTERACTIVE' }
   | { action: 'LOGOUT' }
   | { action: 'CREATE_JOB'; payload: Omit<Job, 'id'> }
   | { action: 'UPDATE_JOB'; payload: Job }
@@ -64,4 +65,7 @@ export type ExtensionMessage =
   | { action: 'SET_ACTIVE_RESUME'; payload: SetActiveResumeParams }
   | { action: 'GET_PARSED_RESUME' }
   | { action: 'SYNC_AUTH_FROM_WEB'; payload: StoredAuth }
-  | { action: 'AUTH_STATE_CHANGED'; payload: StoredAuth | null };
+  | { action: 'AUTH_STATE_CHANGED'; payload: StoredAuth | null }
+  | { action: 'AUTH_STORAGE_SET'; payload: StoredAuth }
+  | { action: 'AUTH_STORAGE_GET' }
+  | { action: 'AUTH_STORAGE_REMOVE' };

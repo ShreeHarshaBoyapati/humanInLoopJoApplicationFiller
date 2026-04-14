@@ -3,6 +3,14 @@
   "name": "Job Filler",
   "description": "A Chrome extension to fill job applications",
   "version": "1.0.0",
+  "oauth2": {
+    "client_id": "PLACEHOLDER_EXTENSION_CLIENT_ID",
+    "scopes": [
+      "openid",
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/userinfo.profile"
+    ]
+  },
   "action": {
     "default_icon": {
       "16": "public/icon-16.png",
@@ -33,7 +41,15 @@
       "run_at": "document_idle"
     }
   ],
-  "permissions": ["storage", "activeTab", "tabs", "contextMenus", "notifications", "sidePanel"],
+  "permissions": [
+    "storage",
+    "activeTab",
+    "tabs",
+    "contextMenus",
+    "notifications",
+    "sidePanel",
+    "identity"
+  ],
   "icons": {
     "16": "public/icon-16.png",
     "32": "public/icon-32.png",
@@ -42,6 +58,7 @@
   },
   "host_permissions": [
     "http://localhost/*",
+    "http://localhost:3001/*",
     "*://*.linkedin.com/*",
     "*://*.indeed.com/*",
     "*://*.glassdoor.com/*",

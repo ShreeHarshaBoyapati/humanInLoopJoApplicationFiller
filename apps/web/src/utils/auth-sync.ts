@@ -5,32 +5,66 @@
  * and the Chrome extension.
  *
  * Flow:
- * - On login: send token to extension via postMessage
+ * - On login: get token from cookie, send to extension via postMessage
  * - On logout: send logout signal to extension
- * - Listen for extension-initiated auth changes
+ * - Listen for extension-initiated auth changes with timestamp comparison
  */
 
-import { WEB_APP_MESSAGE_KEY, type StoredAuth } from '@repo/shared-types';
+import { TOKEN_COOKIE_NAME, type StoredAuth } from '@repo/shared-types';
+
+/**
+ * Get token from cookie
+ */
+export function getTokenFromCookie(): string | null {
+  if (typeof document === 'undefined') return null;
+
+  const cookies = document.cookie.split(';');
+
+  for (const cookie of cookies) {
+    const [name, value] = cookie.trim().split('=');
+    if (name === TOKEN_COOKIE_NAME) {
+      return decodeURIComponent(value);
+    }
+  }
+  return null;
+}
+
+/**
+ * Set token in cookie
+ */
+function setTokenInCookie(token: string): void {
+  if (typeof document === 'undefined') return;
+
+  document.cookie = `${TOKEN_COOKIE_NAME}=${encodeURIComponent(token)}; path=/; HttpOnly; SameSite=Lax`;
+}
 
 /**
  * Sync auth data to extension after login
+ * Gets token from cookie and sends to extension
  */
-export function syncAuthToExtension(authData: StoredAuth): void {
-  if (typeof window !== 'undefined') {
-    window.postMessage(
-      {
-        type: 'AUTH_SYNC',
-        source: import.meta.env.VITE_WEB_APP_URL,
-        payload: {
-          token: authData.token,
-          userId: authData.userId,
-          email: authData.email,
-          timestamp: authData.timestamp,
-        },
-      },
-      '*'
-    );
+export function syncAuthToExtension(authData: Partial<StoredAuth>): void {
+  if (typeof window === 'undefined') return;
+
+  // Get token from cookie if not provided in authData
+  const token = authData.token || getTokenFromCookie();
+  if (!token) {
+    console.warn('[Auth Sync] No token available to sync to extension');
+    return;
   }
+
+  const timestamp = authData.timestamp || Date.now();
+
+  window.postMessage(
+    {
+      type: 'AUTH_SYNC',
+      source: import.meta.env.VITE_WEB_APP_URL,
+      payload: {
+        token,
+        timestamp,
+      },
+    },
+    '*'
+  );
 }
 
 /**
@@ -51,6 +85,7 @@ export function notifyExtensionLogout(): void {
 
 /**
  * Listen for auth changes from extension
+ * Compares timestamps - if extension data is newer, update cookie
  */
 export function listenForExtensionAuth(
   callback: (authData: StoredAuth | null) => void
@@ -69,13 +104,17 @@ export function listenForExtensionAuth(
       if (payload?.token) {
         const authData: StoredAuth = {
           token: payload.token,
-          userId: payload.userId,
-          email: payload.email,
-          timestamp: payload.timestamp,
+          timestamp: payload.timestamp || 0,
         };
+
+        // Update cookie with new token
+        setTokenInCookie(payload.token);
+
         callback(authData);
       }
     } else if (type === 'AUTH_LOGOUT') {
+      // Clear cookie on logout
+      document.cookie = `${TOKEN_COOKIE_NAME}=; path=/; max-age=0`;
       callback(null);
     }
   }
@@ -89,40 +128,9 @@ export function listenForExtensionAuth(
 }
 
 /**
- * Get current auth from localStorage
+ * Clear auth - clear cookie
  */
-export function getLocalStorageAuth(): StoredAuth | null {
-  if (typeof window === 'undefined') return null;
-
-  const stored = localStorage.getItem(WEB_APP_MESSAGE_KEY);
-  if (!stored) return null;
-
-  try {
-    const authData: StoredAuth = JSON.parse(stored);
-    if (authData.token && authData.userId) {
-      return authData;
-    }
-  } catch {
-    return null;
-  }
-
-  return null;
-}
-
-/**
- * Set auth in localStorage
- */
-export function setLocalStorageAuth(authData: StoredAuth): void {
-  if (typeof window === 'undefined') return;
-
-  localStorage.setItem(WEB_APP_MESSAGE_KEY, JSON.stringify(authData));
-}
-
-/**
- * Clear auth from localStorage
- */
-export function clearLocalStorageAuth(): void {
-  if (typeof window === 'undefined') return;
-
-  localStorage.removeItem(WEB_APP_MESSAGE_KEY);
+export function clearTokenAuth(): void {
+  if (typeof document === 'undefined') return;
+  document.cookie = `${TOKEN_COOKIE_NAME}=; path=/; max-age=0`;
 }

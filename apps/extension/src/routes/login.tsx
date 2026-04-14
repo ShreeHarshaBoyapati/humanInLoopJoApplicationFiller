@@ -70,6 +70,43 @@ function LoginComponent() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setLoading(true);
+    setError('');
+
+    try {
+      if (typeof chrome !== 'undefined' && chrome.runtime) {
+        const response = await new Promise<{ success: boolean; error?: string }>((resolve) => {
+          chrome.runtime.sendMessage({ action: 'GOOGLE_LOGIN_INTERACTIVE' }, (res) => {
+            if (chrome.runtime.lastError) {
+              resolve({ success: false, error: chrome.runtime.lastError.message });
+            } else {
+              resolve(res);
+            }
+          });
+        });
+
+        if (response.success) {
+          window.location.reload();
+        } else {
+          throw new Error(response.error || 'Google login failed');
+        }
+      } else {
+        console.warn('Chrome runtime not available');
+        setError('Chrome runtime not available. Cannot login via background script.');
+      }
+    } catch (err: unknown) {
+      console.error('Google login error:', err);
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unexpected error occurred');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className={styles.container}>
       <h2 className={styles.heading}>Login</h2>
@@ -145,6 +182,24 @@ function LoginComponent() {
           customProps={{ props: { sx: { width: '100%', maxWidth: '154px' } } }}
         />
       </form>
+      <div className={styles.orDiv}>
+        <div />
+        <span>OR</span>
+        <div />
+      </div>
+      <EnhancedButton
+        type="button"
+        onClick={handleGoogleLogin}
+        disabled={loading}
+        label={loading ? 'Signing in...' : 'Sign in with Google'}
+        colorTheme="secondary"
+        size="medium"
+        customProps={{
+          props: {
+            sx: { maxWidth: 'fit-content' },
+          },
+        }}
+      />
     </div>
   );
 }

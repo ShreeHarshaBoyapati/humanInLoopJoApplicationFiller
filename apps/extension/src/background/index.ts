@@ -26,10 +26,10 @@ const api = axios.create({
   adapter: 'fetch',
 });
 
-// Add a request interceptor to inject the token from authData
+// Add a request interceptor to inject the token from session storage
 api.interceptors.request.use(async (config) => {
   const result = await new Promise<{ token?: string }>((resolve) => {
-    chrome.storage.local.get([AUTH_STORAGE_KEY], (res) => {
+    chrome.storage.session.get([AUTH_STORAGE_KEY], (res) => {
       const authData = res[AUTH_STORAGE_KEY] as StoredAuth | undefined;
       resolve({ token: authData?.token });
     });
@@ -46,7 +46,7 @@ api.interceptors.response.use(
   (error: AxiosError<ApiResponse>) => {
     if (error.response && error.response.status === 401) {
       const message = error.response.data?.message || 'Session expired. Please log in again.';
-      chrome.storage.local.remove(AUTH_STORAGE_KEY, () => {
+      chrome.storage.session.remove(AUTH_STORAGE_KEY, () => {
         chrome.runtime
           .sendMessage({
             action: 'LOGOUT_TRIGGERED',

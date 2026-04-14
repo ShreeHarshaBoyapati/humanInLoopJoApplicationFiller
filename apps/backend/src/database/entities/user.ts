@@ -18,11 +18,17 @@ export default class User {
   @Column('varchar', { unique: true })
   email!: string;
 
-  @Column('varchar')
-  password!: string;
+  @Column('varchar', { nullable: true })
+  password!: string | null;
 
   @Column('varchar', { nullable: true })
   sessionId!: string | null;
+
+  @Column('varchar', { nullable: true })
+  googleId!: string | null;
+
+  @Column('varchar', { nullable: true })
+  refreshToken!: string | null;
 
   @OneToMany(() => Job, (job) => job.user)
   jobs!: Job[];

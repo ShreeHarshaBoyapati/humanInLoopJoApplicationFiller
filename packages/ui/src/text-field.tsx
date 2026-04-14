@@ -2,7 +2,7 @@ import { forwardRef, type ReactNode } from 'react';
 import type { TextFieldProps, BoxProps } from '@mui/material';
 import { TextField, Box } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import { EnhancedFieldLabel, EnhancedFieldLabelProps } from './field-label';
+import { EnhancedFieldLabel, type EnhancedFieldLabelProps } from './field-label';
 import styleConstants from './constants/style-constants';
 
 type TextFieldVariant = 'default' | 'disabled' | 'error';

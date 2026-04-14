@@ -1,18 +1,18 @@
 import {
   Box,
-  BoxProps,
+  type BoxProps,
   Menu,
   MenuItem,
-  MenuItemProps,
+  type MenuItemProps,
   Select,
-  SelectProps,
+  type SelectProps,
   Typography,
-  TypographyOwnProps,
+  type TypographyOwnProps,
   styled,
 } from '@mui/material';
 import { forwardRef } from 'react';
 import styleConstants from './constants/style-constants';
-import { EnhancedFieldLabel, EnhancedFieldLabelProps } from './field-label.js';
+import { EnhancedFieldLabel, type EnhancedFieldLabelProps } from './field-label.js';
 import ArrowDownIcon from './icons/arrow-down.js';
 
 const RootContainer = styled(Box)({

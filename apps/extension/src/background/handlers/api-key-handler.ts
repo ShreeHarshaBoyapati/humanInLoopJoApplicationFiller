@@ -1,5 +1,5 @@
 import type { AxiosError, AxiosInstance } from 'axios';
-import type { ExtensionMessage, ApiResponse } from '@repo/shared-types';
+import type { ExtensionMessage, ApiResponse, ApiKeyData } from '@repo/shared-types';
 import { transitEncrypt, transitDecrypt } from '@repo/utils';
 
 // TRANSIT_SECRET must match the backend. In development the fallback is used.
@@ -104,8 +104,8 @@ export function handleApiKeyMessage(
 
   if (message.action === 'GET_CONFIGURED_PROVIDERS') {
     api
-      .get<ApiResponse<any[]>>('/api-key')
-      .then((response: { data: ApiResponse<Record<string, unknown>[]> }) => {
+      .get<ApiResponse<ApiKeyData[]>>('/api-key')
+      .then((response: { data: ApiResponse<ApiKeyData[]> }) => {
         const { data } = response;
         if (data.success) {
           sendResponse({ success: true, data: data.data });

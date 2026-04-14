@@ -24,7 +24,12 @@ async function initializeApp() {
 
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
-  const FRONTEND_ORIGIN = process.env.NODE_CORS_ORIGIN || '*';
+
+  const corsOrigin = process.env.NODE_CORS_ORIGIN || '*';
+  const FRONTEND_ORIGIN = corsOrigin.includes(',')
+    ? corsOrigin.split(',').map((origin) => origin.trim())
+    : corsOrigin;
+  logger.info({ FRONTEND_ORIGIN }, 'CORS origin(s) configured');
 
   const appDataSource = initializeDataSource();
 
@@ -47,13 +52,15 @@ async function initializeApp() {
   });
 
   app.use(helmet());
-  app.use(limiter);
-  app.use(cookieParser());
+  // CORS middleware for preflight and actual requests
   app.use(
     cors({
       origin: FRONTEND_ORIGIN,
+      credentials: true,
     })
   );
+  app.use(limiter);
+  app.use(cookieParser());
   app.use(httpLogger);
   app.use(express.json());
 

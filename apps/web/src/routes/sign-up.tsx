@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, useNavigate, useSearch } from '@tanstack/react-router';
 import axios from 'axios';
 import styles from './style/sign-up.module.css';
 import { EnhancedTextField as TextField } from '@repo/ui/text-field.tsx';
@@ -8,12 +8,22 @@ import type { ApiResponse } from '@repo/shared-types';
 
 const API_URL = import.meta.env.VITE_WEB_BACKENDAPI || '';
 
+interface SignUpSearchSchema {
+  error?: string;
+}
+
 export const Route = createFileRoute('/sign-up')({
   component: SignUpComponent,
+  validateSearch: (search: Record<string, unknown>): SignUpSearchSchema => {
+    return {
+      error: search.error as string | undefined,
+    };
+  },
 });
 
 function SignUpComponent() {
   const navigate = useNavigate();
+  const searchParams = useSearch({ from: '/sign-up' }) as SignUpSearchSchema;
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -21,6 +31,8 @@ function SignUpComponent() {
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const apiError = searchParams.error || '';
 
   const handleChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
@@ -33,6 +45,7 @@ function SignUpComponent() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     setError('');
 
     // Validate passwords match
@@ -74,7 +87,10 @@ function SignUpComponent() {
   };
 
   const handleGoogleSignUp = () => {
-    console.log('Google OAuth sign up clicked');
+    const callbackUrl = encodeURIComponent(
+      `${window.location.origin}/google-callback?from=${encodeURIComponent('/sign-up')}`
+    );
+    window.location.href = `${API_URL}/user/google?callback=${callbackUrl}`;
   };
 
   const features = [
@@ -189,12 +205,15 @@ function SignUpComponent() {
                   }
                 />
               </div>
+              {apiError && <div className={styles.apiError}>{apiError}</div>}
               <div className={styles.loginLink}>
                 <span className={styles.linkText}>Already a user? </span>
                 <button
                   type="button"
                   className={styles.linkButton}
-                  onClick={() => navigate({ to: '/login' })}
+                  onClick={() =>
+                    navigate({ to: '/login', search: { error: undefined } as { error?: string } })
+                  }
                   data-testid="login-link"
                 >
                   Log In
