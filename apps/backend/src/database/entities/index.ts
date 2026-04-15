@@ -3,5 +3,6 @@ import Job from './job.js';
 import ApiKey from './api-key.js';
 import Persona from './persona.js';
 import Resume from './resume.js';
+import VerificationCode from './verification-code.js';
 
-export default [User, Job, ApiKey, Persona, Resume];
+export default [User, Job, ApiKey, Persona, Resume, VerificationCode];

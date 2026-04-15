@@ -73,3 +73,8 @@
   flex-direction: row !important;
   justify-content: center;
 }
+
+.googleLogin {
+  display: flex;
+  justify-content: center;
+}

@@ -19,9 +19,6 @@ export default class User {
   email!: string;
 
   @Column('varchar', { nullable: true })
-  password!: string | null;
-
-  @Column('varchar', { nullable: true })
   sessionId!: string | null;
 
   @Column('varchar', { nullable: true })

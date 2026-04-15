@@ -24,7 +24,7 @@ export const Route = createRootRoute({
     // Check if chrome runtime is available (for dev/preview safety)
     if (typeof chrome === 'undefined' || !chrome.runtime) {
       console.warn('Chrome runtime not detected, treating as unauthenticated');
-      if (location.pathname !== '/login' && location.pathname !== '/new-user') {
+      if (location.pathname !== '/login') {
         throw redirect({ to: '/login' });
       }
       return;
@@ -45,11 +45,7 @@ export const Route = createRootRoute({
     const { isAuthenticated } = response;
 
     if (isAuthenticated) {
-      if (
-        location.pathname === '/login' ||
-        location.pathname === '/new-user' ||
-        location.pathname === '/'
-      ) {
+      if (location.pathname === '/login' || location.pathname === '/') {
         const storage = await new Promise<{ quickSaveActive?: boolean }>((resolve) => {
           chrome.storage.local.get(['quickSaveActive'], (res) => resolve(res));
         });
@@ -58,11 +54,11 @@ export const Route = createRootRoute({
         }
       }
 
-      if (location.pathname === '/login' || location.pathname === '/new-user') {
+      if (location.pathname === '/login') {
         throw redirect({ to: '/' });
       }
     } else {
-      if (location.pathname !== '/login' && location.pathname !== '/new-user') {
+      if (location.pathname !== '/login') {
         throw redirect({ to: '/login' });
       }
     }
@@ -91,8 +87,7 @@ function RootComponent() {
       };
     }
   }, [navigate]);
-  const isLoginPage =
-    routerState.location.pathname === '/login' || routerState.location.pathname === '/new-user';
+  const isLoginPage = routerState.location.pathname === '/login';
 
   if (isLoginPage) {
     return (

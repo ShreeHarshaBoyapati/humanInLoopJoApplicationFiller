@@ -6,17 +6,16 @@ import { ApiResponse, TOKEN_COOKIE_NAME } from '@repo/shared-types';
 import { flattenZodErrorToString } from '../utils/validations.js';
 import logger from '../utils/logger.js';
 
-const UserObj = z.object({
+const SendCodeObj = z.object({
   email: z.email(),
-  password: z
+});
+
+const VerifyCodeObj = z.object({
+  email: z.email(),
+  code: z
     .string()
-    .min(8, 'Password must be at least 8 characters long')
-    .regex(/\d/, 'Password must contain at least 1 number')
-    .regex(
-      /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/,
-      'Password must contain at least 1 special character'
-    )
-    .optional(),
+    .length(6, 'Code must be 6 digits')
+    .regex(/^\d+$/, 'Code must contain only numbers'),
 });
 
 const OAuthCallbackObj = z.object({
@@ -30,22 +29,9 @@ const ExtensionOAuthCallbackObj = z.object({
   error: z.string().optional(),
 });
 
-const UpdateUserObj = z
-  .object({
-    email: z.email().optional(),
-    password: z
-      .string()
-      .min(8, 'Password must be at least 8 characters long')
-      .regex(/\d/, 'Password must contain at least 1 number')
-      .regex(
-        /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/,
-        'Password must contain at least 1 special character'
-      )
-      .optional(),
-  })
-  .refine((data) => data.email || data.password, {
-    message: 'At least one of email or password must be provided',
-  });
+const UpdateUserObj = z.object({
+  email: z.email().optional(),
+});
 
 export async function authMiddleware(
   req: Request,
@@ -103,10 +89,10 @@ export async function authMiddleware(
     res.status(401).json(data);
   }
 }
-export type RegisterInputType = z.infer<typeof UserObj>;
-export function registerInputValidation(req: Request, res: Response, next: NextFunction) {
+export type SendCodeInputType = z.infer<typeof SendCodeObj>;
+export function sendCodeValidation(req: Request, res: Response, next: NextFunction) {
   try {
-    req.body = UserObj.parse(req.body);
+    req.body = SendCodeObj.parse(req.body);
     next();
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -126,15 +112,23 @@ export function registerInputValidation(req: Request, res: Response, next: NextF
   }
 }
 
-export type LoginInputType = z.infer<typeof UserObj>;
-export function loginInputValidation(req: Request, res: Response, next: NextFunction) {
+export type VerifyCodeInputType = z.infer<typeof VerifyCodeObj>;
+export function verifyCodeValidation(req: Request, res: Response, next: NextFunction) {
   try {
-    req.body = UserObj.parse(req.body);
+    req.body = VerifyCodeObj.parse(req.body);
     next();
-  } catch {
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const data: ApiResponse = {
+        success: false,
+        message: flattenZodErrorToString(error),
+      };
+      res.status(400).json(data);
+      return;
+    }
     const data: ApiResponse = {
       success: false,
-      message: 'Invalid email or password',
+      message: 'Invalid code',
     };
     res.status(400).json(data);
     return;

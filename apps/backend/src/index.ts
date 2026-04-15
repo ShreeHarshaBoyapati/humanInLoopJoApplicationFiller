@@ -11,13 +11,39 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { LessThan } from 'typeorm';
 import initializeDataSource from './database/data-source.js';
 import routes from './routes/index.js';
-import { logger, httpLogger } from './utils/index.js';
+import { getVerificationCodeRepository } from './database/repositories/index.js';
+import { logger, httpLogger, staticConfig } from './utils/index.js';
 
 let app: express.Application | null = null;
 const PORT = parseInt(process.env.NODE_PORT || '8000');
 const isProduction = process.env.NODE_ENV === 'production';
+
+function startVerificationCodeCleanupTimer() {
+  const cleanupIntervalMs = staticConfig.auth.cleanupIntervalMinutes * 60 * 1000;
+
+  const cleanupExpiredCodes = async () => {
+    try {
+      const repo = getVerificationCodeRepository();
+      const now = new Date();
+      const result = await repo.delete({ expiresAt: LessThan(now) });
+      if (result.affected && result.affected > 0) {
+        logger.info({ deletedCount: result.affected }, 'Cleaned up expired verification codes');
+      }
+    } catch (error) {
+      logger.error({ err: error }, 'Error cleaning up expired verification codes');
+    }
+  };
+
+  // Run cleanup immediately on startup
+  cleanupExpiredCodes();
+
+  // Then run periodically
+  setInterval(cleanupExpiredCodes, cleanupIntervalMs);
+  logger.info({ intervalMs: cleanupIntervalMs }, 'Verification code cleanup timer started');
+}
 
 async function initializeApp() {
   app = express();
@@ -104,6 +130,9 @@ async function initializeApp() {
 
 initializeApp()
   .then(() => {
+    // Start the verification code cleanup timer
+    startVerificationCodeCleanupTimer();
+
     app?.listen(PORT, '0.0.0.0', () => {
       logger.info({ port: PORT }, 'Server started');
     });

@@ -3,6 +3,7 @@ import getJobRepository from './job-repo.js';
 import getApiKeyRepository from './api-key-repo.js';
 import getPersonaRepository from './persona-repo.js';
 import getResumeRepository from './resume-repo.js';
+import getVerificationCodeRepository from './verification-code-repo.js';
 
 export {
   getUserRepository,
@@ -10,4 +11,5 @@ export {
   getApiKeyRepository,
   getPersonaRepository,
   getResumeRepository,
+  getVerificationCodeRepository,
 };

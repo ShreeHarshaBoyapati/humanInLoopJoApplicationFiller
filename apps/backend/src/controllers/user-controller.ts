@@ -1,73 +1,196 @@
 import type { Response, TypedRequest, AuthenticatedTypedRequest } from '../types/index.js';
 import { type ApiResponse, type UserPublic, TOKEN_COOKIE_NAME } from '@repo/shared-types';
 import { v4 as uuidv4 } from 'uuid';
-import { getUserRepository } from '../database/repositories/index.js';
 import {
-  hashPassword,
-  comparePassword,
+  getUserRepository,
+  getVerificationCodeRepository,
+} from '../database/repositories/index.js';
+import {
   generateToken,
   staticConfig,
   logger,
+  hashPassword,
+  comparePassword,
 } from '../utils/index.js';
 import {
-  LoginInputType,
-  RegisterInputType,
+  SendCodeInputType,
+  VerifyCodeInputType,
   UpdateUserInputType,
   OAuthCallbackInputType,
   ExtensionOAuthCallbackInputType,
 } from '../middlewares/user.js';
 import { getTokensFromCode, getUserInfo } from '../services/google-oauth-service.js';
+import { sendVerificationCode } from '../services/email-service.js';
 
 class UserController {
   /**
-   * Register a new user
-   * POST /api/user
-   * Body: { email: string, password: string }
+   * Send verification code to email
+   * POST /api/user/send-code
+   * Body: { email: string }
    */
-  async register(req: TypedRequest<RegisterInputType>, res: Response) {
-    const { email, password } = req.body;
+  async sendVerificationCode(req: TypedRequest<SendCodeInputType>, res: Response) {
+    const { email } = req.body;
+    const verificationCodeRepository = getVerificationCodeRepository();
+
+    try {
+      // Generate 6-digit code
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const hashedCode = await hashPassword(code);
+
+      // Calculate expiry time from config
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + staticConfig.auth.codeExpiryMinutes);
+
+      // Delete any existing codes for this email first
+      await verificationCodeRepository.delete({ email });
+
+      // Store the new code (hashed)
+      await verificationCodeRepository.save({
+        email,
+        code: hashedCode,
+        expiresAt,
+      });
+
+      // Send email (placeholder - logs to console)
+      await sendVerificationCode(email, code);
+
+      res.status(200).json({
+        success: true,
+        message: 'Verification code sent to email',
+      });
+    } catch (error) {
+      logger.error({ err: error }, 'Error sending verification code');
+      res.status(500).json({
+        success: false,
+        message: 'Failed to send verification code',
+      });
+    }
+  }
+
+  /**
+   * Verify code and login/register user
+   * POST /api/user/verify-code
+   * Body: { email: string, code: string }
+   */
+  async verifyCode(req: TypedRequest<VerifyCodeInputType>, res: Response) {
+    const { email, code } = req.body;
+    const verificationCodeRepository = getVerificationCodeRepository();
     const userRepository = getUserRepository();
 
-    const existingUser = await userRepository.findOne({
-      where: { email: email },
-    });
-
-    if (existingUser) {
-      const errorResponse: ApiResponse = {
-        success: false,
-        message: 'User with this email already exists',
-      };
-      res.status(400).json(errorResponse);
-      return;
-    }
-
-    if (!password) {
-      res.status(400).json({
-        success: false,
-        message: 'Password is required',
+    try {
+      // Find the latest code entry for this email
+      const verificationCode = await verificationCodeRepository.findOne({
+        where: { email },
+        order: { createdAt: 'DESC' },
       });
-      return;
+
+      if (!verificationCode) {
+        res.status(400).json({
+          success: false,
+          message: 'No verification code found. Please request a new code.',
+        });
+        return;
+      }
+
+      // Check if code is expired
+      const now = new Date();
+      if (verificationCode.expiresAt < now) {
+        res.status(400).json({
+          success: false,
+          message: 'Verification code has expired. Please request a new code.',
+        });
+        return;
+      }
+
+      // Verify the code (compare hashed code)
+      const isCodeValid = await comparePassword(code, verificationCode.code);
+      if (!isCodeValid) {
+        res.status(400).json({
+          success: false,
+          message: 'Invalid verification code',
+        });
+        return;
+      }
+
+      // Delete the used code
+      await verificationCodeRepository.delete({ id: verificationCode.id });
+
+      // Check if user exists by email (for linking with Google OAuth)
+      let user = await userRepository.findOne({
+        where: { email },
+      });
+
+      if (user) {
+        // User exists - create session and login
+        const sessionId = uuidv4();
+        user.sessionId = sessionId;
+        await userRepository.save(user);
+
+        const token = generateToken({
+          sessionId,
+          userId: user.id,
+        });
+
+        res.cookie(TOKEN_COOKIE_NAME, token, {
+          httpOnly: staticConfig.cookie.httpOnly,
+          secure: staticConfig.cookie.secure,
+          sameSite: staticConfig.cookie.sameSite as 'lax' | 'strict' | 'none',
+          path: staticConfig.cookie.path,
+        });
+
+        const response: ApiResponse<UserPublic> = {
+          success: true,
+          message: 'Login successful',
+          data: {
+            id: user.id,
+            email: user.email,
+            token,
+          },
+        };
+        res.status(200).json(response);
+      } else {
+        // New user - create account and login
+        user = await userRepository.save({
+          email,
+          sessionId: null,
+          googleId: null,
+          refreshToken: null,
+        });
+
+        const sessionId = uuidv4();
+        user.sessionId = sessionId;
+        await userRepository.save(user);
+
+        const token = generateToken({
+          sessionId,
+          userId: user.id,
+        });
+
+        res.cookie(TOKEN_COOKIE_NAME, token, {
+          httpOnly: staticConfig.cookie.httpOnly,
+          secure: staticConfig.cookie.secure,
+          sameSite: staticConfig.cookie.sameSite as 'lax' | 'strict' | 'none',
+          path: staticConfig.cookie.path,
+        });
+
+        const response: ApiResponse<UserPublic> = {
+          success: true,
+          message: 'Account created successfully',
+          data: {
+            id: user.id,
+            email: user.email,
+            token,
+          },
+        };
+        res.status(201).json(response);
+      }
+    } catch (error) {
+      logger.error({ err: error }, 'Error verifying code');
+      res.status(500).json({
+        success: false,
+        message: 'Failed to verify code',
+      });
     }
-
-    const hashedPassword = await hashPassword(password);
-
-    const user = await userRepository.save({
-      email: email,
-      password: hashedPassword,
-      sessionId: null,
-      googleId: null,
-      refreshToken: null,
-    });
-
-    const response: ApiResponse<UserPublic> = {
-      success: true,
-      message: 'User registered successfully. Please login to continue.',
-      data: {
-        id: user.id,
-        email: user.email,
-      },
-    };
-    res.status(201).json(response);
   }
 
   async googleAuth(req: TypedRequest<OAuthCallbackInputType>, res: Response) {
@@ -139,7 +262,7 @@ class UserController {
         return;
       }
 
-      // Check if user exists with same email
+      // Check if user exists with same email (from email OTP auth)
       const existingUserByEmail = await userRepository.findOne({
         where: { email: googleUser.email },
       });
@@ -191,7 +314,6 @@ class UserController {
       // Case 3: No user exists -> create new user with OAuth data
       user = await userRepository.save({
         email: googleUser.email,
-        password: null,
         sessionId: null,
         googleId: googleUser.id,
         refreshToken: tokens.refresh_token || null,
@@ -327,7 +449,6 @@ class UserController {
       // Case 3: No user exists -> create new user with OAuth data
       user = await userRepository.save({
         email: googleUser.email,
-        password: null,
         sessionId: null,
         googleId: googleUser.id,
         refreshToken: null,
@@ -363,68 +484,6 @@ class UserController {
   }
 
   /**
-   * Login user and generate JWT tokens
-   * POST /api/user/login
-   * Body: { email: string, password: string }
-   */
-  async login(req: TypedRequest<LoginInputType>, res: Response) {
-    const { email, password } = req.body;
-    const userRepository = getUserRepository();
-
-    const user = await userRepository.findOne({
-      where: { email: email },
-    });
-    const errData: ApiResponse = {
-      success: false,
-      message: 'Invalid email or password',
-    };
-    if (!user) {
-      res.status(400).json(errData);
-      return;
-    }
-
-    // Password is required for login
-    if (!password || !user.password) {
-      res.status(400).json(errData);
-      return;
-    }
-
-    const isPasswordValid = await comparePassword(password, user.password);
-
-    if (!isPasswordValid) {
-      res.status(400).json(errData);
-      return;
-    }
-
-    const sessionId = uuidv4();
-
-    user.sessionId = sessionId;
-    await userRepository.save(user);
-
-    const token = generateToken({
-      sessionId,
-      userId: user.id,
-    });
-
-    res.cookie(TOKEN_COOKIE_NAME, token, {
-      httpOnly: staticConfig.cookie.httpOnly,
-      secure: staticConfig.cookie.secure,
-      sameSite: staticConfig.cookie.sameSite as 'lax' | 'strict' | 'none',
-      path: staticConfig.cookie.path,
-    });
-    const data: ApiResponse<UserPublic> = {
-      success: true,
-      message: 'Login successful',
-      data: {
-        token,
-        id: user.id,
-        email: user.email,
-      },
-    };
-    res.status(200).json(data);
-  }
-
-  /**
    * Logout user (invalidate session)
    * POST /api/user/logout
    * Headers: Authorization: Bearer <token>
@@ -451,11 +510,11 @@ class UserController {
   /**
    * Update user profile
    * PUT /api/user
-   * Body: { email?: string, password?: string }
+   * Body: { email?: string }
    */
   async update(req: AuthenticatedTypedRequest<UpdateUserInputType>, res: Response) {
     const userId = req.userId!;
-    const { email, password } = req.body;
+    const { email } = req.body;
     const userRepository = getUserRepository();
 
     const user = await userRepository.findOne({ where: { id: userId } });
@@ -478,10 +537,6 @@ class UserController {
         return;
       }
       user.email = email;
-    }
-
-    if (password) {
-      user.password = await hashPassword(password);
     }
 
     await userRepository.save(user);

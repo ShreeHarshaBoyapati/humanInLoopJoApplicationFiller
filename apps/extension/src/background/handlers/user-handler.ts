@@ -56,21 +56,60 @@ export function handleUserMessage(
     return true;
   }
 
-  if (message.action === 'NewUser') {
-    const { email, password } = message.payload;
+  if (message.action === 'SEND_CODE') {
+    const { email } = message.payload;
 
     api
-      .post<ApiResponse<UserPublic>>('/user', { email, password })
+      .post<ApiResponse>('/user/send-code', { email })
       .then((response) => {
         const { data } = response;
         if (data.success) {
           sendResponse({ success: true });
         } else {
-          sendResponse({ success: false, error: data.message || 'Registration failed' });
+          sendResponse({ success: false, error: data.message || 'Failed to send code' });
         }
       })
       .catch((error) => {
-        console.error('Registration error:', error);
+        console.error('Send code error:', error);
+        sendResponse({ success: false, error: error.response?.data?.message || error.message });
+      });
+
+    return true;
+  }
+
+  if (message.action === 'VERIFY_CODE') {
+    const { email, code } = message.payload;
+
+    api
+      .post<ApiResponse<{ token: string; id: string; email: string }>>('/user/verify-code', {
+        email,
+        code,
+      })
+      .then((response) => {
+        const { data } = response;
+
+        if (data.success && data.data?.token) {
+          const timestamp = Date.now();
+          const authData: StoredAuth = {
+            token: data.data.token,
+            timestamp,
+          };
+
+          chrome.storage.session.set({ [AUTH_STORAGE_KEY]: authData }, () => {
+            sendResponse({
+              success: true,
+              token: data.data?.token,
+              authData,
+              user: { id: data.data?.id, email: data.data?.email },
+            });
+            sendAuthStateToWebApp(authData);
+          });
+        } else {
+          sendResponse({ success: false, error: data.message || 'Verification failed' });
+        }
+      })
+      .catch((error) => {
+        console.error('Verify code error:', error);
         sendResponse({ success: false, error: error.response?.data?.message || error.message });
       });
 

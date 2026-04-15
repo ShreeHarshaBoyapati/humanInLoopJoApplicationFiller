@@ -24,6 +24,7 @@ const API_URL = import.meta.env.VITE_EXT_BACKENDAPI || '';
 const api = axios.create({
   baseURL: API_URL,
   adapter: 'fetch',
+  withCredentials: true,
 });
 
 // Add a request interceptor to inject the token from session storage

@@ -20,8 +20,9 @@ import type { StoredAuth } from './auth-types';
 export type ExtensionMessage =
   | { action: 'CHECK_AUTH' }
   | { action: 'CHECK_AUTH_WITH_TIMESTAMP' }
+  | { action: 'SEND_CODE'; payload: { email: string } }
+  | { action: 'VERIFY_CODE'; payload: { email: string; code: string } }
   | { action: 'LOGIN'; payload: { email: string; password: string } }
-  | { action: 'NewUser'; payload: { email: string; password: string } }
   | { action: 'GOOGLE_LOGIN_INTERACTIVE' }
   | { action: 'LOGOUT' }
   | { action: 'CREATE_JOB'; payload: Omit<Job, 'id'> }

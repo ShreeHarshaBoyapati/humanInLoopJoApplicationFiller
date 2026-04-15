@@ -1,9 +1,11 @@
 {
   "auth": {
-    "saltRounds": 12
+    "saltRounds": 12,
+    "codeExpiryMinutes": 5,
+    "cleanupIntervalMinutes": 30
   },
   "cookie": {
-    "httpOnly": true,
+    "httpOnly": false,
     "secure": false,
     "sameSite": "lax",
     "path": "/"

@@ -9,16 +9,10 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root';
-import { Route as SignUpRouteImport } from './routes/sign-up';
 import { Route as LoginRouteImport } from './routes/login';
 import { Route as GoogleCallbackRouteImport } from './routes/google-callback';
 import { Route as IndexRouteImport } from './routes/index';
 
-const SignUpRoute = SignUpRouteImport.update({
-  id: '/sign-up',
-  path: '/sign-up',
-  getParentRoute: () => rootRouteImport,
-} as any);
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
@@ -39,45 +33,34 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute;
   '/google-callback': typeof GoogleCallbackRoute;
   '/login': typeof LoginRoute;
-  '/sign-up': typeof SignUpRoute;
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute;
   '/google-callback': typeof GoogleCallbackRoute;
   '/login': typeof LoginRoute;
-  '/sign-up': typeof SignUpRoute;
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
   '/': typeof IndexRoute;
   '/google-callback': typeof GoogleCallbackRoute;
   '/login': typeof LoginRoute;
-  '/sign-up': typeof SignUpRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: '/' | '/google-callback' | '/login' | '/sign-up';
+  fullPaths: '/' | '/google-callback' | '/login';
   fileRoutesByTo: FileRoutesByTo;
-  to: '/' | '/google-callback' | '/login' | '/sign-up';
-  id: '__root__' | '/' | '/google-callback' | '/login' | '/sign-up';
+  to: '/' | '/google-callback' | '/login';
+  id: '__root__' | '/' | '/google-callback' | '/login';
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute;
   GoogleCallbackRoute: typeof GoogleCallbackRoute;
   LoginRoute: typeof LoginRoute;
-  SignUpRoute: typeof SignUpRoute;
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/sign-up': {
-      id: '/sign-up';
-      path: '/sign-up';
-      fullPath: '/sign-up';
-      preLoaderRoute: typeof SignUpRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
     '/login': {
       id: '/login';
       path: '/login';
@@ -106,7 +89,6 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GoogleCallbackRoute: GoogleCallbackRoute,
   LoginRoute: LoginRoute,
-  SignUpRoute: SignUpRoute,
 };
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
