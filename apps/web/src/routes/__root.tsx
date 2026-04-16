@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import {
-  Link,
   Outlet,
   createRootRoute,
   redirect,
@@ -10,6 +9,7 @@ import {
 import { axiosInstance } from '../utils/axios.ts';
 import styles from './style/__root.module.css';
 import { LogoutConfirmModal } from '../components/logout-confirm-modal.tsx';
+import { HomePageBanner } from '../components/home-page-banner.tsx';
 import {
   listenForExtensionAuth,
   getTokenFromCookie,
@@ -26,8 +26,7 @@ export const Route = createRootRoute({
     const pathname = location.pathname;
 
     // Public routes that don't require authentication
-    const isPublicRoute =
-      pathname === '/login' || pathname === '/sign-up' || pathname === '/google-callback';
+    const isPublicRoute = pathname === '/login' || pathname === '/google-callback';
 
     if (isAuthenticated) {
       // If authenticated and on a public route, redirect to home
@@ -50,8 +49,7 @@ function RootComponent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const pathname = routerState.location.pathname;
-  const isPublicRoute =
-    pathname === '/login' || pathname === '/sign-up' || pathname === '/google-callback';
+  const isPublicRoute = pathname === '/login' || pathname === '/google-callback';
 
   // Listen for extension auth changes
   useEffect(() => {
@@ -109,18 +107,7 @@ function RootComponent() {
 
   return (
     <div className={styles.layoutWrapper}>
-      {isAuthenticated && (
-        <header className={styles.header}>
-          <nav className={styles.nav}>
-            <Link to="/" className={styles.navLink}>
-              Home
-            </Link>
-            <button type="button" onClick={handleLogout} className={styles.logoutButton}>
-              Logout
-            </button>
-          </nav>
-        </header>
-      )}
+      {isAuthenticated && !isPublicRoute && <HomePageBanner onLogout={handleLogout} />}
       <main className={styles.mainContent}>
         <Outlet />
       </main>

@@ -1,6 +1,7 @@
 # Project Rules
 - Create the file only with kebab-case formate
 - don't add the inline css, add it into the module.css
+- use packages/ui/src/constants/css-constants.css for the colors and font sizes
 
 ## Terminal Commands
 
