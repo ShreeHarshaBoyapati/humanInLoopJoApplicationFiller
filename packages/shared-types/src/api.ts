@@ -17,6 +17,20 @@ export type ApiResponse<TData = never, TErrors = never> =
       errors?: TErrors;
     };
 
+export interface PaginationParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 /**
  * Result returned by the AI resume-job analysis endpoint.
  */

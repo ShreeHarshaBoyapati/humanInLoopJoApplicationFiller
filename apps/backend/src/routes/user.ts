@@ -1,5 +1,5 @@
 import express from 'express';
-import rateLimit from 'express-rate-limit';
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
 import UserController from '../controllers/user-controller.js';
 import {
   sendCodeValidation,
@@ -27,7 +27,7 @@ const sendCodeRateLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: (req: express.Request) => {
     const email = (req as express.Request<unknown, unknown, { email?: string }>).body?.email;
-    return email || req.ip || 'unknown';
+    return email || ipKeyGenerator(req.ip || '') || 'unknown';
   },
 });
 

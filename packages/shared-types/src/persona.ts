@@ -7,6 +7,7 @@ export interface Persona {
   title: string;
   keywords: string[];
   active: boolean;
+  resumesCount?: number;
   createdAt: Date;
   updatedAt: Date;
 }

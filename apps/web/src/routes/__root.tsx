@@ -6,6 +6,7 @@ import {
   useNavigate,
   useRouterState,
 } from '@tanstack/react-router';
+
 import { axiosInstance } from '../utils/axios.ts';
 import styles from './style/__root.module.css';
 import { LogoutConfirmModal } from '../components/logout-confirm-modal.tsx';
@@ -17,6 +18,7 @@ import {
   clearTokenAuth,
 } from '../utils/auth-sync.ts';
 import type { StoredAuth } from '@repo/shared-types';
+import { useStore } from '../store/index.ts';
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -92,6 +94,7 @@ function RootComponent() {
     try {
       await axiosInstance.post('/user/logout');
       clearTokenAuth();
+      useStore.getState().clearUser();
       setIsAuthenticated(false);
 
       notifyExtensionLogout();

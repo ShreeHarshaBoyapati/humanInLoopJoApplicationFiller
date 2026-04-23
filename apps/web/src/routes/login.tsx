@@ -7,6 +7,7 @@ import { EnhancedButton as Button } from '@repo/ui/button.tsx';
 import { VerificationCode } from '@repo/ui/verification-code.tsx';
 import type { ApiResponse } from '@repo/shared-types';
 import { syncAuthToExtension } from '../utils/auth-sync.ts';
+import { useStore } from '../store/index.ts';
 import MailIcon from '@mui/icons-material/Mail';
 import styleConstants from '@repo/ui/constants/style-constants.js';
 
@@ -96,6 +97,12 @@ function LoginComponent() {
           email: response.data.data.email,
           timestamp,
         };
+
+        // Store user data in Zustand
+        useStore.getState().setUser({
+          id: response.data.data.id,
+          email: response.data.data.email,
+        });
 
         // Sync to extension
         syncAuthToExtension(authData);

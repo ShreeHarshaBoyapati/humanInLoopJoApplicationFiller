@@ -1,3 +1,4 @@
+import { Like } from 'typeorm';
 import type { Response, AuthenticatedTypedRequest } from '../types/index.js';
 import { getPersonaRepository } from '../database/repositories/index.js';
 import type {
@@ -5,7 +6,7 @@ import type {
   UpdatePersonaInput,
   DeletePersonaInput,
 } from '../middlewares/persona.js';
-import type { ApiResponse, Persona } from '@repo/shared-types';
+import type { ApiResponse, Persona, PaginationParams } from '@repo/shared-types';
 
 class PersonaController {
   async create(req: AuthenticatedTypedRequest<CreatePersonaInput>, res: Response) {
@@ -135,7 +136,21 @@ class PersonaController {
       return;
     }
 
+    const wasActive = persona.active;
     await personaRepository.remove(persona);
+
+    // If deleted persona was active, mark the latest one as active
+    if (wasActive) {
+      const latestPersona = await personaRepository.findOne({
+        where: { user: { id: userId } },
+        order: { createdAt: 'DESC' },
+      });
+
+      if (latestPersona) {
+        latestPersona.active = true;
+        await personaRepository.save(latestPersona);
+      }
+    }
 
     const data: ApiResponse = {
       success: true,
@@ -145,28 +160,114 @@ class PersonaController {
     res.status(200).json(data);
   }
 
-  async get(req: AuthenticatedTypedRequest<null>, res: Response) {
+  async get(req: AuthenticatedTypedRequest<PaginationParams>, res: Response) {
     const personaRepository = getPersonaRepository();
 
     const userId = req.userId;
+    const { page = '1', limit = '10', search = '' } = req.query;
 
-    const personas = await personaRepository.find({
-      where: { user: { id: userId } },
-      order: { createdAt: 'DESC' },
+    const pageNum = parseInt(String(page), 10) || 1;
+    const limitNum = parseInt(String(limit), 10) || 10;
+    const searchQuery = String(search).trim();
+
+    // Build where clause for filtering
+    const buildWhereClause = (isActive: boolean) => {
+      const where: Record<string, unknown> = { user: { id: userId }, active: isActive };
+      if (searchQuery) {
+        where.title = Like(`%${searchQuery}%`);
+      }
+      return where;
+    };
+
+    // Get active persona (only if not searching)
+    let activePersona = null;
+    if (!searchQuery) {
+      activePersona = await personaRepository.findOne({
+        where: { user: { id: userId }, active: true },
+        relations: ['resumes'],
+      });
+    }
+
+    // Count total matching personas
+    const total = await personaRepository.count({
+      where: buildWhereClause(true),
     });
 
-    const personaData: Persona[] = personas.map((p) => ({
-      id: p.id,
-      title: p.title,
-      keywords: p.keywords,
-      active: p.active,
-      createdAt: p.createdAt,
-      updatedAt: p.updatedAt,
-    }));
+    const items: Persona[] = [];
 
-    const data: ApiResponse<Persona[]> = {
+    if (pageNum === 1) {
+      // Page 1: active persona first (if not searching), then latest matching (limit + 1 to check for duplicate)
+      if (activePersona) {
+        items.push({
+          id: activePersona.id,
+          title: activePersona.title,
+          keywords: activePersona.keywords,
+          active: activePersona.active,
+          resumesCount: activePersona.resumes ? activePersona.resumes.length : 0,
+          createdAt: activePersona.createdAt,
+          updatedAt: activePersona.updatedAt,
+        });
+      }
+
+      // Get limit matching non-active personas (skip 0)
+      const whereClause = buildWhereClause(false);
+      const nonActivePersonas = await personaRepository.find({
+        where: whereClause,
+        relations: ['resumes'],
+        order: { createdAt: 'DESC' },
+        take: limitNum - 1,
+      });
+
+      for (const p of nonActivePersonas) {
+        items.push({
+          id: p.id,
+          title: p.title,
+          keywords: p.keywords,
+          active: p.active,
+          resumesCount: p.resumes ? p.resumes.length : 0,
+          createdAt: p.createdAt,
+          updatedAt: p.updatedAt,
+        });
+      }
+    } else {
+      const skip = (pageNum - 1) * limitNum;
+      const whereClause = buildWhereClause(false);
+      const nonActivePersonas = await personaRepository.find({
+        where: whereClause,
+        relations: ['resumes'],
+        order: { createdAt: 'DESC' },
+        skip: skip,
+        take: limitNum,
+      });
+
+      for (const p of nonActivePersonas) {
+        items.push({
+          id: p.id,
+          title: p.title,
+          keywords: p.keywords,
+          active: p.active,
+          resumesCount: p.resumes ? p.resumes.length : 0,
+          createdAt: p.createdAt,
+          updatedAt: p.updatedAt,
+        });
+      }
+    }
+
+    const data: ApiResponse<{
+      items: Persona[];
+      total: number;
+      page: number;
+      limit: number;
+      totalPages: number;
+    }> = {
       success: true,
-      data: personaData,
+      data: {
+        items,
+        total: total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum),
+      },
     };
     res.status(200).json(data);
   }
@@ -178,6 +279,7 @@ class PersonaController {
 
     const persona = await personaRepository.findOne({
       where: { user: { id: userId }, active: true },
+      relations: ['resumes'],
     });
 
     if (!persona) {
@@ -196,6 +298,7 @@ class PersonaController {
         title: persona.title,
         keywords: persona.keywords,
         active: persona.active,
+        resumesCount: persona.resumes ? persona.resumes.length : 0,
         createdAt: persona.createdAt,
         updatedAt: persona.updatedAt,
       },

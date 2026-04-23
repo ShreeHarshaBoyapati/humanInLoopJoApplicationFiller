@@ -15,7 +15,7 @@ export default class Persona {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column('varchar', { unique: true })
+  @Column('varchar')
   title!: string;
 
   @Column('simple-array', { default: [] })

@@ -1,21 +1,22 @@
 import { useState } from 'react';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { AccountCircle } from '@mui/icons-material';
 import { StyledMenu, StyledMenuItem } from '@repo/ui';
 import styles from './style/home-page-banner.module.css';
 import { Typography } from '@mui/material';
 
-const TABS = [
+const TABS: Array<{ id: string; label: string; route?: string }> = [
   { id: 'dashboard', label: 'Dashboard' },
-  { id: 'persona-resumes', label: 'Persona and Resumes' },
+  { id: 'persona-resumes', label: 'Persona and Resumes', route: '/persona-resumes' },
   { id: 'settings', label: 'Settings' },
-] as const;
+];
 
 interface HomePageBannerProps {
   onLogout: () => void;
 }
 
 export function HomePageBanner({ onLogout }: HomePageBannerProps) {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>('persona-resumes');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
@@ -46,7 +47,12 @@ export function HomePageBanner({ onLogout }: HomePageBannerProps) {
           <button
             key={tab.id}
             className={activeTab === tab.id ? styles.tabActive : styles.tab}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => {
+              setActiveTab(tab.id);
+              if (tab.route) {
+                navigate({ to: tab.route });
+              }
+            }}
             type="button"
           >
             {tab.label}

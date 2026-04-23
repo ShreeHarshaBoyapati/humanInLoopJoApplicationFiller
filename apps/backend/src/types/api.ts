@@ -7,9 +7,22 @@ import type {
   Response,
   RequestHandler,
   ParamsDictionary,
+  Query,
 } from 'express-serve-static-core';
 
-export type TypedRequest<TBody> = Request<ParamsDictionary, never, TBody>;
+export type TypedRequest<TBody, TQuery extends Query = Query> = Request<
+  ParamsDictionary,
+  never,
+  TBody,
+  TQuery
+>;
+
+export type AuthenticatedTypedRequest<TBody, TQuery extends Query = Query> = TypedRequest<
+  TBody,
+  TQuery
+> & {
+  userId: string;
+};
 
 /**
  * Wraps a typed controller method so it's compatible with Express's route handler.

@@ -3,6 +3,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { axiosInstance } from '../utils/axios.ts';
 import type { ApiResponse } from '@repo/shared-types';
 import { syncAuthToExtension, getTokenFromCookie } from '../utils/auth-sync.ts';
+import { useStore } from '../store/index.ts';
 
 export const Route = createFileRoute('/google-callback')({
   component: GoogleCallbackComponent,
@@ -47,6 +48,12 @@ function GoogleCallbackComponent() {
 
           // Sync token to extension
           syncAuthToExtension({ token, timestamp });
+
+          // Store user data in Zustand
+          useStore.getState().setUser({
+            id: response.data.data.id,
+            email: response.data.data.email,
+          });
 
           // Navigate to home on success
           navigate({ to: '/' });

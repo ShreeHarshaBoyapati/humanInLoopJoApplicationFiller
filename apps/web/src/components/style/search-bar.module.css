@@ -1,0 +1,11 @@
+.searchBox {
+  display: flex;
+  justify-content: flex-start;
+  max-width: 800px;
+  width: 100%;
+}
+
+.searchContainer {
+  max-width: 300px;
+  width: 100%;
+}

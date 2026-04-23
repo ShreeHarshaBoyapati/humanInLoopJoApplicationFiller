@@ -13,3 +13,4 @@ export * from './action-card';
 export * from './file-uploader';
 export * from './stepper';
 export * from './verification-code';
+export * from './modal';
