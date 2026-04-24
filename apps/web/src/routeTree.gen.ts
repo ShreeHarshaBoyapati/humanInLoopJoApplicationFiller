@@ -8,97 +8,97 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root';
-import { Route as PersonaResumesRouteImport } from './routes/persona-resumes';
-import { Route as LoginRouteImport } from './routes/login';
-import { Route as GoogleCallbackRouteImport } from './routes/google-callback';
-import { Route as IndexRouteImport } from './routes/index';
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as PersonaResumesRouteImport } from './routes/persona-resumes'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as GoogleCallbackRouteImport } from './routes/google-callback'
+import { Route as IndexRouteImport } from './routes/index'
 
 const PersonaResumesRoute = PersonaResumesRouteImport.update({
   id: '/persona-resumes',
   path: '/persona-resumes',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const GoogleCallbackRoute = GoogleCallbackRouteImport.update({
   id: '/google-callback',
   path: '/google-callback',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute;
-  '/google-callback': typeof GoogleCallbackRoute;
-  '/login': typeof LoginRoute;
-  '/persona-resumes': typeof PersonaResumesRoute;
+  '/': typeof IndexRoute
+  '/google-callback': typeof GoogleCallbackRoute
+  '/login': typeof LoginRoute
+  '/persona-resumes': typeof PersonaResumesRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute;
-  '/google-callback': typeof GoogleCallbackRoute;
-  '/login': typeof LoginRoute;
-  '/persona-resumes': typeof PersonaResumesRoute;
+  '/': typeof IndexRoute
+  '/google-callback': typeof GoogleCallbackRoute
+  '/login': typeof LoginRoute
+  '/persona-resumes': typeof PersonaResumesRoute
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport;
-  '/': typeof IndexRoute;
-  '/google-callback': typeof GoogleCallbackRoute;
-  '/login': typeof LoginRoute;
-  '/persona-resumes': typeof PersonaResumesRoute;
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/google-callback': typeof GoogleCallbackRoute
+  '/login': typeof LoginRoute
+  '/persona-resumes': typeof PersonaResumesRoute
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
-  fullPaths: '/' | '/google-callback' | '/login' | '/persona-resumes';
-  fileRoutesByTo: FileRoutesByTo;
-  to: '/' | '/google-callback' | '/login' | '/persona-resumes';
-  id: '__root__' | '/' | '/google-callback' | '/login' | '/persona-resumes';
-  fileRoutesById: FileRoutesById;
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths: '/' | '/google-callback' | '/login' | '/persona-resumes'
+  fileRoutesByTo: FileRoutesByTo
+  to: '/' | '/google-callback' | '/login' | '/persona-resumes'
+  id: '__root__' | '/' | '/google-callback' | '/login' | '/persona-resumes'
+  fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute;
-  GoogleCallbackRoute: typeof GoogleCallbackRoute;
-  LoginRoute: typeof LoginRoute;
-  PersonaResumesRoute: typeof PersonaResumesRoute;
+  IndexRoute: typeof IndexRoute
+  GoogleCallbackRoute: typeof GoogleCallbackRoute
+  LoginRoute: typeof LoginRoute
+  PersonaResumesRoute: typeof PersonaResumesRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/persona-resumes': {
-      id: '/persona-resumes';
-      path: '/persona-resumes';
-      fullPath: '/persona-resumes';
-      preLoaderRoute: typeof PersonaResumesRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/persona-resumes'
+      path: '/persona-resumes'
+      fullPath: '/persona-resumes'
+      preLoaderRoute: typeof PersonaResumesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
-      id: '/login';
-      path: '/login';
-      fullPath: '/login';
-      preLoaderRoute: typeof LoginRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/google-callback': {
-      id: '/google-callback';
-      path: '/google-callback';
-      fullPath: '/google-callback';
-      preLoaderRoute: typeof GoogleCallbackRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/google-callback'
+      path: '/google-callback'
+      fullPath: '/google-callback'
+      preLoaderRoute: typeof GoogleCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
-      id: '/';
-      path: '/';
-      fullPath: '/';
-      preLoaderRoute: typeof IndexRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -107,7 +107,7 @@ const rootRouteChildren: RootRouteChildren = {
   GoogleCallbackRoute: GoogleCallbackRoute,
   LoginRoute: LoginRoute,
   PersonaResumesRoute: PersonaResumesRoute,
-};
+}
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()

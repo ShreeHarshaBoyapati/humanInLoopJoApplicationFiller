@@ -64,9 +64,36 @@ export interface ResumeData {
 export interface ResumeMetadata {
   id: string;
   fileName: string;
+  active: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ResumeWithVersions extends ResumeMetadata {
+  versions: ResumeVersionMetadata[];
+  activeVersion?: ResumeVersionMetadata;
+}
+
+export interface ResumeVersionMetadata {
+  id: string;
+  fileName: string;
   fileSize: number;
   keywords: string[];
   active: boolean;
+  versionName: string;
+  comment: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ResumeVersionWithFile {
+  id: string;
+  fileName: string;
+  fileSize: number;
+  keywords: string[];
+  active: boolean;
+  versionName: string;
+  comment: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -114,9 +141,50 @@ export interface SetActiveResumeParams {
 export interface ResumeFull {
   id: string;
   fileName: string;
-  fileSize: number;
-  file: Blob;
-  keywords: string[];
+  active: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface CreateResumeVersionParams {
+  resumeId: string;
+  file: FileDataPayload;
+  keywords?: string[];
+  parsedData?: ResumeData;
+  comment?: string;
+}
+
+export interface UpdateResumeVersionParams {
+  resumeId: string;
+  versionId: string;
+  keywords?: string[];
+  parsedData?: ResumeData;
+  comment?: string;
+}
+
+export interface DeleteResumeVersionParams {
+  resumeId: string;
+  versionId: string;
+}
+
+export interface GetResumeVersionByIdParams {
+  resumeId: string;
+  versionId: string;
+}
+
+export interface SetActiveResumeVersionParams {
+  resumeId: string;
+  versionId: string;
+}
+
+export interface BranchResumeParams {
+  resumeId: string;
+  versionId: string;
+  newFileName: string;
+}
+
+export interface CompareVersionsParams {
+  resumeId: string;
+  versionA: string;
+  versionB: string;
 }

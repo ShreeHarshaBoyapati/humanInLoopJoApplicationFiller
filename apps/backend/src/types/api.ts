@@ -17,13 +17,6 @@ export type TypedRequest<TBody, TQuery extends Query = Query> = Request<
   TQuery
 >;
 
-export type AuthenticatedTypedRequest<TBody, TQuery extends Query = Query> = TypedRequest<
-  TBody,
-  TQuery
-> & {
-  userId: string;
-};
-
 /**
  * Wraps a typed controller method so it's compatible with Express's route handler.
  * Use this when middleware (e.g. authMiddleware, validation) narrows the request type.

@@ -4,6 +4,7 @@ import {
   getApiKeyRepository,
   getJobRepository,
   getResumeRepository,
+  getResumeVersionRepository,
 } from '../database/repositories/index.js';
 import { decryptText } from '../utils/encryption.js';
 import { generateText, Output } from 'ai';
@@ -88,6 +89,7 @@ class AiController {
 
       // 2. Fetch resume (ownership check via persona → user)
       const resumeRepository = getResumeRepository();
+      const versionRepository = getResumeVersionRepository();
       const resume = await resumeRepository.findOne({
         where: { id: resumeId },
         relations: ['persona', 'persona.user'],
@@ -98,6 +100,12 @@ class AiController {
         res.status(404).json(data);
         return;
       }
+
+      // 2.1 Fetch active resume version for keywords
+      const activeVersion = await versionRepository.findOne({
+        where: { resume: { id: resumeId }, active: true },
+        select: ['keywords'],
+      });
 
       // 3. Resolve active API key for this user
       const apiKeyRepository = getApiKeyRepository();
@@ -155,7 +163,7 @@ class AiController {
       const jobText = jobParts.join('\n\n');
 
       // 6. Build resume text from stored keywords
-      const resumeText = resume.keywords?.join(', ') || '(no keywords extracted)';
+      const resumeText = activeVersion?.keywords?.join(', ') || '(no keywords extracted)';
 
       // 7. Call AI model
       const prompt = `
