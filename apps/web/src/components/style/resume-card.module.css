@@ -74,10 +74,22 @@
   white-space: nowrap;
 }
 
-.resumeDate {
-  color: var(--grey-500);
+.versionAndDate {
+  align-items: center;
+  color: var(--white-700);
+  display: flex;
   font-family: var(--secondary-font);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
+  gap: calc(var(--spacing) * 1);
+}
+
+.dotSeparator {
+  align-items: center;
+  color: var(--grey-500);
+  display: flex;
+  font-size: 1.25rem;
+  font-weight: 400;
+  line-height: 1;
 }
 
 /* Section 3: Action buttons */
@@ -123,7 +135,7 @@
 }
 
 /* Mobile responsive styles */
-@media (width <= 768px) {
+@media (width <=768px) {
   .resumeCard {
     align-items: flex-start;
     flex-direction: column;
@@ -160,7 +172,7 @@
 }
 
 /* Desktop hover styles - action buttons show on hover */
-@media (width >= 769px) {
+@media (width >=769px) {
   .actionsSection {
     opacity: 0;
     transition: opacity 0.2s ease;

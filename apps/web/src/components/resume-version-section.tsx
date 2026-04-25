@@ -2,10 +2,9 @@ import { ArrowBack } from '@mui/icons-material';
 import styles from '../routes/style/section.module.css';
 import '@repo/ui/constants/css-constants.css';
 import { PageHeader } from './page-header';
-import type { ResumeMetadata } from '@repo/shared-types';
 
 interface ResumeVersionSectionProps {
-  resume: ResumeMetadata;
+  resume: { id: string; fileName: string };
   onBack: () => void;
 }
 

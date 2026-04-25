@@ -28,6 +28,14 @@ const UpdateResumeSchema = z.object({
 const CreateResumeSchema = z.object({
   personaId: z.uuidv4('Invalid persona ID'),
   fileName: z.string(),
+  file: z.object({
+    name: z.string(),
+    type: z.string(),
+    size: z.number(),
+    base64: z.string(),
+  }),
+  keywords: z.array(z.string()).optional(),
+  parsedData: z.record(z.string(), z.unknown()).optional(),
 });
 
 // Schema for setting active resume

@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { ArrowBack } from '@mui/icons-material';
 import AddIcon from '@mui/icons-material/Add';
 import styles from '../routes/style/section.module.css';
 import scrollbarStyles from '@repo/ui/scroll-bar.module.css';
@@ -8,18 +7,15 @@ import { PageHeader } from './page-header';
 import { SearchBar } from './search-bar';
 import { ResumeCard } from './resume-card';
 import { ConfirmModal } from './confirm-modal';
-import {
-  useResumes,
-  useSetActiveResume,
-  useDeleteResume,
-  type PaginatedResumeResponse,
-} from '../hooks/use-resumes';
-import type { Persona, ResumeMetadata } from '@repo/shared-types';
+import { CreateResumeModal } from './create-resume-modal';
+import { EditResumeModal } from './edit-resume-modal';
+import { useResumes, useSetActiveResume, useDeleteResume } from '../hooks/use-resumes';
+import type { Persona, PaginatedResumeListItem, PaginatedResumeResponse } from '@repo/shared-types';
 
 interface ResumeSectionProps {
   persona: Persona;
   onBack: () => void;
-  onSelectResume: (resume: ResumeMetadata) => void;
+  onSelectResume: (resume: PaginatedResumeListItem) => void;
 }
 
 export function ResumeSection({ persona, onBack, onSelectResume }: ResumeSectionProps) {
@@ -27,6 +23,8 @@ export function ResumeSection({ persona, onBack, onSelectResume }: ResumeSection
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null);
   const [deleteResumeId, setDeleteResumeId] = useState<string | null>(null);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [editingResume, setEditingResume] = useState<PaginatedResumeListItem | null>(null);
 
   const deleteResume = useDeleteResume();
   const setActiveResume = useSetActiveResume();
@@ -59,7 +57,7 @@ export function ResumeSection({ persona, onBack, onSelectResume }: ResumeSection
   // Set the active resume as selected when data loads
   useEffect(() => {
     if (resumes.length > 0 && !selectedResumeId) {
-      const activeResume = resumes.find((resume: ResumeMetadata) => resume.active);
+      const activeResume = resumes.find((resume: PaginatedResumeListItem) => resume.active);
       if (activeResume) {
         setSelectedResumeId(activeResume.id);
       }
@@ -117,21 +115,28 @@ export function ResumeSection({ persona, onBack, onSelectResume }: ResumeSection
     isFetchingPreviousPage,
   ]);
 
-  const handleSetActiveResume = (resume: ResumeMetadata) => {
+  const handleSetActiveResume = (resume: PaginatedResumeListItem) => {
     setSelectedResumeId(resume.id);
     if (!resume.active) {
-      setActiveResume.mutate(resume.id);
+      setActiveResume.mutate({ id: resume.id, personaId: persona.id });
     }
   };
 
   const handleAddResume = () => {
-    // TODO: Implement add resume functionality
-    console.log('Add resume clicked');
+    setIsCreateModalOpen(true);
   };
 
-  const handleEditClick = (resume: ResumeMetadata, e: React.MouseEvent) => {
+  const handleCloseCreateModal = () => {
+    setIsCreateModalOpen(false);
+  };
+
+  const handleEditClick = (resume: PaginatedResumeListItem, e: React.MouseEvent) => {
     e.stopPropagation();
-    console.log('Edit clicked for resume:', resume);
+    setEditingResume(resume);
+  };
+
+  const handleCloseEditModal = () => {
+    setEditingResume(null);
   };
 
   const handleDeleteClick = (resumeId: string, e: React.MouseEvent) => {
@@ -142,7 +147,7 @@ export function ResumeSection({ persona, onBack, onSelectResume }: ResumeSection
   const handleDeleteConfirm = () => {
     if (deleteResumeId) {
       deleteResume.mutate(
-        { id: deleteResumeId },
+        { id: deleteResumeId, personaId: persona.id },
         {
           onSuccess: () => {
             setDeleteResumeId(null);
@@ -171,9 +176,6 @@ export function ResumeSection({ persona, onBack, onSelectResume }: ResumeSection
 
       {/* Box 2: Navigation */}
       <div className={styles.navigation}>
-        <button type="button" className={styles.backButton} onClick={onBack}>
-          <ArrowBack sx={{ fontSize: '1rem' }} />
-        </button>
         <span className={styles.navTextBlue} onClick={onBack}>
           All Personas
         </span>
@@ -198,7 +200,7 @@ export function ResumeSection({ persona, onBack, onSelectResume }: ResumeSection
           <div ref={topSentinelRef} className={styles.sentinel} />
 
           <div className={styles.itemList}>
-            {resumes.map((resume: ResumeMetadata) => (
+            {resumes.map((resume: PaginatedResumeListItem) => (
               <ResumeCard
                 key={resume.id}
                 resume={resume}
@@ -228,6 +230,19 @@ export function ResumeSection({ persona, onBack, onSelectResume }: ResumeSection
         cancelLabel="Cancel"
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
+      />
+
+      <CreateResumeModal
+        isOpen={isCreateModalOpen}
+        onClose={handleCloseCreateModal}
+        personaId={persona.id}
+      />
+
+      <EditResumeModal
+        isOpen={!!editingResume}
+        onClose={handleCloseEditModal}
+        resume={editingResume}
+        personaId={persona.id}
       />
     </div>
   );

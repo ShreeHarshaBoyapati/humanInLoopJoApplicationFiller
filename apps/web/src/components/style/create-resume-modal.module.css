@@ -1,0 +1,96 @@
+@import url('@repo/ui/scroll-bar.module.css');
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 6);
+}
+
+.apiError {
+  background-color: var(--black-800);
+  border: 1px solid var(--red-600);
+  border-radius: var(--border-radius);
+  color: var(--red-600);
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+  margin-top: calc(var(--spacing) * 2);
+  padding: calc(var(--spacing) * 3);
+}
+
+/* JSON viewer container */
+.jsonViewerContainer {
+  background-color: var(--black-700);
+  border: 1px solid var(--grey-700);
+  border-radius: var(--border-radius);
+  flex: 1;
+  max-height: 300px;
+  overflow: auto;
+  padding: calc(var(--spacing) * 4);
+}
+
+/* Review content container (State 3) */
+.reviewContent {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 6);
+}
+
+/* Slide-in animation from right */
+@keyframes slide-in-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Circular loader container */
+.circularLoaderContainer {
+  align-items: center;
+  animation: slide-in-from-right 0.4s ease-out;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 4);
+  justify-content: center;
+  min-height: 300px;
+}
+
+.loaderText {
+  color: var(--white-700);
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+}
+
+/* Hidden file input */
+.hiddenInput {
+  display: none;
+}
+
+/* Footer styles */
+.footerContainer {
+  display: flex;
+  gap: calc(var(--spacing) * 3);
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.footerContainerWithBack {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.footerLeft {
+  display: flex;
+  gap: calc(var(--spacing) * 3);
+}
+
+.footerRight {
+  display: flex;
+  gap: calc(var(--spacing) * 3);
+}

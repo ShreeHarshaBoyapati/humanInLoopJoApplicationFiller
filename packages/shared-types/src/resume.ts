@@ -102,6 +102,23 @@ export interface ResumeList {
   resumes: ResumeMetadata[];
 }
 
+export interface PaginatedResumeListItem {
+  id: string;
+  fileName: string;
+  active: boolean;
+  versionsCount: number;
+  activeVersionFileSize: number | null;
+  updatedAt: Date;
+}
+
+export interface PaginatedResumeResponse {
+  items: PaginatedResumeListItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export interface GetResumeParams {
   personaId?: string;
 }
@@ -116,18 +133,19 @@ export interface FileDataPayload {
 export interface CreateResumeParams {
   personaId: string;
   file: FileDataPayload;
+  fileName?: string;
   keywords?: string[];
   parsedData?: ResumeData;
 }
 
 export interface UpdateResumeParams {
   id: string;
-  file?: FileDataPayload;
-  keywords?: string[];
+  fileName: string;
 }
 
 export interface DeleteResumeParams {
   id: string;
+  personaId: string;
 }
 
 export interface GetResumeByIdParams {
@@ -136,6 +154,7 @@ export interface GetResumeByIdParams {
 
 export interface SetActiveResumeParams {
   id: string;
+  personaId: string;
 }
 
 export interface ResumeFull {

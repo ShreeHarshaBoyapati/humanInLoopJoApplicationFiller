@@ -1,12 +1,6 @@
 import React from 'react';
-import {
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
-  AccordionProps,
-  AccordionSummaryProps,
-  AccordionDetailsProps,
-} from '@mui/material';
+import { Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
+import type { AccordionProps, AccordionSummaryProps, AccordionDetailsProps } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import styleConstants from './constants/style-constants';
 

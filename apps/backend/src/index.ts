@@ -88,7 +88,7 @@ async function initializeApp() {
   app.use(limiter);
   app.use(cookieParser());
   app.use(httpLogger);
-  app.use(express.json());
+  app.use(express.json({ limit: '10mb' }));
 
   // ===== API Routes =====
 

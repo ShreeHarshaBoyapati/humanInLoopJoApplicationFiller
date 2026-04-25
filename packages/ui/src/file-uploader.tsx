@@ -21,6 +21,7 @@ export interface FileUploaderProps {
   disabled?: boolean;
   showFilesOnly?: boolean;
   displayFiles?: FileDisplayFile[];
+  value?: File[];
   customProps?: {
     props?: Omit<React.HTMLAttributes<HTMLDivElement>, 'id' | 'onClick' | 'disabled' | 'className'>;
     childProps?: {
@@ -129,11 +130,21 @@ export const FileUploader = ({
   disabled = false,
   showFilesOnly = false,
   displayFiles,
+  value,
   customProps,
 }: FileUploaderProps) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [internalSelectedFiles, setInternalSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Use external value if provided, otherwise use internal state
+  const selectedFiles = value !== undefined ? value : internalSelectedFiles;
+
+  const setSelectedFiles = (files: File[]) => {
+    if (value === undefined) {
+      setInternalSelectedFiles(files);
+    }
+  };
 
   const handleDragOver = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
@@ -213,10 +224,14 @@ export const FileUploader = ({
   const handleRemoveFile = useCallback(
     (index: number) => {
       const newFiles = selectedFiles.filter((_, i) => i !== index);
-      setSelectedFiles(newFiles);
-      onFilesSelected?.(newFiles);
+      if (value !== undefined) {
+        onFilesSelected?.(newFiles);
+      } else {
+        setSelectedFiles(newFiles);
+        onFilesSelected?.(newFiles);
+      }
     },
-    [selectedFiles, onFilesSelected]
+    [selectedFiles, onFilesSelected, value]
   );
 
   const handleContainerClick = useCallback(() => {

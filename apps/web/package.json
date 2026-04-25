@@ -21,6 +21,7 @@
     "axios": "^1.7.9",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-json-view": "^1.21.3",
     "zustand": "^5.0.12"
   },
   "devDependencies": {
