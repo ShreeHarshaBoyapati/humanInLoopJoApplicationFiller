@@ -50,11 +50,21 @@ export const useCreatePersona = () => {
 
   return useMutation({
     mutationFn: async (data: CreatePersonaInput) => {
-      const response = await axiosInstance.post<ApiResponse<Persona>>('/persona', data);
-      if (!response.data.success || !response.data.data) {
-        throw new Error(response.data.message || 'Failed to create persona');
+      try {
+        const response = await axiosInstance.post<ApiResponse<Persona>>('/persona', data);
+        if (!response.data.success || !response.data.data) {
+          throw new Error(response.data.message || 'Failed to create persona');
+        }
+        return response.data.data;
+      } catch (err) {
+        if (err && typeof err === 'object' && 'response' in err) {
+          const error = err as { response: { data: ApiResponse<never> } };
+          if (!error.response.data.success) {
+            throw new Error(error.response.data.message);
+          }
+        }
+        throw err;
       }
-      return response.data.data;
     },
     onSuccess: (newPersona: Persona) => {
       // Get all cached persona list queries to check their search parameters
@@ -137,11 +147,21 @@ export const useUpdatePersona = () => {
 
   return useMutation({
     mutationFn: async (data: UpdatePersonaInput) => {
-      const response = await axiosInstance.put<ApiResponse<Persona>>('/persona', data);
-      if (!response.data.success || !response.data.data) {
-        throw new Error(response.data.message || 'Failed to update persona');
+      try {
+        const response = await axiosInstance.put<ApiResponse<Persona>>('/persona', data);
+        if (!response.data.success || !response.data.data) {
+          throw new Error(response.data.message || 'Failed to update persona');
+        }
+        return response.data.data;
+      } catch (err) {
+        if (err && typeof err === 'object' && 'response' in err) {
+          const error = err as { response: { data: ApiResponse<never> } };
+          if (!error.response.data.success) {
+            throw new Error(error.response.data.message);
+          }
+        }
+        throw err;
       }
-      return response.data.data;
     },
     onSuccess: (updatedPersona: Persona) => {
       queryClient.setQueriesData(
@@ -169,11 +189,21 @@ export const useDeletePersona = () => {
 
   return useMutation({
     mutationFn: async (data: DeletePersonaInput) => {
-      const response = await axiosInstance.delete('/persona', { data });
-      if (!response.data.success) {
-        throw new Error(response.data.message || 'Failed to delete persona');
+      try {
+        const response = await axiosInstance.delete('/persona', { data });
+        if (!response.data.success) {
+          throw new Error(response.data.message || 'Failed to delete persona');
+        }
+        return data.id;
+      } catch (err) {
+        if (err && typeof err === 'object' && 'response' in err) {
+          const error = err as { response: { data: ApiResponse<never> } };
+          if (!error.response.data.success) {
+            throw new Error(error.response.data.message);
+          }
+        }
+        throw err;
       }
-      return data.id;
     },
     onSuccess: (deletedId: string) => {
       queryClient.setQueriesData(
@@ -233,13 +263,23 @@ export const useSetActivePersona = () => {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const response = await axiosInstance.post<ApiResponse<Persona>>('/persona/set-active', {
-        id,
-      });
-      if (!response.data.success || !response.data.data) {
-        throw new Error(response.data.message || 'Failed to set active persona');
+      try {
+        const response = await axiosInstance.post<ApiResponse<Persona>>('/persona/set-active', {
+          id,
+        });
+        if (!response.data.success || !response.data.data) {
+          throw new Error(response.data.message || 'Failed to set active persona');
+        }
+        return response.data.data;
+      } catch (err) {
+        if (err && typeof err === 'object' && 'response' in err) {
+          const error = err as { response: { data: ApiResponse<never> } };
+          if (!error.response.data.success) {
+            throw new Error(error.response.data.message);
+          }
+        }
+        throw err;
       }
-      return response.data.data;
     },
     onSuccess: (activePersona: Persona) => {
       queryClient.setQueriesData(

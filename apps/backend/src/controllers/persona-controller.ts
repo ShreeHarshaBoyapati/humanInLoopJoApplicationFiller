@@ -88,6 +88,22 @@ class PersonaController {
       return;
     }
 
+    // Check for duplicate title if title is being updated
+    if (updateData.title && updateData.title !== persona.title) {
+      const existingPersona = await personaRepository.findOne({
+        where: { title: updateData.title, user: { id: userId } },
+      });
+
+      if (existingPersona) {
+        const data: ApiResponse = {
+          success: false,
+          message: 'A persona with this title already exists',
+        };
+        res.status(400).json(data);
+        return;
+      }
+    }
+
     Object.assign(persona, updateData);
 
     await personaRepository.save(persona);

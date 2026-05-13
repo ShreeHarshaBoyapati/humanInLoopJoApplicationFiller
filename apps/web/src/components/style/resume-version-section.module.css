@@ -1,0 +1,324 @@
+.tabsContainer {
+  border-bottom: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 0;
+  display: flex;
+  gap: calc(var(--spacing) * 4);
+  margin-bottom: calc(var(--spacing) * 4);
+  max-width: 1000px;
+  width: 100%;
+}
+
+.tab {
+  appearance: none;
+  appearance: none;
+  background: transparent;
+  background-color: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--white-700);
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  margin: 0;
+  margin-bottom: -1px;
+  outline: 0;
+  padding: calc(var(--spacing) * 3) calc(var(--spacing) * 2);
+  position: relative;
+  transition:
+    color 0.2s ease,
+    border-bottom-color 0.2s ease;
+}
+
+.tab:hover,
+.tab:focus,
+.tab:focus-visible,
+.tab:active {
+  background: transparent;
+  background-color: transparent;
+  border-color: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--white-900);
+  outline: 0;
+}
+
+.tab.active,
+.tab.active:hover,
+.tab.active:focus,
+.tab.active:focus-visible,
+.tab.active:active {
+  background: transparent;
+  background-color: transparent;
+  border-bottom-color: var(--blue-500);
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--blue-500);
+  outline: 0;
+}
+
+/* Diff view styles */
+.diffContainer {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 4);
+  max-width: 1000px;
+  min-height: 0;
+  overflow: hidden;
+  width: 80%;
+}
+
+.selectsRow {
+  align-items: flex-end;
+  display: flex;
+  gap: calc(var(--spacing) * 4);
+}
+
+.selectWrapper {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 2);
+}
+
+.compareButton {
+  align-self: flex-end;
+  background-color: var(--blue-500);
+  border: none;
+  border-radius: var(--border-radius-md);
+  color: var(--white-900);
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 4);
+  transition: all 0.2s ease;
+}
+
+.compareButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.compareButton:hover:not(:disabled) {
+  background-color: var(--blue-600);
+}
+
+.diffResult {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 4);
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.diffHeader {
+  background-color: var(--black-700);
+  border-radius: var(--border-radius-lg);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 2);
+  padding: calc(var(--spacing) * 4);
+}
+
+.diffTitle {
+  color: var(--white-900);
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+}
+
+.diffSummary {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 2);
+}
+
+.diffItem {
+  align-items: center;
+  display: flex;
+  font-size: var(--font-size-sm);
+  gap: calc(var(--spacing) * 2);
+}
+
+.diffItem.added {
+  color: var(--green-400);
+}
+
+.diffItem.removed {
+  color: var(--red-500);
+}
+
+.diffItem.changed {
+  color: var(--yellow-400);
+}
+
+.diffItem.unchanged {
+  color: var(--grey-500);
+}
+
+.diffDetailsContainer {
+  display: flex;
+  gap: calc(var(--spacing) * 4);
+}
+
+.diffVersionColumn {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 2);
+}
+
+.diffVersionLabel {
+  color: var(--grey-400);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.diffKeywordsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--spacing) * 1);
+}
+
+.diffKeywordChip {
+  background-color: var(--black-600);
+  border-radius: var(--border-radius-sm);
+  color: var(--white-900);
+  font-size: var(--font-size-xs);
+  padding: calc(var(--spacing) * 1) calc(var(--spacing) * 2);
+}
+
+.diffKeywordChip.added {
+  background-color: var(--green-500-opacity-20);
+  color: var(--green-400);
+}
+
+.diffKeywordChip.removed {
+  background-color: var(--red-500-opacity-20);
+  color: var(--red-500);
+}
+
+.diffVersionInfo {
+  color: var(--white-900);
+  display: flex;
+  font-size: var(--font-size-sm);
+  gap: calc(var(--spacing) * 2);
+}
+
+.diffMetaLabel {
+  color: var(--grey-400);
+  font-weight: 500;
+  min-width: 80px;
+}
+
+/* Parsed Data Comparison */
+.parsedDataSection {
+  border-top: 1px solid var(--grey-700);
+  margin-top: calc(var(--spacing) * 6);
+  padding-top: calc(var(--spacing) * 4);
+}
+
+.parsedDataHeader {
+  color: var(--white-900);
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: calc(var(--spacing) * 4);
+}
+
+/* Side-by-side JSON Viewer Layout */
+.parsedDataDiffContainer {
+  display: grid;
+  gap: calc(var(--spacing) * 4);
+  grid-template-columns: 1fr 1fr;
+}
+
+.jsonViewerColumn {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 2);
+}
+
+.jsonViewerHeader {
+  align-items: center;
+  background-color: var(--black-700);
+  border-radius: var(--border-radius) var(--border-radius) 0 0;
+  display: flex;
+  justify-content: space-between;
+  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3);
+}
+
+.jsonViewerTitle {
+  color: var(--white-900);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.jsonViewerContent {
+  background-color: var(--black-800);
+  border-radius: 0 0 var(--border-radius) var(--border-radius);
+  max-height: 500px;
+  overflow: auto;
+}
+
+.jsonViewerContent .jsonViewerScrollbar {
+  max-height: 500px;
+  overflow: auto;
+}
+
+/* Individual diff section styles - kept for potential future use */
+.diffSection {
+  background-color: var(--black-800);
+  border-radius: var(--border-radius);
+  padding: calc(var(--spacing) * 4);
+}
+
+.diffSectionTitle {
+  color: var(--white-900);
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: calc(var(--spacing) * 3);
+  text-transform: capitalize;
+}
+
+.diffSection.changed {
+  border-left: 3px solid var(--yellow-400);
+}
+
+.versionLabel {
+  color: var(--grey-400);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.noDataText {
+  color: var(--grey-500);
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+/* Monaco Diff Viewer Container */
+.monacoDiffContainer {
+  background-color: var(--black-800);
+  border: 1px solid var(--grey-700);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  width: 100%;
+}
+
+/* JSON Diff Viewer Styles */
+.jsonTree {
+  font-family: var(--font-family-mono);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  padding: calc(var(--spacing) * 2);
+}
+
+@media (width <=1024px) {
+  .diffContainer {
+    width: 100%;
+  }
+}

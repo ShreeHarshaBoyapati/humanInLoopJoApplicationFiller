@@ -1,6 +1,7 @@
 import { useState, useEffect, type ChangeEvent } from 'react';
 import { Modal, EnhancedTextField, EnhancedButton } from '@repo/ui';
 import { useUpdateResume } from '../hooks/use-resumes';
+import { CircularProgress } from '@mui/material';
 import type { PaginatedResumeListItem } from '@repo/shared-types';
 import styles from './style/edit-resume-modal.module.css';
 
@@ -80,6 +81,7 @@ export function EditResumeModal({ isOpen, onClose, resume, personaId }: EditResu
             colorTheme="primary"
             onClick={handleSave}
             disabled={isPending}
+            startIcon={isPending ? <CircularProgress size={'1rem'} color="inherit" /> : undefined}
           />
         </div>
       }

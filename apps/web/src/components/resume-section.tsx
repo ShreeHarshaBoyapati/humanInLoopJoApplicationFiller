@@ -116,9 +116,19 @@ export function ResumeSection({ persona, onBack, onSelectResume }: ResumeSection
   ]);
 
   const handleSetActiveResume = (resume: PaginatedResumeListItem) => {
-    setSelectedResumeId(resume.id);
     if (!resume.active) {
-      setActiveResume.mutate({ id: resume.id, personaId: persona.id });
+      setActiveResume.mutate(
+        { id: resume.id, personaId: persona.id },
+        {
+          onSuccess: () => {
+            setSelectedResumeId(resume.id);
+          },
+          onError: (err) => {
+            const errorMessage = err instanceof Error ? err.message : 'Failed to set active resume';
+            alert(errorMessage);
+          },
+        }
+      );
     }
   };
 
@@ -154,6 +164,10 @@ export function ResumeSection({ persona, onBack, onSelectResume }: ResumeSection
             if (selectedResumeId === deleteResumeId) {
               setSelectedResumeId(null);
             }
+          },
+          onError: (err) => {
+            const errorMessage = err instanceof Error ? err.message : 'Failed to delete resume';
+            alert(errorMessage);
           },
         }
       );
@@ -209,6 +223,7 @@ export function ResumeSection({ persona, onBack, onSelectResume }: ResumeSection
                 onNavigate={onSelectResume}
                 onEdit={handleEditClick}
                 onDelete={handleDeleteClick}
+                disabled={setActiveResume.isPending}
               />
             ))}
           </div>
@@ -230,6 +245,7 @@ export function ResumeSection({ persona, onBack, onSelectResume }: ResumeSection
         cancelLabel="Cancel"
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
+        isLoading={deleteResume.isPending}
       />
 
       <CreateResumeModal

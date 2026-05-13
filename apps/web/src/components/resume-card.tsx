@@ -7,6 +7,7 @@ import styles from './style/resume-card.module.css';
 interface ResumeCardProps {
   resume: PaginatedResumeListItem;
   isSelected: boolean;
+  disabled?: boolean;
   onSetActive: (resume: PaginatedResumeListItem) => void;
   onNavigate: (resume: PaginatedResumeListItem) => void;
   onEdit: (resume: PaginatedResumeListItem, e: React.MouseEvent) => void;
@@ -16,6 +17,7 @@ interface ResumeCardProps {
 export const ResumeCard = ({
   resume,
   isSelected,
+  disabled,
   onSetActive,
   onNavigate,
   onEdit,
@@ -39,8 +41,14 @@ export const ResumeCard = ({
           <Radio
             checked={isSelected}
             onChange={() => onSetActive(resume)}
+            disabled={disabled}
             sx={{
               color: 'var(--grey-500)',
+              '&.Mui-disabled': {
+                color: 'var(--grey-500)',
+                pointerEvents: 'none',
+                opacity: 0.5,
+              },
               '&.Mui-checked': {
                 color: 'var(--blue-500)',
               },

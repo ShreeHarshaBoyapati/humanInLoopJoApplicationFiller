@@ -1,16 +1,28 @@
 import { useState, useEffect, useRef, type ChangeEvent } from 'react';
 import { Modal, FileUploader, EnhancedTextField, EnhancedButton } from '@repo/ui';
 import type { FileDisplayFile } from '@repo/ui';
-import { useCreateResume, useParseResumeFile } from '../hooks/use-resumes';
+import {
+  useCreateVersion,
+  useUpdateVersion,
+  useParseVersionFile,
+  useViewParsedData,
+} from '../hooks/use-resume-versions';
 import type { FileDataPayload, ResumeData } from '@repo/shared-types';
 import Editor from '@monaco-editor/react';
 import { CircularProgress } from '@mui/material';
 import styles from './style/create-resume-modal.module.css';
 
-interface CreateResumeModalProps {
+interface CreateVersionModalProps {
   isOpen: boolean;
   onClose: () => void;
-  personaId: string;
+  resumeId: string;
+  editVersion?: {
+    id: string;
+    versionName: string;
+    fileSize: number;
+    keywords: string[];
+    comment: string | null;
+  } | null;
 }
 
 const convertFileToBase64 = (file: File): Promise<FileDataPayload> => {
@@ -19,7 +31,6 @@ const convertFileToBase64 = (file: File): Promise<FileDataPayload> => {
     reader.readAsDataURL(file);
     reader.onload = () => {
       const base64 = reader.result as string;
-      // Remove the data URL prefix (e.g., "data:application/pdf;base64,")
       const base64Data = base64.split(',')[1];
       resolve({
         name: file.name,
@@ -34,11 +45,15 @@ const convertFileToBase64 = (file: File): Promise<FileDataPayload> => {
   });
 };
 
-export function CreateResumeModal({ isOpen, onClose, personaId }: CreateResumeModalProps) {
-  const [resumeName, setResumeName] = useState('');
+export function CreateVersionModal({
+  isOpen,
+  onClose,
+  resumeId,
+  editVersion,
+}: CreateVersionModalProps) {
   const [commit, setCommit] = useState('');
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [nameError, setNameError] = useState('');
+  const [selectedFiles, setSelectedFiles] = useState<(File | FileDisplayFile)[]>([]);
+  const [commitError, setCommitError] = useState('');
   const [fileError, setFileError] = useState('');
   const [apiError, setApiError] = useState('');
   const [parsedData, setParsedData] = useState<ResumeData | null>(null);
@@ -52,21 +67,32 @@ export function CreateResumeModal({ isOpen, onClose, personaId }: CreateResumeMo
     }
   };
 
-  const createResume = useCreateResume();
-  const parseResume = useParseResumeFile();
+  const isEditMode = !!editVersion;
 
+  const createVersion = useCreateVersion();
+  const updateVersion = useUpdateVersion();
+  const parseFile = useParseVersionFile();
+  const viewParsedData = useViewParsedData();
+
+  // Reset state when modal opens/closes
   useEffect(() => {
     if (isOpen) {
-      setResumeName('');
-      setCommit('');
-      setSelectedFiles([]);
-      setNameError('');
+      // Reset all state when modal opens
+      if (isEditMode && editVersion) {
+        setCommit(editVersion.comment || '');
+        // Initialize with existing file as FileDisplayFile
+        setSelectedFiles([{ name: editVersion.versionName, size: editVersion.fileSize }]);
+      } else {
+        setCommit('');
+        setSelectedFiles([]);
+      }
+      setCommitError('');
       setFileError('');
       setApiError('');
       setParsedData(null);
       setIsParsing(false);
     }
-  }, [isOpen]);
+  }, [isOpen, isEditMode, editVersion]);
 
   // Scroll to error when apiError occurs
   useEffect(() => {
@@ -79,50 +105,76 @@ export function CreateResumeModal({ isOpen, onClose, personaId }: CreateResumeMo
   }, [apiError]);
 
   const handleFilesSelected = (files: (File | FileDisplayFile)[]) => {
-    // Filter to only actual File objects (not FileDisplayFile)
-    const actualFiles = files.filter((f): f is File => f instanceof File);
-    setSelectedFiles(actualFiles);
+    setSelectedFiles(files);
     setFileError('');
     if (apiError) setApiError('');
-
-    // Pre-fill resume name with file name (without extension) when file is selected
-    if (actualFiles.length > 0) {
-      const fileName = actualFiles[0].name;
-      setResumeName(fileName);
-    }
   };
 
   const handleFileError = (error: string) => {
     setFileError(error);
-    setSelectedFiles([]);
-  };
-
-  const handleNameChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setResumeName(e.target.value);
-    if (nameError) setNameError('');
-    if (apiError) setApiError('');
+    // Restore existing file if in edit mode
+    setSelectedFiles(
+      isEditMode && editVersion
+        ? [{ name: editVersion.versionName, size: editVersion.fileSize }]
+        : []
+    );
   };
 
   const handleCommitChange = (e: ChangeEvent<HTMLInputElement>) => {
     setCommit(e.target.value);
+    if (commitError) setCommitError('');
     if (apiError) setApiError('');
   };
 
-  const handleParse = async () => {
-    if (selectedFiles.length === 0) {
-      setFileError('Please select a file first');
+  // Check if selectedFiles contains any File objects (new uploads)
+  const hasOnlyNewFiles = selectedFiles.some((f) => f instanceof File);
+
+  const handleParseOrNext = async () => {
+    // Edit mode with existing file and no new file: load existing parsed data
+    if (isEditMode && editVersion && !hasOnlyNewFiles) {
+      // Create new AbortController for this request
+      abortControllerRef.current = new AbortController();
+
+      try {
+        setIsParsing(true);
+        const result = await viewParsedData.mutateAsync({
+          resumeId,
+          versionId: editVersion.id,
+        });
+        setParsedData(result);
+        setIsParsing(false);
+        setApiError('');
+        abortControllerRef.current = null;
+      } catch (error) {
+        // Check if this was an abort error
+        if (error instanceof Error && error.name === 'CanceledError') {
+          setIsParsing(false);
+          abortControllerRef.current = null;
+          return;
+        }
+        setApiError(error instanceof Error ? error.message : 'Failed to load parsed data');
+        setIsParsing(false);
+        abortControllerRef.current = null;
+      }
       return;
     }
 
-    const file = selectedFiles[0];
+    // Get the first new File object
+    const newFile = selectedFiles.find((f) => f instanceof File) as File | undefined;
+
+    // Must have a new file selected
+    if (!newFile) {
+      setFileError('Please select a file first');
+      return;
+    }
 
     // Create new AbortController for this request
     abortControllerRef.current = new AbortController();
 
     try {
       setIsParsing(true);
-      const result = await parseResume.mutateAsync({
-        file,
+      const result = await parseFile.mutateAsync({
+        file: newFile,
         signal: abortControllerRef.current.signal,
       });
       setParsedData(result);
@@ -132,59 +184,70 @@ export function CreateResumeModal({ isOpen, onClose, personaId }: CreateResumeMo
     } catch (error) {
       // Check if this was an abort error
       if (error instanceof Error && error.name === 'CanceledError') {
-        // User cancelled, don't show error
         setIsParsing(false);
         abortControllerRef.current = null;
         return;
       }
-      setApiError(error instanceof Error ? error.message : 'Failed to parse resume');
+      setApiError(error instanceof Error ? error.message : 'Failed to parse file');
       setIsParsing(false);
       abortControllerRef.current = null;
     }
   };
 
   const handleSave = async () => {
-    if (!resumeName.trim()) {
-      setNameError('Resume name is required');
-      return;
-    }
-
-    if (selectedFiles.length === 0) {
-      setFileError('Please select a file');
-      return;
-    }
-
-    const file = selectedFiles[0];
-
     try {
-      const fileData = await convertFileToBase64(file);
+      if (isEditMode && editVersion) {
+        // Edit mode: always use updateVersion
+        const newFile = selectedFiles.find((f) => f instanceof File) as File | undefined;
 
-      createResume.mutate(
-        {
-          personaId,
+        if (newFile) {
+          // New file uploaded, include it in update
+          const fileData = await convertFileToBase64(newFile);
+          await updateVersion.mutateAsync({
+            resumeId,
+            versionId: editVersion.id,
+            file: fileData,
+            keywords: parsedData?.keywords,
+            parsedData: parsedData || undefined,
+            comment: commit.trim() || undefined,
+          });
+        } else {
+          // No new file, just update metadata
+          await updateVersion.mutateAsync({
+            resumeId,
+            versionId: editVersion.id,
+            keywords: parsedData?.keywords,
+            parsedData: parsedData || undefined,
+            comment: commit.trim() || undefined,
+          });
+        }
+      } else {
+        // Create mode: must have selected a file
+        const newFile = selectedFiles.find((f) => f instanceof File) as File | undefined;
+        if (!newFile) {
+          setFileError('Please select a file');
+          return;
+        }
+
+        const fileData = await convertFileToBase64(newFile);
+        await createVersion.mutateAsync({
+          resumeId,
           file: fileData,
-          fileName: resumeName.trim(),
           keywords: parsedData?.keywords || [],
           parsedData: parsedData || undefined,
           comment: commit.trim() || undefined,
-        },
-        {
-          onSuccess: () => {
-            setResumeName('');
-            setCommit('');
-            setSelectedFiles([]);
-            setApiError('');
-            setParsedData(null);
-            setIsParsing(false);
-            onClose();
-          },
-          onError: (error) => {
-            setApiError(error instanceof Error ? error.message : 'Failed to create resume');
-          },
-        }
-      );
+        });
+      }
+
+      // Reset state on success
+      setCommit('');
+      setSelectedFiles([]);
+      setApiError('');
+      setParsedData(null);
+      setIsParsing(false);
+      onClose();
     } catch (error) {
-      setApiError(error instanceof Error ? error.message : 'Failed to process file');
+      setApiError(error instanceof Error ? error.message : 'Failed to save version');
     }
   };
 
@@ -194,10 +257,9 @@ export function CreateResumeModal({ isOpen, onClose, personaId }: CreateResumeMo
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
-    setResumeName('');
     setCommit('');
     setSelectedFiles([]);
-    setNameError('');
+    setCommitError('');
     setFileError('');
     setApiError('');
     setParsedData(null);
@@ -211,18 +273,24 @@ export function CreateResumeModal({ isOpen, onClose, personaId }: CreateResumeMo
     setApiError('');
   };
 
-  const isPending = createResume.isPending;
-  const isLoading = parseResume.isPending;
-
-  // State 1: Initial (Upload) - only file uploader
-  // State 2: Loading - circular loader
-  // State 3: Review - Resume Name + JSON Viewer
+  const isPending = isEditMode ? updateVersion.isPending : createVersion.isPending;
+  const isLoading = parseFile.isPending || viewParsedData.isPending;
 
   const renderContent = () => {
-    // State 1: Initial - File uploader only
+    // State 1: File uploader + commit field
     if (!isParsing && !parsedData) {
       return (
         <div className={styles.formDiv}>
+          {isEditMode && (
+            <EnhancedTextField
+              label="Commit Message"
+              placeholder="Enter commit message (optional)"
+              value={commit}
+              onChange={handleCommitChange}
+              variant={commitError ? 'error' : 'default'}
+              helperText={commitError}
+            />
+          )}
           <FileUploader
             value={selectedFiles}
             onFilesSelected={handleFilesSelected}
@@ -230,8 +298,9 @@ export function CreateResumeModal({ isOpen, onClose, personaId }: CreateResumeMo
             acceptedFormats={['.pdf', '.doc', '.docx']}
             maxFiles={1}
             maxSizeMB={10}
-            testId="resume-file-uploader"
+            testId="version-file-uploader"
           />
+
           {fileError && <p className={styles.apiError}>{fileError}</p>}
           {apiError && (
             <p ref={setErrorRef} className={styles.apiError}>
@@ -242,33 +311,31 @@ export function CreateResumeModal({ isOpen, onClose, personaId }: CreateResumeMo
       );
     }
 
-    // State 2: Loading - Circular loader only
+    // State 2: Loading - Circular loader
     if (isParsing) {
       return (
         <div className={`${styles.circularLoaderContainer}`}>
           <CircularProgress color="primary" size={'3rem'} />
-          <p className={styles.loaderText}>Extracting resume data...</p>
+          <p className={styles.loaderText}>
+            {!hasOnlyNewFiles ? 'Loading parsed data...' : 'Extracting resume data...'}
+          </p>
         </div>
       );
     }
 
-    // State 3: Review - Resume Name + Commit + JSON Viewer
+    // State 3: Review - Commit + JSON Viewer
     return (
       <div className={styles.formDiv}>
-        <EnhancedTextField
-          label="Resume Name"
-          placeholder="Enter resume name"
-          value={resumeName}
-          onChange={handleNameChange}
-          variant={nameError ? 'error' : 'default'}
-          helperText={nameError}
-        />
-        <EnhancedTextField
-          label="Commit Message"
-          placeholder="Enter commit message (optional)"
-          value={commit}
-          onChange={handleCommitChange}
-        />
+        {!isEditMode && (
+          <EnhancedTextField
+            label="Commit Message"
+            placeholder="Enter commit message (optional)"
+            value={commit}
+            onChange={handleCommitChange}
+            variant={commitError ? 'error' : 'default'}
+            helperText={commitError}
+          />
+        )}
         <JsonViewer data={parsedData!} onEdit={setParsedData} />
         {apiError && (
           <p ref={setErrorRef} className={styles.apiError}>
@@ -280,22 +347,35 @@ export function CreateResumeModal({ isOpen, onClose, personaId }: CreateResumeMo
   };
 
   const renderFooter = () => {
-    // States 1 & 2: Right-aligned Cancel + Parse
-    if (!parsedData) {
+    // State 1: Cancel + Next/Parse
+    if (!parsedData && !isParsing) {
       return (
         <div className={styles.footerContainer}>
           <EnhancedButton label="Cancel" colorTheme="secondary" onClick={handleCancel} />
           <EnhancedButton
-            label="Parse"
+            label={isEditMode ? 'Next' : 'Parse'}
             colorTheme="primary"
-            onClick={handleParse}
-            disabled={isLoading || selectedFiles.length === 0}
+            onClick={handleParseOrNext}
+            disabled={
+              isLoading ||
+              (!isEditMode && !selectedFiles.some((f) => f instanceof File)) ||
+              (isEditMode && selectedFiles.length === 0)
+            }
           />
         </div>
       );
     }
 
-    // State 3: Back on left + Cancel + Create on right
+    // State 2: Loading
+    if (isParsing) {
+      return (
+        <div className={styles.footerContainer}>
+          <EnhancedButton label="Cancel" colorTheme="secondary" onClick={handleCancel} />
+        </div>
+      );
+    }
+
+    // State 3: Back + Cancel + Save
     return (
       <div className={styles.footerContainerWithBack}>
         <div className={styles.footerLeft}>
@@ -309,11 +389,11 @@ export function CreateResumeModal({ isOpen, onClose, personaId }: CreateResumeMo
         <div className={styles.footerRight}>
           <EnhancedButton label="Cancel" colorTheme="secondary" onClick={handleCancel} />
           <EnhancedButton
-            label="Create"
+            label={isEditMode ? 'Save' : 'Create'}
             colorTheme="primary"
             onClick={handleSave}
             disabled={isPending}
-            startIcon={isPending ? <CircularProgress size={'1rem'} color="inherit" /> : undefined}
+            startIcon={isPending ? <CircularProgress color="inherit" size={'1rem'} /> : undefined}
           />
         </div>
       </div>
@@ -324,7 +404,7 @@ export function CreateResumeModal({ isOpen, onClose, personaId }: CreateResumeMo
     <Modal
       isOpen={isOpen}
       onClose={handleCancel}
-      headerTitle="Create Resume"
+      headerTitle={isEditMode ? 'Edit Version' : 'Add Version'}
       footer={renderFooter()}
       customProps={{
         childProps: {
@@ -359,7 +439,7 @@ function JsonViewer({ data, onEdit }: JsonViewerProps) {
   };
 
   return (
-    <div className={`${styles.jsonViewerContainer}`}>
+    <div className={`${styles.jsonViewerContainer} ${styles.scrollbarVerticalContainer}`}>
       <Editor
         height="300px"
         defaultLanguage="json"

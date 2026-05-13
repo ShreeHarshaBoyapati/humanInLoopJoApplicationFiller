@@ -118,9 +118,15 @@ export function PersonaSection({ onSelectPersona }: PersonaSectionProps) {
   ]);
 
   const handleSetActivePersona = (persona: Persona) => {
-    setSelectedPersonaId(persona.id);
     if (!persona.active) {
-      setActivePersona.mutate(persona.id);
+      setActivePersona.mutate(persona.id, {
+        onSuccess: (activePersona) => {
+          setSelectedPersonaId(activePersona.id);
+        },
+        onError: (error) => {
+          alert(error instanceof Error ? error.message : 'Failed to set active persona');
+        },
+      });
     }
   };
 
@@ -148,6 +154,9 @@ export function PersonaSection({ onSelectPersona }: PersonaSectionProps) {
             if (selectedPersonaId === deletePersonaId) {
               setSelectedPersonaId(null);
             }
+          },
+          onError: (error) => {
+            alert(error instanceof Error ? error.message : 'Failed to delete persona');
           },
         }
       );
@@ -200,6 +209,7 @@ export function PersonaSection({ onSelectPersona }: PersonaSectionProps) {
                 key={persona.id}
                 persona={persona}
                 isSelected={selectedPersonaId === persona.id}
+                disabled={setActivePersona.isPending}
                 onSetActive={handleSetActivePersona}
                 onNavigate={onSelectPersona}
                 onEdit={handleEditClick}
@@ -228,6 +238,7 @@ export function PersonaSection({ onSelectPersona }: PersonaSectionProps) {
         message="Are you sure you want to delete this persona? This action cannot be undone."
         confirmLabel="Delete"
         cancelLabel="Cancel"
+        isLoading={deletePersona.isPending}
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
       />

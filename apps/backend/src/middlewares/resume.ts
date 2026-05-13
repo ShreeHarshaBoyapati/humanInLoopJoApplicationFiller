@@ -36,6 +36,7 @@ const CreateResumeSchema = z.object({
   }),
   keywords: z.array(z.string()).optional(),
   parsedData: z.record(z.string(), z.unknown()).optional(),
+  comment: z.string().optional(),
 });
 
 // Schema for setting active resume
@@ -83,6 +84,7 @@ const BranchResumeSchema = z.object({
   id: z.uuidv4('Invalid resume ID'),
   versionId: z.uuidv4('Invalid resume version ID'),
   newFileName: z.string(),
+  commit: z.string().optional(),
 });
 
 // Schema for comparing versions

@@ -120,6 +120,7 @@
 
 .actionButton:hover {
   background-color: var(--grey-700);
+  border-color: var(--grey-700);
   color: var(--white-900);
 }
 
@@ -139,7 +140,7 @@
 }
 
 /* Mobile responsive styles */
-@media (width <= 768px) {
+@media (width <=768px) {
   .personaCard {
     align-items: flex-start;
     flex-direction: column;
@@ -176,7 +177,7 @@
 }
 
 /* Desktop hover styles - action buttons show on hover */
-@media (width >= 769px) {
+@media (width >=769px) {
   .actionsSection {
     opacity: 0;
     transition: opacity 0.2s ease;

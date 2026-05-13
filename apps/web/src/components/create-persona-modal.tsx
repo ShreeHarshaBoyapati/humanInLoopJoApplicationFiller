@@ -1,4 +1,5 @@
 import { useState, useEffect, type ChangeEvent } from 'react';
+import { CircularProgress } from '@mui/material';
 import { Modal, EnhancedTextField } from '@repo/ui';
 import { EnhancedButton } from '@repo/ui';
 import { useCreatePersona, useUpdatePersona } from '../hooks/use-personas';
@@ -68,6 +69,8 @@ export function CreatePersonaModal({ isOpen, onClose, initialData }: CreatePerso
             onClose();
           },
           onError: (error) => {
+            console.log('=======the error:++++', error);
+
             setApiError(error instanceof Error ? error.message : 'Failed to update persona');
           },
         }
@@ -108,6 +111,7 @@ export function CreatePersonaModal({ isOpen, onClose, initialData }: CreatePerso
         colorTheme="primary"
         onClick={handleSave}
         disabled={isPending}
+        startIcon={isPending ? <CircularProgress size={'1rem'} color="inherit" /> : undefined}
       />
     </>
   );
@@ -121,6 +125,7 @@ export function CreatePersonaModal({ isOpen, onClose, initialData }: CreatePerso
       customProps={{
         childProps: {
           modal: { sx: { maxWidth: '450px', minWidth: '400px' } },
+          body: { className: styles.form },
         },
       }}
     >

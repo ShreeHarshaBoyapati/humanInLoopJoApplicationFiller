@@ -1,4 +1,5 @@
 import { Modal, EnhancedButton } from '@repo/ui';
+import { CircularProgress } from '@mui/material';
 
 interface ConfirmModalProps {
   isOpen: boolean;
@@ -6,6 +7,7 @@ interface ConfirmModalProps {
   message: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  isLoading?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -16,13 +18,25 @@ export function ConfirmModal({
   message,
   confirmLabel = 'Yes',
   cancelLabel = 'No',
+  isLoading = false,
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
   const footer = (
     <>
-      <EnhancedButton label={cancelLabel} colorTheme="secondary" onClick={onCancel} />
-      <EnhancedButton label={confirmLabel} colorTheme="negativeSecondary" onClick={onConfirm} />
+      <EnhancedButton
+        label={cancelLabel}
+        colorTheme="secondary"
+        onClick={onCancel}
+        disabled={isLoading}
+      />
+      <EnhancedButton
+        label={confirmLabel}
+        colorTheme="negativeSecondary"
+        onClick={onConfirm}
+        disabled={isLoading}
+        startIcon={isLoading ? <CircularProgress size={'1rem'} color="inherit" /> : undefined}
+      />
     </>
   );
 

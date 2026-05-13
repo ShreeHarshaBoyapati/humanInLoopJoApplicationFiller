@@ -40,7 +40,7 @@ class ResumeController {
     const versionRepository = getResumeVersionRepository();
 
     const userId = req.userId;
-    const { personaId, fileName, file, keywords, parsedData } = req.body;
+    const { personaId, fileName, file, keywords, parsedData, comment } = req.body;
 
     // Verify persona belongs to user
     const persona = await personaRepository.findOne({
@@ -54,6 +54,20 @@ class ResumeController {
         message: 'Persona not found or not authorized',
       };
       res.status(403).json(data);
+      return;
+    }
+
+    // Check for duplicate fileName in the same persona
+    const duplicateResume = await resumeRepository.findOne({
+      where: { fileName, persona: { id: personaId } },
+    });
+
+    if (duplicateResume) {
+      const data: ApiResponse = {
+        success: false,
+        message: 'A resume with this file name already exists for this persona',
+      };
+      res.status(400).json(data);
       return;
     }
 
@@ -81,6 +95,7 @@ class ResumeController {
       active: true,
       versionName: 'v1',
       parsedData: parsedData || null,
+      comment: comment || null,
       resume,
     });
 
@@ -130,8 +145,21 @@ class ResumeController {
       return;
     }
 
-    // Update fileName if provided
+    // Check for duplicate fileName in the same persona (excluding current resume)
     if (fileName) {
+      const duplicateResume = await resumeRepository.findOne({
+        where: { fileName, persona: { id: resume.persona.id } },
+      });
+
+      if (duplicateResume && duplicateResume.id !== id) {
+        const data: ApiResponse = {
+          success: false,
+          message: 'A resume with this file name already exists for this persona',
+        };
+        res.status(400).json(data);
+        return;
+      }
+
       resume.fileName = fileName;
     }
 

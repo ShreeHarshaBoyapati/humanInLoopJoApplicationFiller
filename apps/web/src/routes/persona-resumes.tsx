@@ -48,7 +48,11 @@ function PersonaResumes() {
         />
       )}
       {activeLayer === 'resume-version' && selectedResume && (
-        <ResumeVersionSection resume={selectedResume} onBack={handleBackToResume} />
+        <ResumeVersionSection
+          resume={selectedResume}
+          onBack={handleBackToResume}
+          onBackToPersonas={handleBackToPersona}
+        />
       )}
     </>
   );

@@ -21,6 +21,7 @@ import {
   EnhancedTextField,
   EnhancedTooltipWithText,
 } from '@repo/ui';
+import type { FileDisplayFile } from '@repo/ui';
 import { Box } from '@mui/material';
 
 export interface ResumeSearch {
@@ -121,8 +122,10 @@ function ResumeComponent() {
   const step3Enabled = parsedData !== null || editingResume !== null; // File parsed or editing, can save
   const isEditMode = editingResume !== null;
 
-  const handleFilesSelected = (files: File[]) => {
-    setSelectedFiles(files);
+  const handleFilesSelected = (files: (File | FileDisplayFile)[]) => {
+    // Filter to only actual File objects (not FileDisplayFile)
+    const actualFiles = files.filter((f): f is File => f instanceof File);
+    setSelectedFiles(actualFiles);
     // Reset parsed data when file changes
     setParsedData(null);
     setKeywords([]);
@@ -548,7 +551,7 @@ function ResumeComponent() {
               {isEditMode && editingResume ? (
                 <FileUploader
                   showFilesOnly={true}
-                  displayFiles={[{ name: editingResume.fileName, size: editingResume.fileSize }]}
+                  value={[{ name: editingResume.fileName, size: 0 }]}
                   acceptedFormats={['.pdf', '.txt', '.docx']}
                   maxFiles={1}
                   maxSizeMB={10}

@@ -9,8 +9,14 @@ import type {
   BranchResumeInput,
   CompareVersionsInput,
 } from '../middlewares/resume.js';
+import { Like } from 'typeorm';
 import { ApiResponse } from '@repo/shared-types';
-import type { ResumeVersionMetadata, ResumeData } from '@repo/shared-types';
+import type {
+  ResumeVersionMetadata,
+  ResumeData,
+  PaginatedVersionResponse,
+  CompareVersionsResponse,
+} from '@repo/shared-types';
 import { parseFile } from '../utils/file-parser.js';
 import { parseResume as parseResumeWithAI } from '../services/resume-parser.js';
 
@@ -19,16 +25,31 @@ interface VersionParamsRequest extends Request {
   userId: string;
 }
 
+interface PaginationQuery {
+  page?: string;
+  limit?: string;
+  search?: string;
+}
+
 class ResumeVersionController {
   /**
-   * List all versions for a resume (latest first)
+   * List all versions for a resume with pagination
    */
-  async getAll(req: AuthenticatedTypedRequest<{ id: string }>, res: Response) {
+  async getAll(
+    req: AuthenticatedTypedRequest<{ id: string }> & { query: PaginationQuery },
+    res: Response
+  ) {
     const resumeRepository = getResumeRepository();
     const versionRepository = getResumeVersionRepository();
 
     const userId = req.userId;
     const resumeId = req.params.id as string;
+
+    const { page: pageParam, limit: limitParam, search } = req.query;
+
+    const pageNum = parseInt(pageParam as string, 10) || 1;
+    const limitNum = parseInt(limitParam as string, 10) || 10;
+    const searchQuery = search ? (search as string).trim() : '';
 
     // Verify resume belongs to user
     const resume = await resumeRepository.findOne({
@@ -45,21 +66,28 @@ class ResumeVersionController {
       return;
     }
 
-    const versions = await versionRepository.find({
-      where: { resume: { id: resumeId } },
-      select: [
-        'id',
-        'fileSize',
-        'keywords',
-        'active',
-        'versionName',
-        'comment',
-        'createdAt',
-        'updatedAt',
-      ],
-      order: { createdAt: 'DESC' },
+    // Build where clause
+    const where: Record<string, unknown> = {
+      resume: { id: resumeId },
+    };
+    if (searchQuery) {
+      where.versionName = Like(`%${searchQuery}%`);
+    }
+
+    // Count total matching versions
+    const total = await versionRepository.count({
+      where,
     });
 
+    // Get versions with standard pagination
+    const versions = await versionRepository.find({
+      where,
+      order: { createdAt: 'DESC' },
+      skip: (pageNum - 1) * limitNum,
+      take: limitNum,
+    });
+
+    // Map to response format
     const versionResponses: ResumeVersionMetadata[] = versions.map((v) => ({
       id: v.id,
       fileName: resume.fileName,
@@ -72,9 +100,17 @@ class ResumeVersionController {
       updatedAt: v.updatedAt,
     }));
 
-    const data: ApiResponse<ResumeVersionMetadata[]> = {
+    const paginatedResponse: PaginatedVersionResponse = {
+      items: versionResponses,
+      total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum) || 1,
+    };
+
+    const data: ApiResponse<PaginatedVersionResponse> = {
       success: true,
-      data: versionResponses,
+      data: paginatedResponse,
     };
     res.status(200).json(data);
   }
@@ -202,19 +238,31 @@ class ResumeVersionController {
       return;
     }
 
-    // For PDF, DOCX, and other binary files, return raw file data
+    // Determine correct content-type based on file extension
+    const getContentType = (fileName: string): string => {
+      const ext = fileName.split('.').pop()?.toLowerCase();
+      const types: Record<string, string> = {
+        pdf: 'application/pdf',
+        doc: 'application/msword',
+        docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        txt: 'text/plain',
+      };
+      return types[ext || ''] || 'application/octet-stream';
+    };
+
+    // For PDF, DOCX, and other binary files, return as base64 string
     const data: ApiResponse<{
-      file: Buffer;
+      file: string;
       fileName: string;
       fileSize: number;
       contentType: string;
     }> = {
       success: true,
       data: {
-        file: version.file,
+        file: version.file.toString('base64'),
         fileName: resume.fileName,
         fileSize: version.fileSize,
-        contentType: 'application/octet-stream',
+        contentType: getContentType(resume.fileName),
       },
     };
     res.status(200).json(data);
@@ -560,7 +608,7 @@ class ResumeVersionController {
     const versionRepository = getResumeVersionRepository();
 
     const userId = req.userId;
-    const { id: resumeId, versionId, newFileName } = req.body;
+    const { id: resumeId, versionId, newFileName, commit } = req.body;
 
     // Verify resume belongs to user
     const resume = await resumeRepository.findOne({
@@ -594,11 +642,14 @@ class ResumeVersionController {
     // Create a new resume under the same persona
     const newResume = resumeRepository.create({
       fileName: newFileName,
-      active: true,
+      active: false,
       persona: resume.persona,
     });
 
     await resumeRepository.save(newResume);
+
+    // Use commit message as comment if provided, otherwise use auto-generated comment
+    const comment = commit || `Branched from ${resume.fileName} ${version.versionName}`;
 
     // Create the first version for the new resume with the branched content
     const newVersion = versionRepository.create({
@@ -607,7 +658,7 @@ class ResumeVersionController {
       keywords: [...version.keywords],
       parsedData: version.parsedData ? { ...version.parsedData } : null,
       versionName: 'v1',
-      comment: `Branched from ${resume.fileName} ${version.versionName}`,
+      comment: comment,
       active: true,
       resume: newResume,
     });
@@ -676,34 +727,18 @@ class ResumeVersionController {
     }
 
     const [version1, version2] = await Promise.all([
-      versionRepository.findOne({
-        where: { id: versionA, resume: { id: resumeId } },
-        select: [
-          'id',
-          'fileSize',
-          'keywords',
-          'active',
-          'versionName',
-          'comment',
-          'parsedData',
-          'createdAt',
-          'updatedAt',
-        ],
-      }),
-      versionRepository.findOne({
-        where: { id: versionB, resume: { id: resumeId } },
-        select: [
-          'id',
-          'fileSize',
-          'keywords',
-          'active',
-          'versionName',
-          'comment',
-          'parsedData',
-          'createdAt',
-          'updatedAt',
-        ],
-      }),
+      versionRepository
+        .createQueryBuilder('rv')
+        .select(['rv.fileSize', 'rv.comment', 'rv.updatedAt', 'rv.parsedData'])
+        .where('rv.id = :versionId', { versionId: versionA })
+        .andWhere('rv.resumeId = :resumeId', { resumeId })
+        .getRawOne(),
+      versionRepository
+        .createQueryBuilder('rv')
+        .select(['rv.fileSize', 'rv.comment', 'rv.updatedAt', 'rv.parsedData'])
+        .where('rv.id = :versionId', { versionId: versionB })
+        .andWhere('rv.resumeId = :resumeId', { resumeId })
+        .getRawOne(),
     ]);
 
     if (!version1 || !version2) {
@@ -715,48 +750,30 @@ class ResumeVersionController {
       return;
     }
 
-    const data: ApiResponse<{
-      versionA: ResumeVersionMetadata;
-      versionB: ResumeVersionMetadata;
-      diff: {
-        keywordsAdded: string[];
-        keywordsRemoved: string[];
-        parsedDataChanged: boolean;
-        commentChanged: boolean;
-      };
-    }> = {
+    const versionAData = {
+      fileName: resume.fileName,
+      fileSize: version1.rv_fileSize,
+      comment: version1.rv_comment,
+      updatedAt: new Date(version1.rv_updatedAt),
+      parsedData: version1.rv_parsedData as unknown as ResumeData,
+    };
+
+    const versionBData = {
+      fileName: resume.fileName,
+      fileSize: version2.rv_fileSize,
+      comment: version2.rv_comment,
+      updatedAt: new Date(version2.rv_updatedAt),
+      parsedData: version2.rv_parsedData as unknown as ResumeData,
+    };
+
+    const compareData: CompareVersionsResponse = {
+      versionA: versionAData,
+      versionB: versionBData,
+    };
+
+    const data: ApiResponse<CompareVersionsResponse> = {
       success: true,
-      data: {
-        versionA: {
-          id: version1.id,
-          fileName: resume.fileName,
-          fileSize: version1.fileSize,
-          keywords: version1.keywords,
-          active: version1.active,
-          versionName: version1.versionName,
-          comment: version1.comment,
-          createdAt: version1.createdAt,
-          updatedAt: version1.updatedAt,
-        },
-        versionB: {
-          id: version2.id,
-          fileName: resume.fileName,
-          fileSize: version2.fileSize,
-          keywords: version2.keywords,
-          active: version2.active,
-          versionName: version2.versionName,
-          comment: version2.comment,
-          createdAt: version2.createdAt,
-          updatedAt: version2.updatedAt,
-        },
-        diff: {
-          keywordsAdded: version2.keywords.filter((k) => !version1.keywords.includes(k)),
-          keywordsRemoved: version1.keywords.filter((k) => !version2.keywords.includes(k)),
-          parsedDataChanged:
-            JSON.stringify(version1.parsedData) !== JSON.stringify(version2.parsedData),
-          commentChanged: version1.comment !== version2.comment,
-        },
-      },
+      data: compareData,
     };
     res.status(200).json(data);
   }

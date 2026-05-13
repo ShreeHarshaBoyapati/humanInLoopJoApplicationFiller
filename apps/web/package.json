@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
     "@mui/icons-material": "^7.3.8",
     "@mui/material": "^7.3.8",
     "@repo/assets": "workspace:^",
@@ -21,7 +22,6 @@
     "axios": "^1.7.9",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "react-json-view": "^1.21.3",
     "zustand": "^5.0.12"
   },
   "devDependencies": {
@@ -34,6 +34,7 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
     "eslint": "^9.39.1",
+    "monaco-editor": "^0.55.1",
     "typescript": "5.9.2",
     "vite": "^7.2.4"
   }

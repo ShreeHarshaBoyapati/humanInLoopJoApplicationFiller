@@ -47,11 +47,21 @@ export const useDeleteResume = () => {
 
   return useMutation({
     mutationFn: async (data: DeleteResumeParams) => {
-      const response = await axiosInstance.delete('/resume', { data });
-      if (!response.data.success) {
-        throw new Error(response.data.message || 'Failed to delete resume');
+      try {
+        const response = await axiosInstance.delete('/resume', { data });
+        if (!response.data.success) {
+          throw new Error(response.data.message || 'Failed to delete resume');
+        }
+        return data;
+      } catch (err) {
+        if (err && typeof err === 'object' && 'response' in err) {
+          const error = err as { response: { data: ApiResponse<never> } };
+          if (!error.response.data.success) {
+            throw new Error(error.response.data.message);
+          }
+        }
+        throw err;
       }
-      return data;
     },
     onSuccess: (data: DeleteResumeParams) => {
       const { id: deletedId, personaId } = data;
@@ -134,13 +144,26 @@ export const useSetActiveResume = () => {
 
   return useMutation({
     mutationFn: async (data: SetActiveResumeParams) => {
-      const response = await axiosInstance.post<ApiResponse<ResumeMetadata>>('/resume/set-active', {
-        id: data.id,
-      });
-      if (!response.data.success || !response.data.data) {
-        throw new Error(response.data.message || 'Failed to set active resume');
+      try {
+        const response = await axiosInstance.post<ApiResponse<ResumeMetadata>>(
+          '/resume/set-active',
+          {
+            id: data.id,
+          }
+        );
+        if (!response.data.success || !response.data.data) {
+          throw new Error(response.data.message || 'Failed to set active resume');
+        }
+        return { resume: response.data.data, personaId: data.personaId };
+      } catch (err) {
+        if (err && typeof err === 'object' && 'response' in err) {
+          const error = err as { response: { data: ApiResponse<never> } };
+          if (!error.response.data.success) {
+            throw new Error(error.response.data.message);
+          }
+        }
+        throw err;
       }
-      return { resume: response.data.data, personaId: data.personaId };
     },
     onSuccess: ({ resume: activeResume, personaId }) => {
       // Get all cached resume list queries
@@ -189,14 +212,23 @@ export const useCreateResume = () => {
 
   return useMutation({
     mutationFn: async (data: CreateResumeParams) => {
-      const response = await axiosInstance.post<ApiResponse<ResumeMetadata & { fileSize: number }>>(
-        '/resume',
-        data
-      );
-      if (!response.data.success || !response.data.data) {
-        throw new Error(response.data.message || 'Failed to create resume');
+      try {
+        const response = await axiosInstance.post<
+          ApiResponse<ResumeMetadata & { fileSize: number }>
+        >('/resume', data);
+        if (!response.data.success || !response.data.data) {
+          throw new Error(response.data.message || 'Failed to create resume');
+        }
+        return response.data.data;
+      } catch (err) {
+        if (err && typeof err === 'object' && 'response' in err) {
+          const error = err as { response: { data: ApiResponse<never> } };
+          if (!error.response.data.success) {
+            throw new Error(error.response.data.message);
+          }
+        }
+        throw err;
       }
-      return response.data.data;
     },
     onSuccess: (result: ResumeMetadata & { fileSize: number }, variables: CreateResumeParams) => {
       const { fileSize } = result;
@@ -349,23 +381,35 @@ export interface ParseResumeResponse {
 
 export const useParseResumeFile = () => {
   return useMutation({
-    mutationFn: async (file: File) => {
-      const formData = new FormData();
-      formData.append('file', file);
+    mutationFn: async (params: { file: File; signal?: AbortSignal }) => {
+      try {
+        const { file, signal } = params;
+        const formData = new FormData();
+        formData.append('file', file);
 
-      const response = await axiosInstance.post<ParseResumeResponse>(
-        '/resume/versions/parse-file',
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
+        const response = await axiosInstance.post<ParseResumeResponse>(
+          '/resume/versions/parse-file',
+          formData,
+          {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+            signal,
+          }
+        );
+        if (!response.data.success || !response.data.data) {
+          throw new Error(response.data.message || 'Failed to parse resume file');
         }
-      );
-      if (!response.data.success || !response.data.data) {
-        throw new Error(response.data.message || 'Failed to parse resume file');
+        return response.data.data;
+      } catch (err) {
+        if (err && typeof err === 'object' && 'response' in err) {
+          const error = err as { response: { data: ApiResponse<never> } };
+          if (!error.response.data.success) {
+            throw new Error(error.response.data.message);
+          }
+        }
+        throw err;
       }
-      return response.data.data;
     },
   });
 };
@@ -381,13 +425,23 @@ export const useUpdateResume = () => {
 
   return useMutation({
     mutationFn: async (data: UpdateResumeParamsWithPersona) => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { personaId, ...apiData } = data;
-      const response = await axiosInstance.put<ApiResponse<ResumeMetadata>>('/resume', apiData);
-      if (!response.data.success || !response.data.data) {
-        throw new Error(response.data.message || 'Failed to update resume');
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { personaId, ...apiData } = data;
+        const response = await axiosInstance.put<ApiResponse<ResumeMetadata>>('/resume', apiData);
+        if (!response.data.success || !response.data.data) {
+          throw new Error(response.data.message || 'Failed to update resume');
+        }
+        return response.data.data;
+      } catch (err) {
+        if (err && typeof err === 'object' && 'response' in err) {
+          const error = err as { response: { data: ApiResponse<never> } };
+          if (!error.response.data.success) {
+            throw new Error(error.response.data.message);
+          }
+        }
+        throw err;
       }
-      return response.data.data;
     },
     onSuccess: (updatedResume: ResumeMetadata, variables: UpdateResumeParamsWithPersona) => {
       // Get all cached resume list queries

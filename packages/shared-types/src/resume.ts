@@ -136,6 +136,7 @@ export interface CreateResumeParams {
   fileName?: string;
   keywords?: string[];
   parsedData?: ResumeData;
+  comment?: string;
 }
 
 export interface UpdateResumeParams {
@@ -206,4 +207,48 @@ export interface CompareVersionsParams {
   resumeId: string;
   versionA: string;
   versionB: string;
+}
+
+// Paginated version list response
+export interface PaginatedVersionListItem {
+  id: string;
+  fileName: string;
+  fileSize: number;
+  keywords: string[];
+  active: boolean;
+  versionName: string;
+  comment: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PaginatedVersionResponse {
+  items: PaginatedVersionListItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+// Compare versions response
+export interface CompareVersionData {
+  fileName: string;
+  fileSize: number;
+  comment: string | null;
+  updatedAt: Date;
+  parsedData: ResumeData | null;
+}
+
+export interface CompareVersionsResponse {
+  versionA: CompareVersionData;
+  versionB: CompareVersionData;
+}
+
+// View document response (for opening files in new tab)
+export interface ViewDocumentResponse {
+  file?: string | number[]; // base64 encoded string OR number array (Buffer)
+  text?: string; // for txt files
+  fileName: string;
+  fileSize: number;
+  contentType: string;
 }

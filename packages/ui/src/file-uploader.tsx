@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, type FC } from 'react';
 import { Box, styled, Typography } from '@mui/material';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import InsertDriveFileIcon from '@mui/icons-material/InsertDriveFile';
@@ -12,7 +12,11 @@ export interface FileDisplayFile {
 }
 
 export interface FileUploaderProps {
-  onFilesSelected?: (files: File[]) => void;
+  // Controlled value - parent provides the file list
+  value?: (File | FileDisplayFile)[];
+
+  // onFilesSelected serves as onChange for controlled mode
+  onFilesSelected?: (files: (File | FileDisplayFile)[]) => void;
   onError?: (error: string) => void;
   acceptedFormats?: string[];
   maxFiles?: number;
@@ -20,8 +24,6 @@ export interface FileUploaderProps {
   testId?: string;
   disabled?: boolean;
   showFilesOnly?: boolean;
-  displayFiles?: FileDisplayFile[];
-  value?: File[];
   customProps?: {
     props?: Omit<React.HTMLAttributes<HTMLDivElement>, 'id' | 'onClick' | 'disabled' | 'className'>;
     childProps?: {
@@ -120,7 +122,8 @@ const formatFileSize = (bytes: number): string => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
 };
 
-export const FileUploader = ({
+export const FileUploader: FC<FileUploaderProps> = ({
+  value = [],
   onFilesSelected,
   onError,
   acceptedFormats = ['.pdf', '.doc', '.docx'],
@@ -129,22 +132,10 @@ export const FileUploader = ({
   testId = '',
   disabled = false,
   showFilesOnly = false,
-  displayFiles,
-  value,
   customProps,
-}: FileUploaderProps) => {
+}) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [internalSelectedFiles, setInternalSelectedFiles] = useState<File[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Use external value if provided, otherwise use internal state
-  const selectedFiles = value !== undefined ? value : internalSelectedFiles;
-
-  const setSelectedFiles = (files: File[]) => {
-    if (value === undefined) {
-      setInternalSelectedFiles(files);
-    }
-  };
 
   const handleDragOver = useCallback(
     (event: React.DragEvent<HTMLDivElement>) => {
@@ -195,7 +186,7 @@ export const FileUploader = ({
         onError?.('');
       }
 
-      setSelectedFiles(validFiles);
+      // Notify parent with the new file list
       onFilesSelected?.(validFiles);
     },
     [acceptedFormats, maxFiles, maxSizeMB, onFilesSelected, onError, disabled]
@@ -223,15 +214,10 @@ export const FileUploader = ({
 
   const handleRemoveFile = useCallback(
     (index: number) => {
-      const newFiles = selectedFiles.filter((_, i) => i !== index);
-      if (value !== undefined) {
-        onFilesSelected?.(newFiles);
-      } else {
-        setSelectedFiles(newFiles);
-        onFilesSelected?.(newFiles);
-      }
+      const newFiles = value.filter((_, i) => i !== index);
+      onFilesSelected?.(newFiles);
     },
-    [selectedFiles, onFilesSelected, value]
+    [value, onFilesSelected]
   );
 
   const handleContainerClick = useCallback(() => {
@@ -252,12 +238,12 @@ export const FileUploader = ({
 
   const formatLabel = acceptedFormats.map((f) => f.replace('.', '').toUpperCase()).join(', ');
 
-  // Determine which files to show
-  const filesToShow = showFilesOnly && displayFiles ? displayFiles : selectedFiles;
+  // Show upload area only when not in showFilesOnly mode
+  const showUploadArea = !showFilesOnly;
 
   return (
     <Box data-testid={testId} {...(customProps?.props || {})}>
-      {!showFilesOnly && (
+      {showUploadArea && (
         <>
           <UploadContainer
             isDragging={isDragging}
@@ -322,9 +308,9 @@ export const FileUploader = ({
         </>
       )}
 
-      {(selectedFiles.length > 0 || (showFilesOnly && displayFiles && displayFiles.length > 0)) && (
+      {value.length > 0 && (
         <FilesList {...(customProps?.childProps?.filesList || {})}>
-          {filesToShow.map((file, index) => (
+          {value.map((file, index) => (
             <FileItem key={`${file.name}-${index}`} {...(customProps?.childProps?.fileItem || {})}>
               <FileInfo {...(customProps?.childProps?.fileInfo || {})}>
                 <InsertDriveFileIcon

@@ -7,6 +7,7 @@ import styles from './style/persona-card.module.css';
 interface PersonaCardProps {
   persona: Persona;
   isSelected: boolean;
+  disabled?: boolean;
   onSetActive: (persona: Persona) => void;
   onNavigate: (persona: Persona) => void;
   onEdit: (persona: Persona, e: React.MouseEvent) => void;
@@ -16,6 +17,7 @@ interface PersonaCardProps {
 export const PersonaCard = ({
   persona,
   isSelected,
+  disabled = false,
   onSetActive,
   onNavigate,
   onEdit,
@@ -35,8 +37,14 @@ export const PersonaCard = ({
           <Radio
             checked={isSelected}
             onChange={() => onSetActive(persona)}
+            disabled={disabled}
             sx={{
               color: 'var(--grey-500)',
+              '&.Mui-disabled': {
+                color: 'var(--grey-500)',
+                pointerEvents: 'none',
+                opacity: 0.5,
+              },
               '&.Mui-checked': {
                 color: 'var(--blue-500)',
               },
