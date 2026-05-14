@@ -178,14 +178,12 @@ class PersonaController {
 
   async get(req: AuthenticatedTypedRequest<PaginationParams>, res: Response) {
     const personaRepository = getPersonaRepository();
-
     const userId = req.userId;
     const { page = '1', limit = '10', search = '' } = req.query;
 
     const pageNum = parseInt(String(page), 10) || 1;
     const limitNum = parseInt(String(limit), 10) || 10;
     const searchQuery = String(search).trim();
-
     // Build where clause for filtering
     const buildWhereClause = (isActive: boolean) => {
       const where: Record<string, unknown> = { user: { id: userId }, active: isActive };
@@ -204,9 +202,12 @@ class PersonaController {
       });
     }
 
-    // Count total matching personas
+    const totalWhere: Record<string, unknown> = { user: { id: userId } };
+    if (searchQuery) {
+      totalWhere.title = Like(`%${searchQuery}%`);
+    }
     const total = await personaRepository.count({
-      where: buildWhereClause(true),
+      where: totalWhere,
     });
 
     const items: Persona[] = [];
@@ -246,7 +247,7 @@ class PersonaController {
         });
       }
     } else {
-      const skip = (pageNum - 1) * limitNum;
+      const skip = (pageNum - 1) * limitNum - 1;
       const whereClause = buildWhereClause(false);
       const nonActivePersonas = await personaRepository.find({
         where: whereClause,

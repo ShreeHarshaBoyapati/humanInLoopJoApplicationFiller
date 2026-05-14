@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import AddIcon from '@mui/icons-material/Add';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import styles from '../routes/style/section.module.css';
 import scrollbarStyles from '@repo/ui/scroll-bar.module.css';
 import '@repo/ui/constants/css-constants.css';
+import { EnhancedButton } from '@repo/ui';
 import { PageHeader } from './page-header';
 import { SearchBar } from './search-bar';
 import { PersonaCard } from './persona-card';
@@ -43,12 +45,14 @@ export function PersonaSection({ onSelectPersona }: PersonaSectionProps) {
   const {
     data,
     isLoading,
+    isError,
     fetchNextPage,
     fetchPreviousPage,
     hasNextPage,
     hasPreviousPage,
     isFetchingNextPage,
     isFetchingPreviousPage,
+    refetch,
   } = usePersonas(10, debouncedSearch);
 
   const personas = useMemo(
@@ -66,10 +70,11 @@ export function PersonaSection({ onSelectPersona }: PersonaSectionProps) {
     }
   }, [personas, selectedPersonaId]);
 
-  // Scroll to top when data changes (for previous page)
+  // Scroll position restoration for infinite scroll
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
+  const previousScrollHeightRef = useRef<number>(0);
 
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current;
@@ -83,24 +88,27 @@ export function PersonaSection({ onSelectPersona }: PersonaSectionProps) {
         const topEntry = entries.find((e) => e.target === topSentinel);
         const bottomEntry = entries.find((e) => e.target === bottomSentinel);
 
-        // Scroll up - load previous page
-        if (topEntry?.isIntersecting && hasPreviousPage && !isFetchingPreviousPage) {
+        if (topEntry?.isIntersecting && hasPreviousPage && !isFetchingPreviousPage && !isError) {
+          // Store current scroll state before prepending data
+          const currentScrollTop = scrollContainer.scrollTop;
+          previousScrollHeightRef.current = scrollContainer.scrollHeight;
+
           fetchPreviousPage().then(() => {
-            // Scroll down a bit to show we're still at the top
+            // Restore scroll position to keep same content in view
             if (scrollContainer) {
-              scrollContainer.scrollTop = scrollContainer.scrollHeight / 4;
+              const contentAdded = scrollContainer.scrollHeight - previousScrollHeightRef.current;
+              scrollContainer.scrollTop = currentScrollTop + contentAdded;
             }
           });
         }
 
-        // Scroll down - load next page
-        if (bottomEntry?.isIntersecting && hasNextPage && !isFetchingNextPage) {
+        if (bottomEntry?.isIntersecting && hasNextPage && !isFetchingNextPage && !isError) {
           fetchNextPage();
         }
       },
       {
         root: scrollContainer,
-        threshold: 0.1,
+        threshold: 0.15,
       }
     );
 
@@ -115,6 +123,7 @@ export function PersonaSection({ onSelectPersona }: PersonaSectionProps) {
     hasPreviousPage,
     isFetchingNextPage,
     isFetchingPreviousPage,
+    isError,
   ]);
 
   const handleSetActivePersona = (persona: Persona) => {
@@ -224,6 +233,20 @@ export function PersonaSection({ onSelectPersona }: PersonaSectionProps) {
           {(isFetchingNextPage || isFetchingPreviousPage) && (
             <p className={styles.loadingText}>Loading...</p>
           )}
+        </div>
+      )}
+
+      {/* Error state with retry button */}
+      {isError && (
+        <div className={styles.errorContainer}>
+          <p className={styles.errorText}>Failed to load personas. Please try again.</p>
+          <EnhancedButton
+            label="Retry"
+            colorTheme="secondary"
+            size="small"
+            onClick={() => refetch()}
+            startIcon={<RefreshIcon fontSize="small" />}
+          />
         </div>
       )}
 
