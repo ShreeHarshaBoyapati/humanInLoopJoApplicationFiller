@@ -13,16 +13,20 @@ const VERSION_KEYS = {
   all: ['versions'] as const,
   lists: () => [...VERSION_KEYS.all, 'list'] as const,
   byResume: (resumeId: string) => [...VERSION_KEYS.lists(), { resumeId }] as const,
+  byPersonaAndResume: (personaId: string, resumeId: string) =>
+    [...VERSION_KEYS.all, { personaId }, { resumeId }] as const,
 };
 
 export const useResumeVersions = (
   resumeId: string,
+  personaId: string,
   limit: number = 10,
   searchQuery: string = ''
 ) => {
   return useInfiniteQuery({
-    queryKey: [...VERSION_KEYS.byResume(resumeId), { search: searchQuery }],
+    queryKey: [...VERSION_KEYS.byPersonaAndResume(personaId, resumeId), { search: searchQuery }],
     initialPageParam: 1,
+    maxPages: 2,
     queryFn: async ({ pageParam }: { pageParam: number }) => {
       const response = await axiosInstance.get<ApiResponse<PaginatedVersionResponse>>(
         `/resume/${resumeId}/versions`,
@@ -50,6 +54,7 @@ export const useResumeVersions = (
 export interface DeleteVersionParams {
   resumeId: string;
   versionId: string;
+  personaId: string;
 }
 
 export const useDeleteVersion = () => {
@@ -76,77 +81,9 @@ export const useDeleteVersion = () => {
         throw err;
       }
     },
-    onSuccess: (data: DeleteVersionParams) => {
-      const { versionId: deletedId, resumeId } = data;
-
-      // Get all cached version list queries
-      const cachedQueries = queryClient.getQueriesData({
-        queryKey: VERSION_KEYS.lists(),
-        exact: false,
-      });
-
-      // Update each cached query based on resumeId match
-      cachedQueries.forEach(([queryKey, oldData]) => {
-        // Check if this query is for the same resume
-        const resumeIdParam = queryKey.find(
-          (k) => k && typeof k === 'object' && 'resumeId' in k
-        ) as { resumeId: string } | undefined;
-
-        const resumeIdFromQuery = resumeIdParam?.resumeId;
-        const resumeMatches = !resumeIdFromQuery || resumeId === resumeIdFromQuery;
-
-        if (!resumeMatches) return;
-
-        if (!oldData || typeof oldData !== 'object') return;
-
-        const cacheData = oldData as { pages?: PaginatedVersionResponse[]; pageParams?: number[] };
-
-        if (!cacheData.pages || cacheData.pages.length === 0) return;
-
-        const firstPage = cacheData.pages[0];
-        if (!firstPage) return;
-
-        const limit = firstPage.limit;
-
-        // Collect all items from all pages
-        const allItems = cacheData.pages.flatMap((page) => page.items);
-
-        // Check if the deleted version was active
-        const deletedWasActive = allItems.some((v) => v.id === deletedId && v.active);
-
-        // Filter out the deleted version
-        const remainingItems = allItems.filter((v) => v.id !== deletedId);
-
-        // Calculate new total and totalPages
-        const newTotal = Math.max(0, firstPage.total - 1);
-        const newTotalPages = Math.ceil(newTotal / limit) || 1;
-
-        // Re-paginate the remaining items
-        const newPages: PaginatedVersionResponse[] = [];
-        for (let pageNum = 1; pageNum <= newTotalPages; pageNum++) {
-          const start = (pageNum - 1) * limit;
-          const end = start + limit;
-          const pageItems = remainingItems.slice(start, end);
-
-          // If this is the first page and deleted was active, set the first item as active
-          const updatedPageItems = pageItems.map((item, index) => ({
-            ...item,
-            active: deletedWasActive && pageNum === 1 && index === 0 ? true : item.active,
-          }));
-
-          newPages.push({
-            ...firstPage,
-            page: pageNum,
-            items: updatedPageItems,
-            total: newTotal,
-            totalPages: newTotalPages,
-          });
-        }
-
-        queryClient.setQueryData(queryKey, {
-          pages: newPages,
-          pageParams: newPages.map((_, index) => index + 1),
-        });
+    onSuccess: (_data: DeleteVersionParams, variables: DeleteVersionParams) => {
+      queryClient.invalidateQueries({
+        queryKey: VERSION_KEYS.byPersonaAndResume(variables.personaId, variables.resumeId),
       });
     },
   });
@@ -155,6 +92,7 @@ export const useDeleteVersion = () => {
 export interface SetActiveVersionParams {
   resumeId: string;
   versionId: string;
+  personaId: string;
 }
 
 export const useSetActiveVersion = () => {
@@ -181,43 +119,12 @@ export const useSetActiveVersion = () => {
         throw err;
       }
     },
-    onSuccess: ({ version: activeVersion, resumeId }) => {
-      // Get all cached version list queries
-      const cachedQueries = queryClient.getQueriesData({
-        queryKey: VERSION_KEYS.lists(),
-        exact: false,
-      });
-
-      // Update each cached query based on resumeId match
-      cachedQueries.forEach(([queryKey, oldData]) => {
-        // Check if this query is for the same resume
-        const resumeIdParam = queryKey.find(
-          (k) => k && typeof k === 'object' && 'resumeId' in k
-        ) as { resumeId: string } | undefined;
-
-        const resumeIdFromQuery = resumeIdParam?.resumeId;
-        const resumeMatches = !resumeIdFromQuery || resumeId === resumeIdFromQuery;
-
-        if (!resumeMatches) return;
-
-        if (!oldData || typeof oldData !== 'object') return;
-
-        const cacheData = oldData as { pages?: PaginatedVersionResponse[]; pageParams?: number[] };
-
-        if (!cacheData.pages) return;
-
-        const updatedPages = cacheData.pages.map((page) => ({
-          ...page,
-          items: page.items.map((v) => ({
-            ...v,
-            active: v.id === activeVersion.id,
-          })),
-        }));
-
-        queryClient.setQueryData(queryKey, {
-          pages: updatedPages,
-          pageParams: cacheData.pageParams || updatedPages.map((_, index) => index + 1),
-        });
+    onSuccess: (
+      _result: { version: ResumeVersionMetadata; resumeId: string },
+      variables: SetActiveVersionParams
+    ) => {
+      queryClient.invalidateQueries({
+        queryKey: VERSION_KEYS.byPersonaAndResume(variables.personaId, variables.resumeId),
       });
     },
   });
@@ -228,6 +135,7 @@ export interface BranchVersionParams {
   versionId: string;
   newFileName: string;
   commit?: string;
+  personaId: string;
 }
 
 export const useBranchVersion = () => {
@@ -267,9 +175,10 @@ export const useBranchVersion = () => {
         throw err;
       }
     },
-    onSuccess: () => {
-      // Invalidate resumes list to show the new branched resume
-      queryClient.invalidateQueries({ queryKey: ['resumes'] });
+    onSuccess: (_result: unknown, variables: BranchVersionParams) => {
+      queryClient.invalidateQueries({
+        queryKey: VERSION_KEYS.byPersonaAndResume(variables.personaId, variables.resumeId),
+      });
     },
   });
 };
@@ -335,6 +244,7 @@ export const useViewParsedData = () => {
 
 export interface CreateVersionParams {
   resumeId: string;
+  personaId: string;
   file: { name: string; type: string; size: number; base64: string };
   keywords?: string[];
   parsedData?: ResumeData;
@@ -389,115 +299,12 @@ export const useCreateVersion = () => {
         throw err;
       }
     },
-    onSuccess: ({ version: newVersion, resumeId }) => {
-      // Get all cached version list queries
-      const cachedQueries = queryClient.getQueriesData({
-        queryKey: VERSION_KEYS.lists(),
-        exact: false,
-      });
-
-      // Update each cached query based on resumeId match
-      cachedQueries.forEach(([queryKey, oldData]) => {
-        // Check if this query is for the same resume
-        const resumeIdParam = queryKey.find(
-          (k) => k && typeof k === 'object' && 'resumeId' in k
-        ) as { resumeId: string } | undefined;
-
-        const searchParams = queryKey.find((k) => k && typeof k === 'object' && 'search' in k) as
-          | { search?: string }
-          | undefined;
-
-        const resumeIdFromQuery = resumeIdParam?.resumeId;
-        const resumeMatches = !resumeIdFromQuery || resumeId === resumeIdFromQuery;
-
-        // Check if version matches the search query
-        const searchQuery = searchParams?.search ?? '';
-        const matchesSearch =
-          !searchQuery || newVersion.versionName.toLowerCase().includes(searchQuery.toLowerCase());
-
-        if (!resumeMatches) return;
-
-        // Handle the case when data is null or has no pages (initial state)
-        if (!oldData || typeof oldData !== 'object') {
-          if (matchesSearch) {
-            queryClient.setQueryData(queryKey, {
-              pages: [
-                {
-                  items: [newVersion],
-                  total: 1,
-                  totalPages: 1,
-                  limit: 10,
-                  page: 1,
-                },
-              ],
-              pageParams: [1],
-            });
-          }
-          return;
-        }
-
-        const cacheData = oldData as { pages?: PaginatedVersionResponse[]; pageParams?: number[] };
-
-        // Handle empty pages array or pages with no items
-        if (
-          !cacheData.pages ||
-          cacheData.pages.length === 0 ||
-          (cacheData.pages[0] && cacheData.pages[0].total === 0)
-        ) {
-          if (matchesSearch) {
-            queryClient.setQueryData(queryKey, {
-              pages: [
-                {
-                  items: [newVersion],
-                  total: 1,
-                  totalPages: 1,
-                  limit: cacheData.pages?.[0]?.limit ?? 10,
-                  page: 1,
-                },
-              ],
-              pageParams: [1],
-            });
-          }
-          return;
-        }
-
-        if (!matchesSearch) return;
-
-        const firstPage = cacheData.pages[0];
-        if (!firstPage) return;
-
-        const limit = firstPage.limit;
-
-        // Collect all items from all pages
-        const allItems = cacheData.pages.flatMap((page) => page.items);
-
-        // Add new version at the front (newest first)
-        const updatedItems = [newVersion, ...allItems];
-
-        // Calculate new total and totalPages
-        const newTotal = firstPage.total + 1;
-        const newTotalPages = Math.ceil(newTotal / limit) || 1;
-
-        // Re-paginate the items
-        const newPages: PaginatedVersionResponse[] = [];
-        for (let pageNum = 1; pageNum <= newTotalPages; pageNum++) {
-          const start = (pageNum - 1) * limit;
-          const end = start + limit;
-          const pageItems = updatedItems.slice(start, end);
-
-          newPages.push({
-            ...firstPage,
-            page: pageNum,
-            items: pageItems,
-            total: newTotal,
-            totalPages: newTotalPages,
-          });
-        }
-
-        queryClient.setQueryData(queryKey, {
-          pages: newPages,
-          pageParams: newPages.map((_, index) => index + 1),
-        });
+    onSuccess: (
+      _result: { version: ResumeVersionMetadata; resumeId: string },
+      variables: CreateVersionParams
+    ) => {
+      queryClient.invalidateQueries({
+        queryKey: VERSION_KEYS.byPersonaAndResume(variables.personaId, variables.resumeId),
       });
     },
   });
@@ -506,6 +313,7 @@ export const useCreateVersion = () => {
 export interface UpdateVersionParams {
   resumeId: string;
   versionId: string;
+  personaId: string;
   file?: { name: string; type: string; size: number; base64: string };
   keywords?: string[];
   parsedData?: ResumeData;
@@ -552,7 +360,11 @@ export const useUpdateVersion = () => {
           if (!response.data.success || !response.data.data) {
             throw new Error(response.data.message || 'Failed to update version');
           }
-          return { version: response.data.data, resumeId: data.resumeId };
+          return {
+            version: response.data.data,
+            resumeId: data.resumeId,
+            personaId: data.personaId,
+          };
         }
 
         // No file, use regular JSON payload
@@ -569,7 +381,7 @@ export const useUpdateVersion = () => {
         if (!response.data.success || !response.data.data) {
           throw new Error(response.data.message || 'Failed to update version');
         }
-        return { version: response.data.data, resumeId: data.resumeId };
+        return { version: response.data.data, resumeId: data.resumeId, personaId: data.personaId };
       } catch (err) {
         if (err && typeof err === 'object' && 'response' in err) {
           const error = err as { response: { data: ApiResponse<never> } };
@@ -580,31 +392,25 @@ export const useUpdateVersion = () => {
         throw err;
       }
     },
-    onSuccess: ({ version: updatedVersion, resumeId }) => {
-      // Get all cached version list queries
+    onSuccess: (
+      _result: { version: ResumeVersionMetadata; resumeId: string; personaId: string },
+      variables: UpdateVersionParams
+    ) => {
       const cachedQueries = queryClient.getQueriesData({
-        queryKey: VERSION_KEYS.lists(),
+        queryKey: VERSION_KEYS.byPersonaAndResume(variables.personaId, variables.resumeId),
         exact: false,
       });
 
-      // Update each cached query based on resumeId match
+      // Update each cached query
       cachedQueries.forEach(([queryKey, oldData]) => {
-        // Check if this query is for the same resume
-        const resumeIdParam = queryKey.find(
-          (k) => k && typeof k === 'object' && 'resumeId' in k
-        ) as { resumeId: string } | undefined;
-
-        const resumeIdFromQuery = resumeIdParam?.resumeId;
-        const resumeMatches = !resumeIdFromQuery || resumeId === resumeIdFromQuery;
-
-        if (!resumeMatches) return;
-
         if (!oldData || typeof oldData !== 'object') return;
 
         const cacheData = oldData as { pages?: PaginatedVersionResponse[]; pageParams?: number[] };
 
         if (!cacheData.pages || cacheData.pages.length === 0) return;
+        console.log('=======the pages are----------->>>>>', cacheData.pages);
 
+        const updatedVersion = _result.version;
         const updatedPages = cacheData.pages.map((page) => ({
           ...page,
           items: page.items.map((v) =>

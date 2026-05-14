@@ -47,9 +47,10 @@ function PersonaResumes() {
           onSelectResume={handleSelectResume}
         />
       )}
-      {activeLayer === 'resume-version' && selectedResume && (
+      {activeLayer === 'resume-version' && selectedResume && selectedPersona && (
         <ResumeVersionSection
           resume={selectedResume}
+          personaId={selectedPersona.id}
           onBack={handleBackToResume}
           onBackToPersonas={handleBackToPersona}
         />

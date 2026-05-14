@@ -10,6 +10,7 @@ interface BranchVersionModalProps {
   resumeId: string;
   versionId: string;
   defaultFileName: string;
+  personaId: string;
 }
 
 export function BranchVersionModal({
@@ -18,6 +19,7 @@ export function BranchVersionModal({
   resumeId,
   versionId,
   defaultFileName,
+  personaId,
 }: BranchVersionModalProps) {
   const [fileName, setFileName] = useState('');
   const [commit, setCommit] = useState('');
@@ -59,6 +61,7 @@ export function BranchVersionModal({
         versionId,
         newFileName: fileName.trim(),
         commit: commit.trim() || undefined,
+        personaId,
       });
 
       // Reset state on success

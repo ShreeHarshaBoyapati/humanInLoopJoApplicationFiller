@@ -16,6 +16,7 @@ interface CreateVersionModalProps {
   isOpen: boolean;
   onClose: () => void;
   resumeId: string;
+  personaId: string;
   editVersion?: {
     id: string;
     versionName: string;
@@ -49,6 +50,7 @@ export function CreateVersionModal({
   isOpen,
   onClose,
   resumeId,
+  personaId,
   editVersion,
 }: CreateVersionModalProps) {
   const [commit, setCommit] = useState('');
@@ -206,6 +208,7 @@ export function CreateVersionModal({
           await updateVersion.mutateAsync({
             resumeId,
             versionId: editVersion.id,
+            personaId,
             file: fileData,
             keywords: parsedData?.keywords,
             parsedData: parsedData || undefined,
@@ -216,6 +219,7 @@ export function CreateVersionModal({
           await updateVersion.mutateAsync({
             resumeId,
             versionId: editVersion.id,
+            personaId,
             keywords: parsedData?.keywords,
             parsedData: parsedData || undefined,
             comment: commit.trim() || undefined,
@@ -232,6 +236,7 @@ export function CreateVersionModal({
         const fileData = await convertFileToBase64(newFile);
         await createVersion.mutateAsync({
           resumeId,
+          personaId,
           file: fileData,
           keywords: parsedData?.keywords || [],
           parsedData: parsedData || undefined,

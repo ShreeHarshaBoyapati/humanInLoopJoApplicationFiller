@@ -1,6 +1,7 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { DiffEditor } from '@monaco-editor/react';
 import AddIcon from '@mui/icons-material/Add';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { PageHeader } from './page-header';
 import { SearchBar } from './search-bar';
 import { ResumeVersionCard } from './resume-version-card';
@@ -80,6 +81,7 @@ function MonacoDiffViewer({ dataA, dataB }: MonacoDiffViewerProps) {
 
 interface ResumeVersionSectionProps {
   resume: { id: string; fileName: string };
+  personaId: string;
   onBack: () => void;
   onBackToPersonas: () => void;
 }
@@ -88,6 +90,7 @@ type TabType = 'versions' | 'diff';
 
 export function ResumeVersionSection({
   resume,
+  personaId,
   onBack,
   onBackToPersonas,
 }: ResumeVersionSectionProps) {
@@ -120,16 +123,27 @@ export function ResumeVersionSection({
   const {
     data: versionsData,
     isLoading: isLoadingVersions,
+    isError,
     fetchNextPage,
+    fetchPreviousPage,
     hasNextPage,
+    hasPreviousPage,
     isFetchingNextPage,
-  } = useResumeVersions(resume.id, 10, debouncedSearch);
+    isFetchingPreviousPage,
+    refetch,
+  } = useResumeVersions(resume.id, personaId, 10, debouncedSearch);
 
   // Diff tab state
   const [selectedVersionA, setSelectedVersionA] = useState<string>('');
   const [selectedVersionB, setSelectedVersionB] = useState<string>('');
   const [diffResult, setDiffResult] = useState<CompareVersionsResponse | null>(null);
   const [isComparing, setIsComparing] = useState(false);
+
+  // Scroll refs for IntersectionObserver
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const topSentinelRef = useRef<HTMLDivElement>(null);
+  const bottomSentinelRef = useRef<HTMLDivElement>(null);
+  const previousScrollHeightRef = useRef<number>(0);
 
   // Mutations+
 
@@ -156,6 +170,7 @@ export function ResumeVersionSection({
         await setActiveVersion.mutateAsync({
           resumeId: resume.id,
           versionId: version.id,
+          personaId,
         });
       } catch (error) {
         console.error('Failed to set active version:', error);
@@ -183,6 +198,7 @@ export function ResumeVersionSection({
       await deleteVersion.mutateAsync({
         resumeId: resume.id,
         versionId: selectedVersionForDelete.id,
+        personaId,
       });
       setIsDeleteModalOpen(false);
       setSelectedVersionForDelete(null);
@@ -244,16 +260,56 @@ export function ResumeVersionSection({
     setSelectedVersionForDelete(null);
   };
 
-  // Infinite scroll handler
-  const handleScroll = useCallback(
-    (e: React.UIEvent<HTMLDivElement>) => {
-      const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-      if (scrollHeight - scrollTop <= clientHeight + 100 && hasNextPage && !isFetchingNextPage) {
-        fetchNextPage();
+  // IntersectionObserver for bidirectional scroll handling
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    const topSentinel = topSentinelRef.current;
+    const bottomSentinel = bottomSentinelRef.current;
+
+    if (!scrollContainer || !topSentinel || !bottomSentinel) return;
+
+    const scrollObserver = new IntersectionObserver(
+      (entries) => {
+        const topEntry = entries.find((e) => e.target === topSentinel);
+        const bottomEntry = entries.find((e) => e.target === bottomSentinel);
+
+        if (topEntry?.isIntersecting && hasPreviousPage && !isFetchingPreviousPage && !isError) {
+          // Store current scroll state before prepending data
+          const currentScrollTop = scrollContainer.scrollTop;
+          previousScrollHeightRef.current = scrollContainer.scrollHeight;
+
+          fetchPreviousPage().then(() => {
+            // Restore scroll position to keep same content in view
+            if (scrollContainer) {
+              const contentAdded = scrollContainer.scrollHeight - previousScrollHeightRef.current;
+              scrollContainer.scrollTop = currentScrollTop + contentAdded;
+            }
+          });
+        }
+
+        if (bottomEntry?.isIntersecting && hasNextPage && !isFetchingNextPage && !isError) {
+          fetchNextPage();
+        }
+      },
+      {
+        root: scrollContainer,
+        threshold: 0.15,
       }
-    },
-    [hasNextPage, isFetchingNextPage, fetchNextPage]
-  );
+    );
+
+    scrollObserver.observe(topSentinel);
+    scrollObserver.observe(bottomSentinel);
+
+    return () => scrollObserver.disconnect();
+  }, [
+    fetchNextPage,
+    fetchPreviousPage,
+    hasNextPage,
+    hasPreviousPage,
+    isFetchingNextPage,
+    isFetchingPreviousPage,
+    isError,
+  ]);
 
   // Version options for select dropdowns
   const versionOptions = versions.map((v) => ({
@@ -326,8 +382,11 @@ export function ResumeVersionSection({
         ) : (
           <div
             className={`${sectionStyles.scrollContainer} ${scrollbarStyles.scrollbarVerticalContainer}`}
-            onScroll={handleScroll}
+            ref={scrollContainerRef}
           >
+            {/* Top sentinel for scroll up detection */}
+            <div ref={topSentinelRef} className={sectionStyles.sentinel} />
+
             <div className={sectionStyles.itemList}>
               {versions.map((version, index) => (
                 <ResumeVersionCard
@@ -345,7 +404,13 @@ export function ResumeVersionSection({
                 />
               ))}
             </div>
-            {isFetchingNextPage && <p className={sectionStyles.loadingText}>Loading...</p>}
+
+            {/* Bottom sentinel for scroll down detection */}
+            <div ref={bottomSentinelRef} className={sectionStyles.sentinel} />
+
+            {(isFetchingNextPage || isFetchingPreviousPage) && (
+              <p className={sectionStyles.loadingText}>Loading...</p>
+            )}
           </div>
         )
       ) : (
@@ -438,11 +503,25 @@ export function ResumeVersionSection({
         </div>
       )}
 
+      {isError && (
+        <div className={sectionStyles.errorContainer}>
+          <p className={sectionStyles.errorText}>Failed to load versions. Please try again.</p>
+          <EnhancedButton
+            label="Retry"
+            colorTheme="secondary"
+            size="small"
+            onClick={() => refetch()}
+            startIcon={<RefreshIcon fontSize="small" />}
+          />
+        </div>
+      )}
+
       {/* Create/Edit Version Modal */}
       <CreateVersionModal
         isOpen={isCreateModalOpen}
         onClose={handleCloseCreateModal}
         resumeId={resume.id}
+        personaId={personaId}
         editVersion={
           selectedVersionForEdit
             ? {
@@ -464,6 +543,7 @@ export function ResumeVersionSection({
           resumeId={resume.id}
           versionId={selectedVersionForBranch.id}
           defaultFileName={`${resume.fileName} (copy)`}
+          personaId={personaId}
         />
       )}
 

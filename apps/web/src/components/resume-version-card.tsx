@@ -70,7 +70,10 @@ export function ResumeVersionCard({
   // Calculate diff from previous version
   const getDiffParts = () => {
     if (!previousVersion) {
-      return [{ text: 'First version', type: 'neutral' as const }];
+      if (version.versionName === 'v1') {
+        return [{ text: 'First version', type: 'neutral' as const }];
+      }
+      return [];
     }
 
     const keywordsAdded = version.keywords.filter((k) => !previousVersion.keywords.includes(k));
