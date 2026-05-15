@@ -9,6 +9,7 @@ import { EnhancedTextInputArea as TextInputArea } from '@repo/ui/text-input-area
 import { FileUploader } from '@repo/ui/file-uploader.tsx';
 import { EnhancedStepper } from '@repo/ui/stepper.tsx';
 import scrollbarStyles from '@repo/ui/scroll-bar.module.css';
+import { useSnackbar } from './hooks/use-snackbar';
 
 const API_URL = import.meta.env.VITE_WEB_APP_URL || '';
 
@@ -27,6 +28,7 @@ function App() {
   const [selectedValue, setSelectedValue] = useState<string | number | readonly string[]>(
     'option1'
   );
+  const { showSnackbar } = useSnackbar();
 
   const dropdownOptions = [
     { dataId: 'opt-1', value: 'option1', label: 'Option 1' },
@@ -642,6 +644,117 @@ function App() {
                 activeStep={1}
                 disabled={true}
                 testId="stepper-disabled"
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Snackbars</h2>
+          <div className={styles.grid}>
+            {/* Success Snackbar */}
+            <div className={styles.variantContainer}>
+              <span className={styles.variantLabel}>Success (Default Header)</span>
+              <Button
+                label="Show Success"
+                colorTheme="primary"
+                onClick={() =>
+                  showSnackbar('Your changes have been saved successfully.', {
+                    severity: 'success',
+                  })
+                }
+              />
+            </div>
+            <div className={styles.variantContainer}>
+              <span className={styles.variantLabel}>Success (Custom Header)</span>
+              <Button
+                label="Show Success with Header"
+                colorTheme="primary"
+                onClick={() =>
+                  showSnackbar('Your changes have been saved successfully.', {
+                    severity: 'success',
+                    header: 'Custom Success',
+                  })
+                }
+              />
+            </div>
+
+            {/* Warning Snackbar */}
+            <div className={styles.variantContainer}>
+              <span className={styles.variantLabel}>Warning (Default Header)</span>
+              <Button
+                label="Show Warning"
+                colorTheme="secondary"
+                onClick={() =>
+                  showSnackbar('Please review the information before proceeding.', {
+                    severity: 'warning',
+                  })
+                }
+              />
+            </div>
+            <div className={styles.variantContainer}>
+              <span className={styles.variantLabel}>Warning (Custom Header)</span>
+              <Button
+                label="Show Warning with Header"
+                colorTheme="secondary"
+                onClick={() =>
+                  showSnackbar('Please review the information before proceeding.', {
+                    severity: 'warning',
+                    header: 'Custom Warning',
+                  })
+                }
+              />
+            </div>
+
+            {/* Error Snackbar */}
+            <div className={styles.variantContainer}>
+              <span className={styles.variantLabel}>Error (Default Header)</span>
+              <Button
+                label="Show Error"
+                colorTheme="negativeSecondary"
+                onClick={() =>
+                  showSnackbar('An error occurred while processing your request.', {
+                    severity: 'error',
+                  })
+                }
+              />
+            </div>
+            <div className={styles.variantContainer}>
+              <span className={styles.variantLabel}>Error (Custom Header)</span>
+              <Button
+                label="Show Error with Header"
+                colorTheme="negativeSecondary"
+                onClick={() =>
+                  showSnackbar('An error occurred while processing your request.', {
+                    severity: 'error',
+                    header: 'Custom Error',
+                  })
+                }
+              />
+            </div>
+
+            {/* Info Snackbar */}
+            <div className={styles.variantContainer}>
+              <span className={styles.variantLabel}>Info (Default Header)</span>
+              <Button
+                label="Show Info"
+                colorTheme="tertiary"
+                onClick={() =>
+                  showSnackbar('You have a new notification waiting for you.', { severity: 'info' })
+                }
+              />
+            </div>
+            <div className={styles.variantContainer}>
+              <span className={styles.variantLabel}>Info (Custom Header)</span>
+              <Button
+                label="Show Info with Header"
+                colorTheme="tertiary"
+                onClick={() =>
+                  showSnackbar('You have a new notification waiting for you.', {
+                    severity: 'info',
+                    header: 'Custom Info',
+                  })
+                }
               />
             </div>
           </div>

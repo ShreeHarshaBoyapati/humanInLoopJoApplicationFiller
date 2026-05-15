@@ -14,3 +14,4 @@ export * from './file-uploader';
 export * from './stepper';
 export * from './verification-code';
 export * from './modal';
+export { default as EnhancedSnackbar } from './snackbar';

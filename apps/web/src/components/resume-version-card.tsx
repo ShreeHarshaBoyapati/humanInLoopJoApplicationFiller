@@ -12,6 +12,7 @@ import {
 import { EnhancedTooltipWithText } from '@repo/ui';
 import { useViewDocument } from '../hooks/use-resume-versions';
 import type { ResumeVersionMetadata, ResumeData } from '@repo/shared-types';
+import { useStore } from '../store';
 import Editor from '@monaco-editor/react';
 import styles from './style/resume-version-card.module.css';
 
@@ -45,6 +46,7 @@ export function ResumeVersionCard({
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [isViewing, setIsViewing] = useState(false);
   const queryClient = useQueryClient();
+  const showSnackbar = useStore((state) => state.showSnackbar);
 
   // View document query - enabled when isViewing is true
   const viewDocumentQuery = useViewDocument({ resumeId, versionId: version.id }, isViewing);
@@ -168,7 +170,7 @@ export function ResumeVersionCard({
       const blob = createBlob();
       if (!blob) {
         console.error('Failed to create blob from response:', data);
-        window.alert('Failed to create file preview');
+        showSnackbar('Failed to create file preview', { severity: 'error' });
         setIsViewing(false);
         return;
       }
@@ -189,17 +191,17 @@ export function ResumeVersionCard({
     }
   }, [viewDocumentQuery.isSuccess, viewDocumentQuery.data]);
 
-  // Show alert on error
+  // Show snackbar on error
   useEffect(() => {
     if (viewDocumentQuery.isError) {
       const message =
         viewDocumentQuery.error instanceof Error
           ? viewDocumentQuery.error.message
           : 'Failed to view document';
-      window.alert(message);
+      showSnackbar(message, { severity: 'error' });
       setIsViewing(false);
     }
-  }, [viewDocumentQuery.isError, viewDocumentQuery.error]);
+  }, [viewDocumentQuery.isError, viewDocumentQuery.error, showSnackbar]);
 
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -228,7 +230,7 @@ export function ResumeVersionCard({
         setIsExpanded(true);
       } catch (error) {
         const message = error instanceof Error ? error.message : 'Failed to load parsed data';
-        window.alert(message);
+        showSnackbar(message, { severity: 'error' });
       } finally {
         setIsLoadingData(false);
       }

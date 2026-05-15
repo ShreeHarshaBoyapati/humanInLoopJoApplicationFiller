@@ -64,21 +64,21 @@ const StyledAlert = styled(Alert, {
   },
 
   '&.MuiAlert-filledSuccess': {
-    background: `${styleConstants.green400},${styleConstants.green400}`,
+    background: `${styleConstants.green450}`,
     border: `1px solid ${styleConstants.grey700}`,
   },
   '&.MuiAlert-filledError': {
-    background: `${styleConstants.red700},${styleConstants.red700}`,
+    background: `${styleConstants.red800}`,
     border: `1px solid ${styleConstants.grey700}`,
   },
 
   '&.MuiAlert-filledWarning': {
-    background: `${styleConstants.yellow400},${styleConstants.yellow400}`,
+    background: `${styleConstants.yellow600}`,
     border: `1px solid ${styleConstants.grey700}`,
   },
 
   '&.MuiAlert-filledInfo': {
-    background: `${styleConstants.blue500},${styleConstants.blue500}`,
+    background: `${styleConstants.blue700}`,
     border: `1px solid ${styleConstants.grey700}`,
   },
 
@@ -120,11 +120,17 @@ const MessageTypography = styled(Typography)(() => ({
 }));
 
 const CloseButton = styled(IconButton)(() => ({
-  padding: '0px',
+  padding: '4px',
   backgroundColor: 'transparent',
   '&:hover': {
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
     boxShadow: 'none',
+  },
+  '&:focus': {
+    outline: 'none',
+  },
+  '&.Mui-focusVisible': {
+    outline: 'none',
   },
   '& .MuiSvgIcon-root': {
     fontSize: '16px',

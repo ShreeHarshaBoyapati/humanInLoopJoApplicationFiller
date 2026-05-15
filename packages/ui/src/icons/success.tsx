@@ -2,7 +2,7 @@ import type { SVGProps } from 'react';
 import styleConstants from '../constants/style-constants';
 
 const SuccessIconSnackBar = ({
-  fill = styleConstants.green500,
+  fill = styleConstants.green430,
   width = 24,
   height = 24,
   ...props

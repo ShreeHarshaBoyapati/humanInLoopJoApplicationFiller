@@ -13,6 +13,7 @@ import { CreateResumeModal } from './create-resume-modal';
 import { EditResumeModal } from './edit-resume-modal';
 import { useResumes, useSetActiveResume, useDeleteResume } from '../hooks/use-resumes';
 import type { Persona, PaginatedResumeListItem, PaginatedResumeResponse } from '@repo/shared-types';
+import { useStore } from '../store';
 
 interface ResumeSectionProps {
   persona: Persona;
@@ -30,6 +31,7 @@ export function ResumeSection({ persona, onBack, onSelectResume }: ResumeSection
 
   const deleteResume = useDeleteResume();
   const setActiveResume = useSetActiveResume();
+  const showSnackbar = useStore((state) => state.showSnackbar);
 
   // Debounce search query
   useEffect(() => {
@@ -133,7 +135,7 @@ export function ResumeSection({ persona, onBack, onSelectResume }: ResumeSection
           },
           onError: (err) => {
             const errorMessage = err instanceof Error ? err.message : 'Failed to set active resume';
-            alert(errorMessage);
+            showSnackbar(errorMessage, { severity: 'error' });
           },
         }
       );
@@ -175,7 +177,7 @@ export function ResumeSection({ persona, onBack, onSelectResume }: ResumeSection
           },
           onError: (err) => {
             const errorMessage = err instanceof Error ? err.message : 'Failed to delete resume';
-            alert(errorMessage);
+            showSnackbar(errorMessage, { severity: 'error' });
           },
         }
       );

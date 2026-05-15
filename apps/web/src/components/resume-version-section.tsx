@@ -22,6 +22,7 @@ import type {
   CompareVersionsResponse,
   ResumeData,
 } from '@repo/shared-types';
+import { useStore } from '../store';
 import styles from './style/resume-version-section.module.css';
 import sectionStyles from '../routes/style/section.module.css';
 
@@ -151,6 +152,7 @@ export function ResumeVersionSection({
   const setActiveVersion = useSetActiveVersion();
   const compareVersions = useCompareVersions();
   const viewParsedData = useViewParsedData();
+  const showSnackbar = useStore((state) => state.showSnackbar);
 
   // Get all versions from pages
   const versions: ResumeVersionMetadata[] = useMemo(
@@ -175,10 +177,10 @@ export function ResumeVersionSection({
       } catch (error) {
         console.error('Failed to set active version:', error);
         const message = error instanceof Error ? error.message : 'Failed to set active version';
-        window.alert(message);
+        showSnackbar(message, { severity: 'error' });
       }
     },
-    [resume.id, setActiveVersion]
+    [resume.id, setActiveVersion, showSnackbar]
   );
 
   const handleEdit = useCallback((version: ResumeVersionMetadata) => {
@@ -205,9 +207,9 @@ export function ResumeVersionSection({
     } catch (error) {
       console.error('Failed to delete version:', error);
       const message = error instanceof Error ? error.message : 'Failed to delete version';
-      window.alert(message);
+      showSnackbar(message, { severity: 'error' });
     }
-  }, [resume.id, deleteVersion, selectedVersionForDelete]);
+  }, [resume.id, deleteVersion, selectedVersionForDelete, showSnackbar]);
 
   const handleBranchClick = useCallback((version: ResumeVersionMetadata) => {
     setSelectedVersionForBranch(version);

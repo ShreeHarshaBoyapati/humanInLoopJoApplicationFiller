@@ -17,6 +17,7 @@ import {
   type PaginatedPersonaResponse,
 } from '../hooks/use-personas';
 import type { Persona } from '@repo/shared-types';
+import { useStore } from '../store';
 
 interface PersonaSectionProps {
   onSelectPersona: (persona: Persona) => void;
@@ -32,6 +33,7 @@ export function PersonaSection({ onSelectPersona }: PersonaSectionProps) {
 
   const deletePersona = useDeletePersona();
   const setActivePersona = useSetActivePersona();
+  const showSnackbar = useStore((state) => state.showSnackbar);
 
   // Debounce search query
   useEffect(() => {
@@ -133,7 +135,9 @@ export function PersonaSection({ onSelectPersona }: PersonaSectionProps) {
           setSelectedPersonaId(activePersona.id);
         },
         onError: (error) => {
-          alert(error instanceof Error ? error.message : 'Failed to set active persona');
+          showSnackbar(error instanceof Error ? error.message : 'Failed to set active persona', {
+            severity: 'error',
+          });
         },
       });
     }
@@ -165,7 +169,9 @@ export function PersonaSection({ onSelectPersona }: PersonaSectionProps) {
             }
           },
           onError: (error) => {
-            alert(error instanceof Error ? error.message : 'Failed to delete persona');
+            showSnackbar(error instanceof Error ? error.message : 'Failed to delete persona', {
+              severity: 'error',
+            });
           },
         }
       );

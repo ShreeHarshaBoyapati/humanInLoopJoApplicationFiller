@@ -2,7 +2,7 @@ import type { SVGProps } from 'react';
 import styleConstants from '../constants/style-constants';
 
 const WarningIcon = ({
-  fill = styleConstants.yellow400,
+  fill = styleConstants.yellow500,
   width = 24,
   height = 24,
   ...props

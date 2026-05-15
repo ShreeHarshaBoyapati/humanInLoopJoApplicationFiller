@@ -1,8 +1,9 @@
 import { create, type StateCreator } from 'zustand';
 import { persist, devtools } from 'zustand/middleware';
 import { createUserSlice, type UserSlice } from './user.slice';
+import { createSnackbarSlice, type SnackbarSlice } from './snackbar.slice';
 
-export type StoreState = UserSlice;
+export type StoreState = UserSlice & SnackbarSlice;
 
 const loggerMiddleware =
   <T extends object>(config: StateCreator<T>): StateCreator<T> =>
@@ -19,6 +20,7 @@ const loggerMiddleware =
 
 const createRootSlice: StateCreator<StoreState> = (...args) => ({
   ...createUserSlice(...args),
+  ...createSnackbarSlice(...args),
 });
 
 export const createStore = () => {

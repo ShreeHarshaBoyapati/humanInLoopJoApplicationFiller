@@ -19,6 +19,7 @@ import {
 } from '../utils/auth-sync.ts';
 import type { StoredAuth } from '@repo/shared-types';
 import { useStore } from '../store/index.ts';
+import { SnackbarContainer } from '../components/snackbar-container.tsx';
 
 export const Route = createRootRoute({
   component: RootComponent,
@@ -119,6 +120,7 @@ function RootComponent() {
         onConfirm={confirmLogout}
         onCancel={cancelLogout}
       />
+      <SnackbarContainer />
     </div>
   );
 }

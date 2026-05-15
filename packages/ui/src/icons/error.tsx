@@ -2,7 +2,7 @@ import type { SVGProps } from 'react';
 import styleConstants from '../constants/style-constants';
 
 const ErrorIcon = ({
-  fill = styleConstants.red700,
+  fill = styleConstants.red600,
   width = 24,
   height = 24,
   ...props

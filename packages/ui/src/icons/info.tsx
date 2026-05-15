@@ -2,7 +2,7 @@ import type { SVGProps } from 'react';
 import styleConstants from '../constants/style-constants';
 
 const InfoIconSnackbar = ({
-  fill = styleConstants.blue500,
+  fill = styleConstants.black800,
   width = 24,
   height = 24,
   ...props

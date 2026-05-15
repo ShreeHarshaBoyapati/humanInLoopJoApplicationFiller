@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as PersonaResumesRouteImport } from './routes/persona-resumes'
+import { Route as MuiDesignRouteImport } from './routes/mui-design'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as GoogleCallbackRouteImport } from './routes/google-callback'
 import { Route as IndexRouteImport } from './routes/index'
@@ -17,6 +18,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const PersonaResumesRoute = PersonaResumesRouteImport.update({
   id: '/persona-resumes',
   path: '/persona-resumes',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MuiDesignRoute = MuiDesignRouteImport.update({
+  id: '/mui-design',
+  path: '/mui-design',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -39,12 +45,14 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/google-callback': typeof GoogleCallbackRoute
   '/login': typeof LoginRoute
+  '/mui-design': typeof MuiDesignRoute
   '/persona-resumes': typeof PersonaResumesRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/google-callback': typeof GoogleCallbackRoute
   '/login': typeof LoginRoute
+  '/mui-design': typeof MuiDesignRoute
   '/persona-resumes': typeof PersonaResumesRoute
 }
 export interface FileRoutesById {
@@ -52,20 +60,33 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/google-callback': typeof GoogleCallbackRoute
   '/login': typeof LoginRoute
+  '/mui-design': typeof MuiDesignRoute
   '/persona-resumes': typeof PersonaResumesRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/google-callback' | '/login' | '/persona-resumes'
+  fullPaths:
+    | '/'
+    | '/google-callback'
+    | '/login'
+    | '/mui-design'
+    | '/persona-resumes'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/google-callback' | '/login' | '/persona-resumes'
-  id: '__root__' | '/' | '/google-callback' | '/login' | '/persona-resumes'
+  to: '/' | '/google-callback' | '/login' | '/mui-design' | '/persona-resumes'
+  id:
+    | '__root__'
+    | '/'
+    | '/google-callback'
+    | '/login'
+    | '/mui-design'
+    | '/persona-resumes'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GoogleCallbackRoute: typeof GoogleCallbackRoute
   LoginRoute: typeof LoginRoute
+  MuiDesignRoute: typeof MuiDesignRoute
   PersonaResumesRoute: typeof PersonaResumesRoute
 }
 
@@ -76,6 +97,13 @@ declare module '@tanstack/react-router' {
       path: '/persona-resumes'
       fullPath: '/persona-resumes'
       preLoaderRoute: typeof PersonaResumesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mui-design': {
+      id: '/mui-design'
+      path: '/mui-design'
+      fullPath: '/mui-design'
+      preLoaderRoute: typeof MuiDesignRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -106,6 +134,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GoogleCallbackRoute: GoogleCallbackRoute,
   LoginRoute: LoginRoute,
+  MuiDesignRoute: MuiDesignRoute,
   PersonaResumesRoute: PersonaResumesRoute,
 }
 export const routeTree = rootRouteImport
