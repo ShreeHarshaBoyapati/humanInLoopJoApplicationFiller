@@ -35,7 +35,7 @@ export function getTokenFromCookie(): string | null {
 function setTokenInCookie(token: string): void {
   if (typeof document === 'undefined') return;
 
-  document.cookie = `${TOKEN_COOKIE_NAME}=${encodeURIComponent(token)}; path=/; HttpOnly; SameSite=Lax`;
+  document.cookie = `${TOKEN_COOKIE_NAME}=${encodeURIComponent(token)}; path=/; SameSite=Lax`;
 }
 
 /**

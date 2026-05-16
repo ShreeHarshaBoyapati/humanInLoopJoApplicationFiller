@@ -13,7 +13,9 @@ const __dirname = path.dirname(__filename);
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, path.resolve(__dirname, '../..'));
   const PORT = parseInt(env.VITE_EXT_PORT || '3000');
-  const WEB_APP_URL = env.VITE_WEB_APP_URL || 'http://localhost:3001';
+  const WEB_APP_URL = env.VITE_WEB_APP_URL || 'http://localhost';
+  const WEB_APP_PORT = env.VITE_WEB_APP_PORT || '';
+  const FULL_WEB_APP_URL = `${WEB_APP_URL}${WEB_APP_PORT ? `:${WEB_APP_PORT}` : ''}`;
   const EXT_CLIENT_ID = env.VITE_EXT_CLIENT_ID || '';
 
   // Transform manifest to inject web app URL for auth sync content script
@@ -22,7 +24,7 @@ export default defineConfig(({ mode }) => {
   // Add web app domain to content_scripts for auth sync
   if (transformedManifest.content_scripts) {
     transformedManifest.content_scripts.push({
-      matches: [`${WEB_APP_URL}/*`],
+      matches: [`${FULL_WEB_APP_URL}/*`],
       js: ['./src/content/auth-sync.ts'],
       run_at: 'document_start',
     });

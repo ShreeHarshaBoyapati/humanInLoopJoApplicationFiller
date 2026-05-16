@@ -29,7 +29,7 @@ export const Route = createRootRoute({
     const pathname = location.pathname;
 
     // Public routes that don't require authentication
-    const isPublicRoute = pathname === '/login' || pathname === '/google-callback';
+    const isPublicRoute = pathname === '/login';
 
     if (isAuthenticated) {
       // If authenticated and on a public route, redirect to home
