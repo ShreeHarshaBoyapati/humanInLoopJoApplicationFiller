@@ -10,6 +10,7 @@ import { useEffect } from 'react';
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import WorkOutlineIcon from '@mui/icons-material/WorkOutline';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import scrollStyles from '@repo/ui/scroll-bar.module.css';
 import styles from './style/__root.module.css';
@@ -130,6 +131,14 @@ function RootComponent() {
         >
           <AutoAwesomeIcon />
           <span>Autofill</span>
+        </Link>
+        <Link
+          to="/personas"
+          className={styles.navItem}
+          activeProps={{ className: `${styles.navItem} ${styles.navItemActive}` }}
+        >
+          <ArticleOutlinedIcon />
+          <span>Personas</span>
         </Link>
         <Link
           to="/profile"

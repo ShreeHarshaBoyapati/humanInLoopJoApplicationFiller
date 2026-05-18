@@ -8,6 +8,11 @@ import {
   SetActiveResumeParams,
   FileDataPayload,
 } from './resume';
+import {
+  GetResumeVersionsParams,
+  SetActiveVersionParams,
+  GetVersionParsedDataParams,
+} from './resume-version';
 import type { StoredAuth } from './auth-types';
 
 /**
@@ -52,10 +57,16 @@ export type ExtensionMessage =
   | { action: 'UPDATE_PERSONA'; payload: { id: string; title?: string; keywords?: string[] } }
   | { action: 'DELETE_PERSONA'; payload: { id: string } }
   | { action: 'GET_ACTIVE_PERSONA' }
-  | { action: 'GET_PERSONAS' }
+  | {
+      action: 'GET_PERSONAS';
+      payload?: { page?: number; limit?: number; search?: string };
+    }
   | { action: 'SELECT_PERSONA'; payload: { id: string } }
   | { action: 'GET_CURRENT_USER' }
-  | { action: 'GET_RESUMES'; payload?: GetResumeParams }
+  | {
+      action: 'GET_RESUMES';
+      payload?: GetResumeParams & { page?: number; limit?: number; search?: string };
+    }
   | { action: 'GET_ACTIVE_RESUME'; payload?: { personaId: string } }
   | { action: 'CREATE_RESUME'; payload: CreateResumeParams }
   | { action: 'UPDATE_RESUME'; payload: UpdateResumeParams }
@@ -65,6 +76,9 @@ export type ExtensionMessage =
   | { action: 'ANALYZE_RESUME'; payload: { jobId: string; resumeId: string } }
   | { action: 'SET_ACTIVE_RESUME'; payload: SetActiveResumeParams }
   | { action: 'GET_PARSED_RESUME' }
+  | { action: 'GET_RESUME_VERSIONS'; payload?: GetResumeVersionsParams }
+  | { action: 'SET_ACTIVE_VERSION'; payload: SetActiveVersionParams }
+  | { action: 'GET_VERSION_PARSED_DATA'; payload: GetVersionParsedDataParams }
   | { action: 'SYNC_AUTH_FROM_WEB'; payload: StoredAuth }
   | { action: 'AUTH_STATE_CHANGED'; payload: StoredAuth | null }
   | { action: 'AUTH_STORAGE_SET'; payload: StoredAuth }

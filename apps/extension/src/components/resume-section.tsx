@@ -1,17 +1,16 @@
 import { useEffect, useState, useReducer, useCallback, useRef } from 'react';
-import { useNavigate } from '@tanstack/react-router';
+
 import { Radio, CircularProgress } from '@mui/material';
-import { ArrowForward } from '@mui/icons-material';
-import styles from '../routes/style/personas.module.css';
+import { ArrowForward, OpenInNew as OpenInNewIcon } from '@mui/icons-material';
+import styles from '../routes/style/resume.module.css';
 import scrollbarStyles from '@repo/ui/scroll-bar.module.css';
 import { EnhancedTextField, EnhancedTooltipWithText } from '@repo/ui';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import type { Persona, PaginatedPersonasResponse } from '@repo/shared-types';
-import { usePersonasCache } from '../hooks/use-personas-cache';
+import type { PaginatedResumeListItem, PaginatedResumeResponse } from '@repo/shared-types';
+import { useResumesCache } from '../hooks/use-resumes-cache';
 
 // Pagination state type
 type PaginationState = {
-  personas: Persona[];
+  resumes: PaginatedResumeListItem[];
   firstPage: number;
   lastPage: number;
   totalPages: number;
@@ -25,7 +24,7 @@ type PaginationAction =
   | { type: 'FETCH_START'; direction?: 'next' | 'previous' }
   | {
       type: 'FETCH_SUCCESS';
-      items: Persona[];
+      items: PaginatedResumeListItem[];
       page: number;
       totalPages: number;
       direction?: 'next' | 'previous';
@@ -36,7 +35,7 @@ type PaginationAction =
 
 // Initial state
 const initialState: PaginationState = {
-  personas: [],
+  resumes: [],
   firstPage: 1,
   lastPage: 1,
   totalPages: 1,
@@ -62,7 +61,7 @@ function paginationReducer(state: PaginationState, action: PaginationAction): Pa
       if (direction === 'next') {
         return {
           ...state,
-          personas: [...state.personas, ...items],
+          resumes: [...state.resumes, ...items],
           lastPage: page,
           totalPages,
           isFetchingNext: false,
@@ -71,7 +70,7 @@ function paginationReducer(state: PaginationState, action: PaginationAction): Pa
       } else if (direction === 'previous') {
         return {
           ...state,
-          personas: [...items, ...state.personas],
+          resumes: [...items, ...state.resumes],
           firstPage: page,
           totalPages,
           isFetchingPrevious: false,
@@ -81,7 +80,7 @@ function paginationReducer(state: PaginationState, action: PaginationAction): Pa
       // Initial fetch
       return {
         ...state,
-        personas: items,
+        resumes: items,
         firstPage: page,
         lastPage: page,
         totalPages,
@@ -105,9 +104,9 @@ function paginationReducer(state: PaginationState, action: PaginationAction): Pa
     case 'SET_ACTIVE':
       return {
         ...state,
-        personas: state.personas.map((p) => ({
-          ...p,
-          active: p.id === action.id,
+        resumes: state.resumes.map((r) => ({
+          ...r,
+          active: r.id === action.id,
         })),
       };
 
@@ -116,15 +115,21 @@ function paginationReducer(state: PaginationState, action: PaginationAction): Pa
   }
 }
 
-export function PersonasSection() {
-  const navigate = useNavigate();
+interface ResumeSectionProps {
+  personaId: string;
+  personaTitle: string;
+  onSelectResume: (resume: PaginatedResumeListItem) => void;
+  onBack: () => void;
+}
+
+export function ResumeSection({ personaId, onSelectResume, onBack }: ResumeSectionProps) {
   const [state, dispatch] = useReducer(paginationReducer, initialState);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeLoading, setActiveLoading] = useState(false);
   const limit = 10;
 
   // Cache hook
-  const { getPage, setPage, invalidateCache, tokenChanged, resetTokenChanged } = usePersonasCache();
+  const { getPage, setPage, invalidateCache } = useResumesCache();
 
   // Refs for infinite scroll
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -136,15 +141,7 @@ export function PersonasSection() {
   const hasPreviousPage = state.firstPage > 1;
   const hasNextPage = state.lastPage < state.totalPages;
 
-  // Reset on token change
-  useEffect(() => {
-    if (tokenChanged) {
-      dispatch({ type: 'RESET' });
-      resetTokenChanged();
-    }
-  }, [tokenChanged, resetTokenChanged]);
-
-  const fetchPersonas = useCallback(
+  const fetchResumes = useCallback(
     async (pageNum: number, search?: string, direction?: 'next' | 'previous') => {
       if (typeof chrome === 'undefined' || !chrome.runtime) return;
 
@@ -156,7 +153,7 @@ export function PersonasSection() {
       }
 
       // Try to get from cache first
-      const cachedData = await getPage(pageNum, search || '');
+      const cachedData = await getPage(pageNum, personaId, search || '');
       if (cachedData) {
         dispatch({
           type: 'FETCH_SUCCESS',
@@ -182,13 +179,13 @@ export function PersonasSection() {
       // Fetch from API if not in cache
       chrome.runtime.sendMessage(
         {
-          action: 'GET_PERSONAS',
-          payload: { page: pageNum, limit, search: search || '' },
+          action: 'GET_RESUMES',
+          payload: { personaId, page: pageNum, limit, search: search || '' },
         },
-        (res: { success: boolean; data?: PaginatedPersonasResponse; error?: string }) => {
+        (res: { success: boolean; data?: PaginatedResumeResponse; error?: string }) => {
           if (res?.success && res.data) {
             // Store in cache
-            setPage(res.data, search || '');
+            setPage(res.data, personaId, search || '');
 
             dispatch({
               type: 'FETCH_SUCCESS',
@@ -214,15 +211,15 @@ export function PersonasSection() {
         }
       );
     },
-    [getPage, setPage]
+    [getPage, setPage, personaId]
   );
 
   // Initial fetch and search
   useEffect(() => {
     dispatch({ type: 'RESET' });
-    fetchPersonas(1, searchQuery);
+    fetchResumes(1, searchQuery);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery]);
+  }, [searchQuery, personaId]);
 
   // Intersection Observer for infinite scroll
   useEffect(() => {
@@ -243,7 +240,7 @@ export function PersonasSection() {
           !state.isFetchingPrevious &&
           !state.isInitialLoading
         ) {
-          fetchPersonas(state.firstPage - 1, searchQuery, 'previous');
+          fetchResumes(state.firstPage - 1, searchQuery, 'previous');
         }
 
         if (
@@ -252,7 +249,7 @@ export function PersonasSection() {
           !state.isFetchingNext &&
           !state.isInitialLoading
         ) {
-          fetchPersonas(state.lastPage + 1, searchQuery, 'next');
+          fetchResumes(state.lastPage + 1, searchQuery, 'next');
         }
       },
       {
@@ -266,7 +263,7 @@ export function PersonasSection() {
 
     return () => scrollObserver.disconnect();
   }, [
-    fetchPersonas,
+    fetchResumes,
     hasNextPage,
     hasPreviousPage,
     state.isFetchingNext,
@@ -281,14 +278,14 @@ export function PersonasSection() {
     if (typeof chrome !== 'undefined' && chrome.runtime) {
       setActiveLoading(true);
       chrome.runtime.sendMessage(
-        { action: 'SELECT_PERSONA', payload: { id } },
+        { action: 'SET_ACTIVE_RESUME', payload: { id, personaId } },
         async (res: { success: boolean; message?: string }) => {
           if (res?.success) {
             dispatch({ type: 'SET_ACTIVE', id });
-            // Invalidate cache and re-fetch fresh data (like TanStack Query's invalidateQueries)
+            // Invalidate cache and re-fetch fresh data
             await invalidateCache();
             dispatch({ type: 'RESET' });
-            fetchPersonas(1, searchQuery);
+            fetchResumes(1, searchQuery);
           }
           setActiveLoading(false);
         }
@@ -300,32 +297,29 @@ export function PersonasSection() {
     setSearchQuery(value);
   };
 
-  const handleNavigateToResumes = (persona: Persona) => {
-    navigate({
-      to: '/resume',
-      search: {
-        personaId: persona.id,
-        title: persona.title,
-        from: '/personas',
-      },
-    });
+  const formatFileSize = (bytes: number | null): string => {
+    if (!bytes) return 'Unknown size';
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const getInitials = (name: string) => {
-    return name.charAt(0).toUpperCase();
+  const formatDate = (date: Date | string): string => {
+    const d = new Date(date);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
   return (
     <div className={`${styles.sectionContainer} ${scrollbarStyles.scrollbarContainer}`}>
       {/* Header */}
       <div className={styles.header}>
-        <h1 className={styles.headerTitle}>Personas</h1>
+        <h1 className={styles.headerTitle}>Resumes</h1>
       </div>
 
       {/* Info Banner */}
       <div className={styles.infoBanner}>
         <p className={styles.infoText}>
-          To create, edit, or delete personas, please use the{' '}
+          To create, edit, or delete resumes, please use the{' '}
           <a
             href={import.meta.env.VITE_WEB_URL || 'http://localhost:5174'}
             target="_blank"
@@ -340,7 +334,11 @@ export function PersonasSection() {
 
       {/* Navigation */}
       <div className={styles.navigation}>
-        <span className={styles.navCurrent}>All Personas</span>
+        <span className={styles.navLink} onClick={onBack}>
+          All Personas
+        </span>
+        <span className={styles.navSeparator}>/</span>
+        <span className={styles.navCurrent}>Resumes</span>
       </div>
 
       {/* Search */}
@@ -349,18 +347,18 @@ export function PersonasSection() {
           label=""
           value={searchQuery}
           onChange={(e) => handleSearchChange(e.target.value)}
-          placeholder="Search by name or keyword"
+          placeholder="Search resumes..."
         />
       </div>
 
-      {/* Persona List */}
-      {state.isInitialLoading && state.personas.length === 0 ? (
+      {/* Resume List */}
+      {state.isInitialLoading && state.resumes.length === 0 ? (
         <div className={styles.loadingContainer}>
           <CircularProgress size={32} sx={{ color: 'var(--blue-500)' }} />
         </div>
-      ) : state.personas.length === 0 ? (
+      ) : state.resumes.length === 0 ? (
         <p className={styles.emptyText}>
-          {searchQuery ? 'No personas match your search.' : 'No personas found.'}
+          {searchQuery ? 'No resumes match your search.' : 'No resumes found.'}
         </p>
       ) : (
         <div
@@ -376,14 +374,14 @@ export function PersonasSection() {
             )}
           </div>
 
-          <div className={styles.personaList}>
-            {state.personas.map((persona) => {
-              const radioTooltip = persona.active ? 'Active' : 'Click to set as active';
+          <div className={styles.resumeList}>
+            {state.resumes.map((resume) => {
+              const radioTooltip = resume.active ? 'Active' : 'Click to set as active';
 
               return (
                 <div
-                  key={persona.id}
-                  className={`${styles.personaCard} ${persona.active ? styles.selected : ''}`}
+                  key={resume.id}
+                  className={`${styles.resumeCard} ${resume.active ? styles.selected : ''}`}
                 >
                   {/* Section 1: Radio button with tooltip */}
                   <div className={styles.radioSection}>
@@ -393,8 +391,8 @@ export function PersonasSection() {
                       placement="top"
                     >
                       <Radio
-                        checked={persona.active}
-                        onChange={() => handleSetActive(persona.id)}
+                        checked={resume.active}
+                        onChange={() => handleSetActive(resume.id)}
                         disabled={activeLoading}
                         sx={{
                           color: 'var(--grey-500)',
@@ -411,19 +409,23 @@ export function PersonasSection() {
                     </EnhancedTooltipWithText>
                   </div>
 
-                  {/* Section 2: Data (icon, title, resumes, keywords) */}
+                  {/* Section 2: Data */}
                   <div className={styles.dataSection}>
-                    <div className={styles.personaIcon}>{getInitials(persona.title)}</div>
-                    <div className={styles.personaInfo}>
-                      <div className={styles.personaNameRow}>
-                        <p className={styles.personaName}>{persona.title}</p>
-                        <span className={styles.personaResumesCount}>
-                          {persona.resumesCount || 0} resumes
+                    <div className={styles.resumeInfo}>
+                      <div className={styles.resumeNameRow}>
+                        <p className={styles.resumeName}>{resume.fileName}</p>
+                        <span className={styles.resumeMeta}>
+                          {formatFileSize(resume.activeVersionFileSize)}
                         </span>
                       </div>
-                      <p className={styles.personaSummary}>
-                        {persona.keywords?.join(', ') || 'No keywords'}
-                      </p>
+                      <div className={styles.resumeDetails}>
+                        <span className={styles.resumeVersions}>
+                          {resume.versionsCount || 0} version{resume.versionsCount !== 1 ? 's' : ''}
+                        </span>
+                        <span className={styles.resumeDate}>
+                          Updated {formatDate(resume.updatedAt)}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -432,7 +434,7 @@ export function PersonasSection() {
                     <button
                       type="button"
                       className={`${styles.actionButton} ${styles.arrow}`}
-                      onClick={() => handleNavigateToResumes(persona)}
+                      onClick={() => onSelectResume(resume)}
                     >
                       <ArrowForward sx={{ fontSize: '1.25rem' }} />
                     </button>

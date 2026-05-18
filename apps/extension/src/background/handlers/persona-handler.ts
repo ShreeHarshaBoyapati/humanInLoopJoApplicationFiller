@@ -1,5 +1,10 @@
 import type { AxiosError, AxiosInstance } from 'axios';
-import type { ExtensionMessage, ApiResponse, Persona } from '@repo/shared-types';
+import type {
+  ExtensionMessage,
+  ApiResponse,
+  Persona,
+  PaginatedPersonasResponse,
+} from '@repo/shared-types';
 
 /**
  * Handles all persona-related background messages: CREATE_PERSONA, UPDATE_PERSONA, DELETE_PERSONA, GET_PERSONAS, SELECT_PERSONA.
@@ -97,8 +102,19 @@ export function handlePersonaMessage(
   }
 
   if (message.action === 'GET_PERSONAS') {
+    const payload = message.payload ?? {};
+    const { page, limit, search } = payload as {
+      page?: number;
+      limit?: number;
+      search?: string;
+    };
+    const params: Record<string, string | number> = {};
+    if (page !== undefined) params.page = page;
+    if (limit !== undefined) params.limit = limit;
+    if (search !== undefined) params.search = search;
+
     api
-      .get<ApiResponse<Persona[]>>('/persona')
+      .get<ApiResponse<PaginatedPersonasResponse>>('/persona', { params })
       .then((response) => {
         const { data } = response;
         if (data.success) {

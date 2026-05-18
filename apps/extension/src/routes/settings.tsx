@@ -4,7 +4,6 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 
 import { AiProvidersSection } from '../components/ai-providers-section';
 import styles from './style/settings.module.css';
-import { PersonasSection } from '../components/personas-section';
 import type { UserPublic } from '@repo/shared-types';
 
 export interface SettingsSearch {
@@ -85,8 +84,6 @@ function SettingsComponent() {
           </div>
         </div>
       </div>
-
-      <PersonasSection returnTo={currentReturnTo} jobId={search.jobId} step={search.step} />
 
       {/* AI Providers Section */}
       <AiProvidersSection />

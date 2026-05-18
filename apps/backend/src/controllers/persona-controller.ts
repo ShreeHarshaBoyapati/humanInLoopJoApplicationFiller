@@ -6,7 +6,12 @@ import type {
   UpdatePersonaInput,
   DeletePersonaInput,
 } from '../middlewares/persona.js';
-import type { ApiResponse, Persona, PaginationParams } from '@repo/shared-types';
+import type {
+  ApiResponse,
+  Persona,
+  PaginationParams,
+  PaginatedPersonasResponse,
+} from '@repo/shared-types';
 
 class PersonaController {
   async create(req: AuthenticatedTypedRequest<CreatePersonaInput>, res: Response) {
@@ -270,13 +275,7 @@ class PersonaController {
       }
     }
 
-    const data: ApiResponse<{
-      items: Persona[];
-      total: number;
-      page: number;
-      limit: number;
-      totalPages: number;
-    }> = {
+    const data: ApiResponse<PaginatedPersonasResponse> = {
       success: true,
       data: {
         items,

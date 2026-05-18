@@ -5,6 +5,7 @@ import type {
   CreatePersonaInput,
   UpdatePersonaInput,
   DeletePersonaInput,
+  PaginatedPersonasResponse,
 } from '@repo/shared-types';
 import type { ApiResponse } from '@repo/shared-types';
 
@@ -13,13 +14,7 @@ const PERSONA_KEYS = {
   lists: () => [...PERSONA_KEYS.all, 'list'] as const,
 };
 
-export interface PaginatedPersonaResponse {
-  items: Persona[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}
+export type { PaginatedPersonasResponse };
 
 export const usePersonas = (limit: number = 10, searchQuery: string = '') => {
   return useInfiniteQuery({
@@ -27,7 +22,7 @@ export const usePersonas = (limit: number = 10, searchQuery: string = '') => {
     initialPageParam: 1,
     maxPages: 20,
     queryFn: async ({ pageParam }: { pageParam: number }) => {
-      const response = await axiosInstance.get<ApiResponse<PaginatedPersonaResponse>>('/persona', {
+      const response = await axiosInstance.get<ApiResponse<PaginatedPersonasResponse>>('/persona', {
         params: { page: pageParam, limit, search: searchQuery || undefined },
       });
       if (!response.data.success || !response.data.data) {
@@ -35,11 +30,11 @@ export const usePersonas = (limit: number = 10, searchQuery: string = '') => {
       }
       return response.data.data;
     },
-    getNextPageParam: (lastPage: PaginatedPersonaResponse) => {
+    getNextPageParam: (lastPage: PaginatedPersonasResponse) => {
       if (lastPage.page >= lastPage.totalPages) return undefined;
       return lastPage.page + 1;
     },
-    getPreviousPageParam: (firstPage: PaginatedPersonaResponse) => {
+    getPreviousPageParam: (firstPage: PaginatedPersonasResponse) => {
       if (firstPage.page <= 1) return undefined;
       return firstPage.page - 1;
     },
@@ -98,11 +93,11 @@ export const useUpdatePersona = () => {
     onSuccess: (updatedPersona: Persona) => {
       queryClient.setQueriesData(
         { queryKey: PERSONA_KEYS.lists() },
-        (oldData: { pages: PaginatedPersonaResponse[]; pageParams?: number[] } | undefined) => {
+        (oldData: { pages: PaginatedPersonasResponse[]; pageParams?: number[] } | undefined) => {
           if (!oldData?.pages) return oldData;
           const updatedPages = oldData.pages.map((page) => ({
             ...page,
-            items: page.items.map((p) =>
+            items: page.items.map((p: Persona) =>
               p.id === updatedPersona.id ? { ...p, ...updatedPersona } : p
             ),
           }));

@@ -21,6 +21,14 @@ export interface PersonaList {
   total: number;
 }
 
+export interface PaginatedPersonasResponse {
+  items: Persona[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 export interface CreatePersonaInput {
   title: string;
   keywords?: string[];
