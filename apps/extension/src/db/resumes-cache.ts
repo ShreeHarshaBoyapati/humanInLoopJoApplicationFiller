@@ -128,5 +128,49 @@ export async function onSwitchPersona(_token: string, previousPersonaId: string)
   }
 }
 
+/**
+ * Invalidate cache for a specific persona's resumes
+ * Only clears entries matching the given personaId
+ */
+export async function invalidateResumesForPersona(personaId: string): Promise<void> {
+  try {
+    const db = await getDB();
+    const tx = db.transaction('resumes', 'readwrite');
+    const store = tx.objectStore('resumes');
+
+    // Get all keys
+    let cursor = await store.openCursor();
+    const keysToDelete: string[] = [];
+
+    while (cursor) {
+      const key = cursor.key;
+      if (!key) {
+        cursor = await cursor.continue();
+        continue;
+      }
+      const keyStr = key as string;
+      // Key format: `${token}:${personaId}:${search}:${page}`
+      const parts = keyStr.split(':');
+      if (parts.length >= 4) {
+        const keyPersonaId = parts[1];
+        if (keyPersonaId === personaId) {
+          keysToDelete.push(keyStr);
+        }
+      }
+      cursor = await cursor.continue();
+    }
+
+    // Delete the marked keys
+    for (const key of keysToDelete) {
+      await store.delete(key);
+    }
+
+    await tx.done;
+    console.log(`[ResumesCache] Invalidated cache for persona ${personaId}`);
+  } catch (error) {
+    console.error('[ResumesCache] Error in invalidateResumesForPersona:', error);
+  }
+}
+
 // Re-export types for convenience
 export type { CachedResumePage } from './common-cache';

@@ -39,11 +39,6 @@ const CreateResumeSchema = z.object({
   comment: z.string().optional(),
 });
 
-// Schema for setting active resume
-const SetActiveResumeSchema = z.object({
-  id: z.uuidv4('Invalid resume ID'),
-});
-
 // Schema for getting a resume version by ID
 const GetResumeVersionByIdSchema = z.object({
   id: z.uuidv4('Invalid resume ID'),
@@ -99,7 +94,6 @@ export type DeleteResumeInput = z.input<typeof DeleteResumeSchema>;
 export type UpdateResumeInput = z.input<typeof UpdateResumeSchema>;
 export type CreateResumeInput = z.input<typeof CreateResumeSchema>;
 export type ParseResumeInput = z.input<typeof ParseResumeSchema>;
-export type SetActiveResumeInput = z.input<typeof SetActiveResumeSchema>;
 export type GetResumeVersionByIdInput = z.input<typeof GetResumeVersionByIdSchema>;
 export type CreateResumeVersionInput = z.input<typeof CreateResumeVersionSchema>;
 export type UpdateResumeVersionInput = z.input<typeof UpdateResumeVersionSchema>;
@@ -238,29 +232,6 @@ export function parseFileResumeValidation(req: Request, res: Response, next: Nex
     return;
   }
   next();
-}
-
-export function setActiveResumeValidation(req: Request, res: Response, next: NextFunction) {
-  try {
-    req.body = SetActiveResumeSchema.parse(req.body);
-    next();
-  } catch (error) {
-    if (error instanceof ZodError) {
-      const data: ApiResponse = {
-        success: false,
-        message: flattenZodErrorToString(error),
-      };
-      res.status(400).json(data);
-      return;
-    }
-
-    const data: ApiResponse = {
-      success: false,
-      message: 'Invalid input',
-    };
-    res.status(400).json(data);
-    return;
-  }
 }
 
 // Resume Version Validation Functions

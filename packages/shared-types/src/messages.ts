@@ -5,7 +5,6 @@ import {
   UpdateResumeParams,
   DeleteResumeParams,
   GetResumeByIdParams,
-  SetActiveResumeParams,
   FileDataPayload,
 } from './resume';
 import {
@@ -61,7 +60,6 @@ export type ExtensionMessage =
       action: 'GET_PERSONAS';
       payload?: { page?: number; limit?: number; search?: string };
     }
-  | { action: 'SELECT_PERSONA'; payload: { id: string } }
   | { action: 'GET_CURRENT_USER' }
   | {
       action: 'GET_RESUMES';
@@ -74,7 +72,6 @@ export type ExtensionMessage =
   | { action: 'GET_RESUME_BY_ID'; payload: GetResumeByIdParams }
   | { action: 'PARSE_FILE_RESUME'; payload: { file: FileDataPayload } }
   | { action: 'ANALYZE_RESUME'; payload: { jobId: string; resumeId: string } }
-  | { action: 'SET_ACTIVE_RESUME'; payload: SetActiveResumeParams }
   | { action: 'GET_PARSED_RESUME' }
   | { action: 'GET_RESUME_VERSIONS'; payload?: GetResumeVersionsParams }
   | { action: 'SET_ACTIVE_VERSION'; payload: SetActiveVersionParams }

@@ -4,7 +4,6 @@ import type {
   ResumeMetadata,
   CreateResumeParams,
   DeleteResumeParams,
-  SetActiveResumeParams,
   PaginatedResumeResponse,
   ResumeData,
 } from '@repo/shared-types';
@@ -64,41 +63,6 @@ export const useDeleteResume = () => {
       }
     },
     onSuccess: (_data: DeleteResumeParams, variables: DeleteResumeParams) => {
-      queryClient.invalidateQueries({ queryKey: RESUME_KEYS.byPersona(variables.personaId) });
-    },
-  });
-};
-
-export const useSetActiveResume = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (data: SetActiveResumeParams) => {
-      try {
-        const response = await axiosInstance.post<ApiResponse<ResumeMetadata>>(
-          '/resume/set-active',
-          {
-            id: data.id,
-          }
-        );
-        if (!response.data.success || !response.data.data) {
-          throw new Error(response.data.message || 'Failed to set active resume');
-        }
-        return { resume: response.data.data, personaId: data.personaId };
-      } catch (err) {
-        if (err && typeof err === 'object' && 'response' in err) {
-          const error = err as { response: { data: ApiResponse<never> } };
-          if (!error.response.data.success) {
-            throw new Error(error.response.data.message);
-          }
-        }
-        throw err;
-      }
-    },
-    onSuccess: (
-      _result: { resume: ResumeMetadata; personaId: string },
-      variables: SetActiveResumeParams
-    ) => {
       queryClient.invalidateQueries({ queryKey: RESUME_KEYS.byPersona(variables.personaId) });
     },
   });

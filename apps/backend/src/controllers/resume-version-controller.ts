@@ -1,5 +1,9 @@
 import type { Response, AuthenticatedTypedRequest, Request } from '../types/index.js';
-import { getResumeRepository, getResumeVersionRepository } from '../database/repositories/index.js';
+import {
+  getResumeRepository,
+  getResumeVersionRepository,
+  getPersonaRepository,
+} from '../database/repositories/index.js';
 import type {
   GetResumeVersionByIdInput,
   CreateResumeVersionInput,
@@ -529,10 +533,13 @@ class ResumeVersionController {
 
   /**
    * Set a version as active
+   * This also updates the parent resume and grandparent persona to active
+   * Returns the previous active persona, resume, and version IDs for cache invalidation
    */
   async setActive(req: AuthenticatedTypedRequest<SetActiveResumeVersionInput>, res: Response) {
     const resumeRepository = getResumeRepository();
     const versionRepository = getResumeVersionRepository();
+    const personaRepository = getPersonaRepository();
 
     const userId = req.userId;
     const { id: resumeId, versionId } = req.body;
@@ -575,14 +582,64 @@ class ResumeVersionController {
       return;
     }
 
-    // Set all versions of this resume to inactive
-    await versionRepository.update({ resume: { id: resumeId } }, { active: false });
+    // Get the currently active persona for the user
+    const previousActivePersona = await personaRepository.findOne({
+      where: { user: { id: userId }, active: true },
+    });
+    const previousPersonaId = previousActivePersona?.id || null;
+
+    // Get the currently active resume for the user
+    const previousActiveResume = await resumeRepository.findOne({
+      where: { persona: { user: { id: userId } }, active: true },
+    });
+    const previousResumeId = previousActiveResume?.id || null;
+
+    // Get the currently active version for the previous active resume (if exists)
+    let previousActiveVersion = null;
+    if (previousResumeId) {
+      previousActiveVersion = await versionRepository.findOne({
+        where: { resume: { id: previousResumeId }, active: true },
+      });
+    }
+
+    // Set the previous active version to inactive (if exists)
+    if (previousActiveVersion) {
+      previousActiveVersion.active = false;
+      await versionRepository.save(previousActiveVersion);
+    }
+
+    // Set the previous active resume to inactive (if exists and different from current)
+    if (previousActiveResume && previousActiveResume.id !== resumeId) {
+      previousActiveResume.active = false;
+      await resumeRepository.save(previousActiveResume);
+    }
+
+    // Set the current resume to active
+    resume.active = true;
+    await resumeRepository.save(resume);
+
+    // Set the previous active persona to inactive (if exists and different from current)
+    if (previousActivePersona && previousActivePersona.id !== resume.persona.id) {
+      previousActivePersona.active = false;
+      await personaRepository.save(previousActivePersona);
+    }
+
+    // Set the current persona to active
+    resume.persona.active = true;
+    await personaRepository.save(resume.persona);
 
     // Set the selected version to active
     version.active = true;
     await versionRepository.save(version);
 
-    const data: ApiResponse<ResumeVersionMetadata> = {
+    const data: ApiResponse<
+      ResumeVersionMetadata & {
+        previousPersonaId: string | null;
+        newPersonaId: string;
+        previousResumeId: string | null;
+        newResumeId: string;
+      }
+    > = {
       success: true,
       message: 'Resume version set as active successfully',
       data: {
@@ -595,6 +652,10 @@ class ResumeVersionController {
         comment: version.comment,
         createdAt: version.createdAt,
         updatedAt: version.updatedAt,
+        previousPersonaId,
+        newPersonaId: resume.persona.id,
+        previousResumeId,
+        newResumeId: resumeId,
       },
     };
     res.status(200).json(data);

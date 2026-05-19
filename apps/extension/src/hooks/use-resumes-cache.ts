@@ -6,6 +6,7 @@ import {
   setCachedResumePage,
   onSwitchPersona,
   clearAllResumesCache,
+  invalidateResumesForPersona,
 } from '../db/resumes-cache';
 import { getCurrentToken } from '../db/personas-cache';
 
@@ -23,8 +24,10 @@ export interface UseResumesCacheResult {
   setPage: (data: PaginatedResumeResponse, personaId: string, search: string) => void;
   /** Handle persona switch - clean up previous persona cache */
   handlePersonaSwitch: (previousPersonaId: string) => Promise<void>;
-  /** Invalidate cache and re-fetch fresh data */
+  /** Invalidate all resumes cache */
   invalidateCache: () => Promise<void>;
+  /** Invalidate cache for a specific persona only */
+  invalidateForPersona: (personaId: string) => Promise<void>;
   /** Current auth token */
   token: string | null;
 }
@@ -110,11 +113,19 @@ export function useResumesCache(): UseResumesCacheResult {
     await clearAllResumesCache();
   }, []);
 
+  /**
+   * Invalidate cache for a specific persona only
+   */
+  const invalidateForPersona = useCallback(async (personaId: string) => {
+    await invalidateResumesForPersona(personaId);
+  }, []);
+
   return {
     getPage,
     setPage,
     handlePersonaSwitch,
     invalidateCache,
+    invalidateForPersona,
     token: currentToken.current,
   };
 }

@@ -9,7 +9,6 @@ import type {
   UpdateResumeInput,
   GetResumeByIdInput,
   CreateResumeInput,
-  SetActiveResumeInput,
 } from '../middlewares/resume.js';
 import { Like } from 'typeorm';
 import { ApiResponse } from '@repo/shared-types';
@@ -389,65 +388,6 @@ class ResumeController {
 
     const data: ApiResponse<ResumeMetadata> = {
       success: true,
-      data: {
-        id: resume.id,
-        fileName: resume.fileName,
-        active: resume.active,
-        createdAt: resume.createdAt,
-        updatedAt: resume.updatedAt,
-      } as ResumeMetadata,
-    };
-    res.status(200).json(data);
-  }
-
-  async setActive(req: AuthenticatedTypedRequest<SetActiveResumeInput>, res: Response) {
-    const resumeRepository = getResumeRepository();
-
-    const userId = req.userId;
-    const { id } = req.body;
-
-    // Get the resume to set as active
-    const resume = await resumeRepository.findOne({
-      where: { id },
-      relations: ['persona', 'persona.user'],
-    });
-
-    if (!resume) {
-      const data: ApiResponse = {
-        success: false,
-        message: 'Resume not found',
-      };
-      res.status(404).json(data);
-      return;
-    }
-
-    if (resume.persona.user.id !== userId) {
-      const data: ApiResponse = {
-        success: false,
-        message: 'Resume not found or not authorized',
-      };
-      res.status(403).json(data);
-      return;
-    }
-
-    // Get all resumes for the same persona that are active
-    const activeResumes = await resumeRepository.find({
-      where: { persona: { id: resume.persona.id }, active: true },
-    });
-
-    // Deactivate all active resumes for this persona
-    for (const activeResume of activeResumes) {
-      activeResume.active = false;
-      await resumeRepository.save(activeResume);
-    }
-
-    // Set the selected resume as active
-    resume.active = true;
-    await resumeRepository.save(resume);
-
-    const data: ApiResponse<ResumeMetadata> = {
-      success: true,
-      message: 'Resume set as active successfully',
       data: {
         id: resume.id,
         fileName: resume.fileName,

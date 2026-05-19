@@ -123,5 +123,49 @@ export async function onSwitchResume(previousResumeId: string): Promise<void> {
   }
 }
 
+/**
+ * Invalidate cache for a specific resume's versions
+ * Only clears entries matching the given resumeId
+ */
+export async function invalidateVersionsForResume(resumeId: string): Promise<void> {
+  try {
+    const db = await getDB();
+    const tx = db.transaction('versions', 'readwrite');
+    const store = tx.objectStore('versions');
+
+    // Get all keys
+    let cursor = await store.openCursor();
+    const keysToDelete: string[] = [];
+
+    while (cursor) {
+      const key = cursor.key;
+      if (!key) {
+        cursor = await cursor.continue();
+        continue;
+      }
+      const keyStr = key as string;
+      // Key format: `${resumeId}:${search}:${page}`
+      const parts = keyStr.split(':');
+      if (parts.length >= 3) {
+        const keyResumeId = parts[0];
+        if (keyResumeId === resumeId) {
+          keysToDelete.push(keyStr);
+        }
+      }
+      cursor = await cursor.continue();
+    }
+
+    // Delete the marked keys
+    for (const key of keysToDelete) {
+      await store.delete(key);
+    }
+
+    await tx.done;
+    console.log(`[VersionsCache] Invalidated cache for resume ${resumeId}`);
+  } catch (error) {
+    console.error('[VersionsCache] Error in invalidateVersionsForResume:', error);
+  }
+}
+
 // Re-export types for convenience
 export type { CachedVersionPage } from './common-cache';

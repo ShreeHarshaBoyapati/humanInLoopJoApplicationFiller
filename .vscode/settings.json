@@ -11,5 +11,11 @@
     "source.fixAll.eslint": "explicit",
     "source.fixAll.stylelint": "explicit"
   },
-  "cSpell.words": ["naukri", "ollama"]
+  "cSpell.words": ["naukri", "ollama"],
+  "terminal.integrated.profiles.linux": {
+    "bash": {
+      "path": "/bin/bash",
+      "args": ["-l"]
+    }
+  }
 }

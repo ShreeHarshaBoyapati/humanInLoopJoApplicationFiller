@@ -7,8 +7,6 @@ import styles from './style/resume-card.module.css';
 interface ResumeCardProps {
   resume: PaginatedResumeListItem;
   isSelected: boolean;
-  disabled?: boolean;
-  onSetActive: (resume: PaginatedResumeListItem) => void;
   onNavigate: (resume: PaginatedResumeListItem) => void;
   onEdit: (resume: PaginatedResumeListItem, e: React.MouseEvent) => void;
   onDelete: (resumeId: string, e: React.MouseEvent) => void;
@@ -17,8 +15,6 @@ interface ResumeCardProps {
 export const ResumeCard = ({
   resume,
   isSelected,
-  disabled,
-  onSetActive,
   onNavigate,
   onEdit,
   onDelete,
@@ -31,7 +27,7 @@ export const ResumeCard = ({
     });
   };
 
-  const radioTooltip = resume.active ? 'Active' : 'Click to set as active';
+  const radioTooltip = resume.active ? 'Active' : 'Inactive';
 
   return (
     <div className={`${styles.resumeCard} ${isSelected ? styles.selected : ''}`}>
@@ -39,9 +35,8 @@ export const ResumeCard = ({
       <div className={styles.radioSection}>
         <EnhancedTooltipWithText description={radioTooltip} showIcon={false} placement="top">
           <Radio
-            checked={isSelected}
-            onChange={() => onSetActive(resume)}
-            disabled={disabled}
+            checked={resume.active}
+            disabled
             sx={{
               color: 'var(--grey-500)',
               '&.Mui-disabled': {

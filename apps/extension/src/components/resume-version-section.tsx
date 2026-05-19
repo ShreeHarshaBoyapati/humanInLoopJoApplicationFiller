@@ -15,6 +15,8 @@ import type {
   ResumeData,
 } from '@repo/shared-types';
 import { useResumeVersionsCache } from '../hooks/use-resume-versions-cache';
+import { usePersonasCache } from '../hooks/use-personas-cache';
+import { useResumesCache } from '../hooks/use-resumes-cache';
 
 // Pagination state type
 type PaginationState = {
@@ -150,8 +152,10 @@ export function ResumeVersionSection({
   const [versionCardStates, setVersionCardStates] = useState<Record<string, VersionCardState>>({});
   const limit = 10;
 
-  // Cache hook
-  const { getPage, setPage, invalidateCache } = useResumeVersionsCache();
+  // Cache hooks - need all three for invalidation when setting version active
+  const { getPage, setPage, invalidateForResume } = useResumeVersionsCache();
+  const { invalidateCache: invalidatePersonasCache } = usePersonasCache();
+  const { invalidateForPersona } = useResumesCache();
 
   // Refs for infinite scroll
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -304,8 +308,12 @@ export function ResumeVersionSection({
         async (res: { success: boolean; message?: string }) => {
           if (res?.success) {
             dispatch({ type: 'SET_ACTIVE', id });
-            // Invalidate cache and re-fetch fresh data
-            await invalidateCache();
+            // Targeted invalidation: clear all personas, specific persona's resumes, specific resume's versions
+            await Promise.all([
+              invalidatePersonasCache(),
+              invalidateForPersona(personaId),
+              invalidateForResume(resumeId),
+            ]);
             dispatch({ type: 'RESET' });
             fetchVersions(1, searchQuery);
           }

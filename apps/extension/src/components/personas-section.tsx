@@ -120,7 +120,6 @@ export function PersonasSection() {
   const navigate = useNavigate();
   const [state, dispatch] = useReducer(paginationReducer, initialState);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeLoading, setActiveLoading] = useState(false);
   const limit = 10;
 
   // Cache hook
@@ -277,25 +276,6 @@ export function PersonasSection() {
     searchQuery,
   ]);
 
-  const handleSetActive = async (id: string) => {
-    if (typeof chrome !== 'undefined' && chrome.runtime) {
-      setActiveLoading(true);
-      chrome.runtime.sendMessage(
-        { action: 'SELECT_PERSONA', payload: { id } },
-        async (res: { success: boolean; message?: string }) => {
-          if (res?.success) {
-            dispatch({ type: 'SET_ACTIVE', id });
-            // Invalidate cache and re-fetch fresh data (like TanStack Query's invalidateQueries)
-            await invalidateCache();
-            dispatch({ type: 'RESET' });
-            fetchPersonas(1, searchQuery);
-          }
-          setActiveLoading(false);
-        }
-      );
-    }
-  };
-
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
   };
@@ -378,7 +358,9 @@ export function PersonasSection() {
 
           <div className={styles.personaList}>
             {state.personas.map((persona) => {
-              const radioTooltip = persona.active ? 'Active' : 'Click to set as active';
+              const radioTooltip = persona.active
+                ? 'Active (set via resume version)'
+                : 'Set a resume version as active to make this persona active';
 
               return (
                 <div
@@ -394,14 +376,12 @@ export function PersonasSection() {
                     >
                       <Radio
                         checked={persona.active}
-                        onChange={() => handleSetActive(persona.id)}
-                        disabled={activeLoading}
+                        disabled
                         sx={{
                           color: 'var(--grey-500)',
                           '&.Mui-disabled': {
-                            color: 'var(--grey-500)',
+                            color: persona.active ? 'var(--blue-500)' : 'var(--grey-500)',
                             pointerEvents: 'none',
-                            opacity: 0.5,
                           },
                           '&.Mui-checked': {
                             color: 'var(--blue-500)',

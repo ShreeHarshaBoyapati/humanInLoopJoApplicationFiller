@@ -5,6 +5,7 @@ import {
   getCachedVersionPage,
   setCachedVersionPage,
   clearAllVersionsCache,
+  invalidateVersionsForResume,
 } from '../db/resume-versions-cache';
 
 /**
@@ -19,8 +20,10 @@ export interface UseVersionsCacheResult {
   ) => Promise<PaginatedVersionResponse | null>;
   /** Set page in IndexedDB cache */
   setPage: (data: PaginatedVersionResponse, resumeId: string, search: string) => void;
-  /** Invalidate cache and re-fetch fresh data */
+  /** Invalidate all versions cache */
   invalidateCache: () => Promise<void>;
+  /** Invalidate cache for a specific resume only */
+  invalidateForResume: (resumeId: string) => Promise<void>;
 }
 
 /**
@@ -70,9 +73,17 @@ export function useResumeVersionsCache(): UseVersionsCacheResult {
     await clearAllVersionsCache();
   }, []);
 
+  /**
+   * Invalidate cache for a specific resume only
+   */
+  const invalidateForResume = useCallback(async (resumeId: string) => {
+    await invalidateVersionsForResume(resumeId);
+  }, []);
+
   return {
     getPage,
     setPage,
     invalidateCache,
+    invalidateForResume,
   };
 }

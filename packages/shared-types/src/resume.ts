@@ -153,11 +153,6 @@ export interface GetResumeByIdParams {
   id: string;
 }
 
-export interface SetActiveResumeParams {
-  id: string;
-  personaId: string;
-}
-
 export interface ResumeFull {
   id: string;
   fileName: string;

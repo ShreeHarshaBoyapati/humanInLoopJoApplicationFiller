@@ -321,57 +321,6 @@ class PersonaController {
     };
     res.status(200).json(data);
   }
-
-  async setActive(req: AuthenticatedTypedRequest<{ id: string }>, res: Response) {
-    const personaRepository = getPersonaRepository();
-
-    const userId = req.userId;
-    const { id } = req.body;
-
-    const persona = await personaRepository.findOne({
-      where: { id },
-      relations: ['user'],
-    });
-
-    if (!persona) {
-      const data: ApiResponse = {
-        success: false,
-        message: 'Persona not found',
-      };
-      res.status(404).json(data);
-      return;
-    }
-
-    if (persona.user.id !== userId) {
-      const data: ApiResponse = {
-        success: false,
-        message: 'You are not authorized to update this persona',
-      };
-      res.status(403).json(data);
-      return;
-    }
-
-    // Set all personas of this user to inactive
-    await personaRepository.update({ user: { id: userId } }, { active: false });
-
-    // Set the selected persona to active
-    persona.active = true;
-    await personaRepository.save(persona);
-
-    const data: ApiResponse<Persona> = {
-      success: true,
-      message: 'Persona set as active successfully',
-      data: {
-        id: persona.id,
-        title: persona.title,
-        keywords: persona.keywords,
-        active: persona.active,
-        createdAt: persona.createdAt,
-        updatedAt: persona.updatedAt,
-      },
-    };
-    res.status(200).json(data);
-  }
 }
 
 export default new PersonaController();

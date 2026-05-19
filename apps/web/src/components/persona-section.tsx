@@ -14,7 +14,7 @@ import {
   usePersonas,
   useSetActivePersona,
   useDeletePersona,
-  type PaginatedPersonaResponse,
+  type PaginatedPersonasResponse,
 } from '../hooks/use-personas';
 import type { Persona } from '@repo/shared-types';
 import { useStore } from '../store';
@@ -58,7 +58,7 @@ export function PersonaSection({ onSelectPersona }: PersonaSectionProps) {
   } = usePersonas(10, debouncedSearch);
 
   const personas = useMemo(
-    () => data?.pages.flatMap((page: PaginatedPersonaResponse) => page.items) || [],
+    () => data?.pages.flatMap((page: PaginatedPersonasResponse) => page.items) || [],
     [data]
   );
 

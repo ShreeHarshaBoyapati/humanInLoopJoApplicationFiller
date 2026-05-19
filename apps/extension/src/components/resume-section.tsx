@@ -125,11 +125,10 @@ interface ResumeSectionProps {
 export function ResumeSection({ personaId, onSelectResume, onBack }: ResumeSectionProps) {
   const [state, dispatch] = useReducer(paginationReducer, initialState);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeLoading, setActiveLoading] = useState(false);
   const limit = 10;
 
   // Cache hook
-  const { getPage, setPage, invalidateCache } = useResumesCache();
+  const { getPage, setPage } = useResumesCache();
 
   // Refs for infinite scroll
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -274,25 +273,6 @@ export function ResumeSection({ personaId, onSelectResume, onBack }: ResumeSecti
     searchQuery,
   ]);
 
-  const handleSetActive = async (id: string) => {
-    if (typeof chrome !== 'undefined' && chrome.runtime) {
-      setActiveLoading(true);
-      chrome.runtime.sendMessage(
-        { action: 'SET_ACTIVE_RESUME', payload: { id, personaId } },
-        async (res: { success: boolean; message?: string }) => {
-          if (res?.success) {
-            dispatch({ type: 'SET_ACTIVE', id });
-            // Invalidate cache and re-fetch fresh data
-            await invalidateCache();
-            dispatch({ type: 'RESET' });
-            fetchResumes(1, searchQuery);
-          }
-          setActiveLoading(false);
-        }
-      );
-    }
-  };
-
   const handleSearchChange = (value: string) => {
     setSearchQuery(value);
   };
@@ -376,7 +356,9 @@ export function ResumeSection({ personaId, onSelectResume, onBack }: ResumeSecti
 
           <div className={styles.resumeList}>
             {state.resumes.map((resume) => {
-              const radioTooltip = resume.active ? 'Active' : 'Click to set as active';
+              const radioTooltip = resume.active
+                ? 'Active (set via resume version)'
+                : 'Set a resume version as active to make this resume active';
 
               return (
                 <div
@@ -392,14 +374,12 @@ export function ResumeSection({ personaId, onSelectResume, onBack }: ResumeSecti
                     >
                       <Radio
                         checked={resume.active}
-                        onChange={() => handleSetActive(resume.id)}
-                        disabled={activeLoading}
+                        disabled
                         sx={{
                           color: 'var(--grey-500)',
                           '&.Mui-disabled': {
-                            color: 'var(--grey-500)',
+                            color: resume.active ? 'var(--blue-500)' : 'var(--grey-500)',
                             pointerEvents: 'none',
-                            opacity: 0.5,
                           },
                           '&.Mui-checked': {
                             color: 'var(--blue-500)',

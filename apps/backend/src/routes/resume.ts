@@ -6,7 +6,6 @@ import {
   updateResumeValidation,
   deleteResumeValidation,
   getResumeByIdValidation,
-  setActiveResumeValidation,
 } from '../middlewares/resume.js';
 import { asHandler } from '../types/api.js';
 
@@ -24,18 +23,10 @@ router.delete('/', authMiddleware, deleteResumeValidation, asHandler(ResumeContr
 // Get all resumes (paginated)
 router.get('/', authMiddleware, asHandler(ResumeController.getPaginated));
 
-// Get a specific resume
-router.get('/:id', authMiddleware, getResumeByIdValidation, asHandler(ResumeController.getById));
-
-// Get active resume
+// Get active resume (MUST come before /:id)
 router.get('/active', authMiddleware, asHandler(ResumeController.getActive));
 
-// Set active resume
-router.post(
-  '/set-active',
-  authMiddleware,
-  setActiveResumeValidation,
-  asHandler(ResumeController.setActive)
-);
+// Get a specific resume
+router.get('/:id', authMiddleware, getResumeByIdValidation, asHandler(ResumeController.getById));
 
 export default router;

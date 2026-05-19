@@ -7,7 +7,7 @@ import type {
 } from '@repo/shared-types';
 
 /**
- * Handles all persona-related background messages: CREATE_PERSONA, UPDATE_PERSONA, DELETE_PERSONA, GET_PERSONAS, SELECT_PERSONA.
+ * Handles all persona-related background messages: CREATE_PERSONA, UPDATE_PERSONA, DELETE_PERSONA, GET_PERSONAS.
  * Returns `true` if the message was handled (caller should keep the channel open),
  * `false` if the message was not a persona-related action.
  */
@@ -126,31 +126,6 @@ export function handlePersonaMessage(
       .catch((error: AxiosError<ApiResponse>) => {
         console.error('Persona fetching error:', error);
         sendResponse({ success: false, error: error.response?.data?.message || error.message });
-      });
-
-    return true;
-  }
-
-  if (message.action === 'SELECT_PERSONA') {
-    const payload = message.payload;
-
-    // Call backend to set the persona as active in the database
-    api
-      .post<ApiResponse<Persona>>('/persona/set-active', { id: payload.id })
-      .then((response) => {
-        const { data } = response;
-        if (data.success) {
-          sendResponse({ success: true, data: data.data });
-        } else {
-          sendResponse({ success: false, error: data.message || 'Failed to set active persona' });
-        }
-      })
-      .catch((error: AxiosError<ApiResponse>) => {
-        console.error('Set active persona error:', error);
-        sendResponse({
-          success: false,
-          error: error.response?.data.message || error.message || 'Unknown network error',
-        });
       });
 
     return true;

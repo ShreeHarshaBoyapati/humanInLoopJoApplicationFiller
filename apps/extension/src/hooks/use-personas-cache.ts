@@ -6,6 +6,7 @@ import {
   getCachedPage,
   setCachedPage,
   clearAllCache,
+  clearAllPersonasCache,
   checkTokenChange,
 } from '../db/personas-cache';
 
@@ -132,11 +133,18 @@ export function usePersonasCache(): UsePersonasCacheResult {
     };
   }, [clearCache]);
 
+  /**
+   * Invalidate cache - clear only personas data, not the token
+   */
+  const invalidateCache = useCallback(async () => {
+    await clearAllPersonasCache();
+  }, []);
+
   return {
     getPage,
     setPage,
     clearCache,
-    invalidateCache: clearCache,
+    invalidateCache,
     token,
     tokenChanged,
     resetTokenChanged,

@@ -11,7 +11,7 @@ import { ResumeCard } from './resume-card';
 import { ConfirmModal } from './confirm-modal';
 import { CreateResumeModal } from './create-resume-modal';
 import { EditResumeModal } from './edit-resume-modal';
-import { useResumes, useSetActiveResume, useDeleteResume } from '../hooks/use-resumes';
+import { useResumes, useDeleteResume } from '../hooks/use-resumes';
 import type { Persona, PaginatedResumeListItem, PaginatedResumeResponse } from '@repo/shared-types';
 import { useStore } from '../store';
 
@@ -30,7 +30,6 @@ export function ResumeSection({ persona, onBack, onSelectResume }: ResumeSection
   const [editingResume, setEditingResume] = useState<PaginatedResumeListItem | null>(null);
 
   const deleteResume = useDeleteResume();
-  const setActiveResume = useSetActiveResume();
   const showSnackbar = useStore((state) => state.showSnackbar);
 
   // Debounce search query
@@ -125,23 +124,6 @@ export function ResumeSection({ persona, onBack, onSelectResume }: ResumeSection
     isError,
   ]);
 
-  const handleSetActiveResume = (resume: PaginatedResumeListItem) => {
-    if (!resume.active) {
-      setActiveResume.mutate(
-        { id: resume.id, personaId: persona.id },
-        {
-          onSuccess: () => {
-            setSelectedResumeId(resume.id);
-          },
-          onError: (err) => {
-            const errorMessage = err instanceof Error ? err.message : 'Failed to set active resume';
-            showSnackbar(errorMessage, { severity: 'error' });
-          },
-        }
-      );
-    }
-  };
-
   const handleAddResume = () => {
     setIsCreateModalOpen(true);
   };
@@ -229,11 +211,9 @@ export function ResumeSection({ persona, onBack, onSelectResume }: ResumeSection
                 key={resume.id}
                 resume={resume}
                 isSelected={selectedResumeId === resume.id}
-                onSetActive={handleSetActiveResume}
                 onNavigate={onSelectResume}
                 onEdit={handleEditClick}
                 onDelete={handleDeleteClick}
-                disabled={setActiveResume.isPending}
               />
             ))}
           </div>
