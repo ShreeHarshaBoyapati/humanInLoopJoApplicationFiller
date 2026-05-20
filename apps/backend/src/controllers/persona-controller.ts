@@ -189,36 +189,64 @@ class PersonaController {
     const pageNum = parseInt(String(page), 10) || 1;
     const limitNum = parseInt(String(limit), 10) || 10;
     const searchQuery = String(search).trim();
-    // Build where clause for filtering
-    const buildWhereClause = (isActive: boolean) => {
-      const where: Record<string, unknown> = { user: { id: userId }, active: isActive };
-      if (searchQuery) {
-        where.title = Like(`%${searchQuery}%`);
-      }
-      return where;
-    };
 
-    // Get active persona (only if not searching)
-    let activePersona = null;
-    if (!searchQuery) {
-      activePersona = await personaRepository.findOne({
-        where: { user: { id: userId }, active: true },
-        relations: ['resumes'],
-      });
-    }
+    const items: Persona[] = [];
 
-    const totalWhere: Record<string, unknown> = { user: { id: userId } };
+    // When searching, return all matching personas in normal order
     if (searchQuery) {
-      totalWhere.title = Like(`%${searchQuery}%`);
+      const whereClause: Record<string, unknown> = {
+        user: { id: userId },
+        title: Like(`%${searchQuery}%`),
+      };
+      const total = await personaRepository.count({ where: whereClause });
+
+      const personas = await personaRepository.find({
+        where: whereClause,
+        relations: ['resumes'],
+        order: { createdAt: 'DESC' },
+        skip: (pageNum - 1) * limitNum,
+        take: limitNum,
+      });
+
+      for (const p of personas) {
+        items.push({
+          id: p.id,
+          title: p.title,
+          keywords: p.keywords,
+          active: p.active,
+          resumesCount: p.resumes ? p.resumes.length : 0,
+          createdAt: p.createdAt,
+          updatedAt: p.updatedAt,
+        });
+      }
+
+      const data: ApiResponse<PaginatedPersonasResponse> = {
+        success: true,
+        data: {
+          items,
+          total: total,
+          page: pageNum,
+          limit: limitNum,
+          totalPages: Math.ceil(total / limitNum),
+        },
+      };
+      res.status(200).json(data);
+      return;
     }
+
+    // No search - existing behavior with active persona first
+    const totalWhere: Record<string, unknown> = { user: { id: userId } };
     const total = await personaRepository.count({
       where: totalWhere,
     });
 
-    const items: Persona[] = [];
-
     if (pageNum === 1) {
-      // Page 1: active persona first (if not searching), then latest matching (limit + 1 to check for duplicate)
+      // Page 1: get active persona first, then non-active
+      const activePersona = await personaRepository.findOne({
+        where: { user: { id: userId }, active: true },
+        relations: ['resumes'],
+      });
+
       if (activePersona) {
         items.push({
           id: activePersona.id,
@@ -231,10 +259,9 @@ class PersonaController {
         });
       }
 
-      // Get limit matching non-active personas (skip 0)
-      const whereClause = buildWhereClause(false);
+      // Get non-active personas
       const nonActivePersonas = await personaRepository.find({
-        where: whereClause,
+        where: { user: { id: userId }, active: false },
         relations: ['resumes'],
         order: { createdAt: 'DESC' },
         take: limitNum - 1,
@@ -253,9 +280,8 @@ class PersonaController {
       }
     } else {
       const skip = (pageNum - 1) * limitNum - 1;
-      const whereClause = buildWhereClause(false);
       const nonActivePersonas = await personaRepository.find({
-        where: whereClause,
+        where: { user: { id: userId }, active: false },
         relations: ['resumes'],
         order: { createdAt: 'DESC' },
         skip: skip,

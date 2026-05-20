@@ -9,6 +9,8 @@ import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import type { Persona, PaginatedPersonasResponse } from '@repo/shared-types';
 import { usePersonasCache } from '../hooks/use-personas-cache';
 
+const MAX_PAGES = 10;
+
 // Pagination state type
 type PaginationState = {
   personas: Persona[];
@@ -18,6 +20,7 @@ type PaginationState = {
   isInitialLoading: boolean;
   isFetchingNext: boolean;
   isFetchingPrevious: boolean;
+  pageSizes: Map<number, number>;
 };
 
 // Pagination action types
@@ -43,6 +46,7 @@ const initialState: PaginationState = {
   isInitialLoading: true,
   isFetchingNext: false,
   isFetchingPrevious: false,
+  pageSizes: new Map(),
 };
 
 // Reducer function
@@ -60,31 +64,70 @@ function paginationReducer(state: PaginationState, action: PaginationAction): Pa
       const { items, page, totalPages, direction } = action;
 
       if (direction === 'next') {
+        const newPageSizes = new Map(state.pageSizes);
+        newPageSizes.set(page, items.length);
+
+        let newPersonas = [...state.personas, ...items];
+        let newFirstPage = state.firstPage;
+        let newPageSizesAfterEviction = newPageSizes;
+
+        const pageCount = state.lastPage - state.firstPage + 1;
+        if (pageCount >= MAX_PAGES) {
+          const firstPageSize = state.pageSizes.get(state.firstPage) || 0;
+          newPersonas = newPersonas.slice(firstPageSize);
+          newPageSizesAfterEviction = new Map(newPageSizes);
+          newPageSizesAfterEviction.delete(state.firstPage);
+          newFirstPage = state.firstPage + 1;
+        }
+
         return {
           ...state,
-          personas: [...state.personas, ...items],
+          personas: newPersonas,
+          firstPage: newFirstPage,
           lastPage: page,
           totalPages,
+          pageSizes: newPageSizesAfterEviction,
           isFetchingNext: false,
           isInitialLoading: false,
         };
       } else if (direction === 'previous') {
+        const newPageSizes = new Map(state.pageSizes);
+        newPageSizes.set(page, items.length);
+
+        let newPersonas = [...items, ...state.personas];
+        let newLastPage = state.lastPage;
+        let newPageSizesAfterEviction = newPageSizes;
+
+        const pageCount = state.lastPage - state.firstPage + 1;
+        if (pageCount >= MAX_PAGES) {
+          const lastPageSize = state.pageSizes.get(state.lastPage) || 0;
+          newPersonas = newPersonas.slice(0, newPersonas.length - lastPageSize);
+          newPageSizesAfterEviction = new Map(newPageSizes);
+          newPageSizesAfterEviction.delete(state.lastPage);
+          newLastPage = state.lastPage - 1;
+        }
+
         return {
           ...state,
-          personas: [...items, ...state.personas],
+          personas: newPersonas,
           firstPage: page,
+          lastPage: newLastPage,
           totalPages,
+          pageSizes: newPageSizesAfterEviction,
           isFetchingPrevious: false,
           isInitialLoading: false,
         };
       }
       // Initial fetch
+      const newPageSizes = new Map();
+      newPageSizes.set(page, items.length);
       return {
         ...state,
         personas: items,
         firstPage: page,
         lastPage: page,
         totalPages,
+        pageSizes: newPageSizes,
         isInitialLoading: false,
         isFetchingNext: false,
         isFetchingPrevious: false,
@@ -128,36 +171,58 @@ export function PersonasSection({ onSelectPersona, isFromAutofill = false }: Per
   const limit = 10;
 
   // Cache hook
-  const { getPage, setPage, invalidateCache, tokenChanged, resetTokenChanged } = usePersonasCache();
+  const { getPage, setPage } = usePersonasCache();
 
   // Refs for infinite scroll
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
-  const previousScrollHeightRef = useRef<number>(0);
+  const pendingScrollRestoreRef = useRef<{
+    firstVisibleElementId: string | null;
+    firstVisibleElementOffset: number;
+  } | null>(null);
 
   // Derived values
   const hasPreviousPage = state.firstPage > 1;
   const hasNextPage = state.lastPage < state.totalPages;
 
-  // Reset on token change
-  useEffect(() => {
-    if (tokenChanged) {
-      dispatch({ type: 'RESET' });
-      resetTokenChanged();
-    }
-  }, [tokenChanged, resetTokenChanged]);
-
   const fetchPersonas = useCallback(
     async (pageNum: number, search?: string, direction?: 'next' | 'previous') => {
       if (typeof chrome === 'undefined' || !chrome.runtime) return;
 
-      dispatch({ type: 'FETCH_START', direction });
-
-      // Store scroll height before prepending
+      // Capture the first visible element BEFORE fetching previous page
       if (direction === 'previous' && scrollContainerRef.current) {
-        previousScrollHeightRef.current = scrollContainerRef.current.scrollHeight;
+        const scrollContainer = scrollContainerRef.current;
+        const personaCards = scrollContainer.querySelectorAll('[data-persona-id]');
+
+        if (personaCards.length > 0) {
+          const containerRect = scrollContainer.getBoundingClientRect();
+          let firstVisibleElement: Element | null = null;
+          let firstVisibleElementOffset = 0;
+
+          for (let i = 0; i < personaCards.length; i++) {
+            const card = personaCards.item(i);
+            if (!card) continue;
+            const cardRect = card.getBoundingClientRect();
+
+            // Check if this card is visible in the viewport
+            if (cardRect.bottom > containerRect.top && cardRect.top < containerRect.bottom) {
+              firstVisibleElement = card;
+              firstVisibleElementOffset = cardRect.top - containerRect.top;
+              break;
+            }
+          }
+
+          if (firstVisibleElement) {
+            pendingScrollRestoreRef.current = {
+              firstVisibleElementId: firstVisibleElement.getAttribute('data-persona-id'),
+              firstVisibleElementOffset: firstVisibleElementOffset,
+            };
+          }
+        }
       }
+
+      dispatch({ type: 'FETCH_START', direction });
 
       // Try to get from cache first
       const cachedData = await getPage(pageNum, search || '');
@@ -169,17 +234,6 @@ export function PersonasSection({ onSelectPersona, isFromAutofill = false }: Per
           totalPages: cachedData.totalPages,
           direction,
         });
-
-        // Restore scroll position after prepending
-        if (direction === 'previous') {
-          requestAnimationFrame(() => {
-            if (scrollContainerRef.current) {
-              const contentAdded =
-                scrollContainerRef.current.scrollHeight - previousScrollHeightRef.current;
-              scrollContainerRef.current.scrollTop += contentAdded;
-            }
-          });
-        }
         return;
       }
 
@@ -201,17 +255,6 @@ export function PersonasSection({ onSelectPersona, isFromAutofill = false }: Per
               totalPages: res.data.totalPages,
               direction,
             });
-
-            // Restore scroll position after prepending
-            if (direction === 'previous') {
-              requestAnimationFrame(() => {
-                if (scrollContainerRef.current) {
-                  const contentAdded =
-                    scrollContainerRef.current.scrollHeight - previousScrollHeightRef.current;
-                  scrollContainerRef.current.scrollTop += contentAdded;
-                }
-              });
-            }
           } else {
             dispatch({ type: 'FETCH_ERROR', direction });
           }
@@ -221,10 +264,41 @@ export function PersonasSection({ onSelectPersona, isFromAutofill = false }: Per
     [getPage, setPage]
   );
 
+  // Restore scroll position after fetching previous page completes
+  useEffect(() => {
+    if (
+      !state.isFetchingPrevious &&
+      pendingScrollRestoreRef.current &&
+      scrollContainerRef.current
+    ) {
+      const { firstVisibleElementId, firstVisibleElementOffset } = pendingScrollRestoreRef.current;
+
+      // Find the element by its persona id
+      const targetElement = scrollContainerRef.current.querySelector(
+        `[data-persona-id="${firstVisibleElementId}"]`
+      );
+
+      if (targetElement) {
+        const containerRect = scrollContainerRef.current.getBoundingClientRect();
+        const targetRect = targetElement.getBoundingClientRect();
+        const newScrollTop =
+          scrollContainerRef.current.scrollTop +
+          (targetRect.top - containerRect.top - firstVisibleElementOffset);
+        scrollContainerRef.current.scrollTop = newScrollTop;
+      }
+
+      // Clear pending restore after applying
+      pendingScrollRestoreRef.current = null;
+    }
+  }, [state.isFetchingPrevious, state.personas.length]);
+
   // Initial fetch and search
   useEffect(() => {
     dispatch({ type: 'RESET' });
     fetchPersonas(1, searchQuery);
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery]);
 
@@ -387,6 +461,7 @@ export function PersonasSection({ onSelectPersona, isFromAutofill = false }: Per
               return (
                 <div
                   key={persona.id}
+                  data-persona-id={persona.id}
                   className={`${styles.personaCard} ${persona.active ? styles.selected : ''}`}
                 >
                   {/* Section 1: Radio button with tooltip */}

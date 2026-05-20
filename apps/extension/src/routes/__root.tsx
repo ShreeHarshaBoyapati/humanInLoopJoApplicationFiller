@@ -14,6 +14,8 @@ import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import scrollStyles from '@repo/ui/scroll-bar.module.css';
 import styles from './style/__root.module.css';
+import { AUTH_STORAGE_KEY, type StoredAuth } from '@repo/shared-types';
+import { clearAllCache } from '../db/personas-cache';
 
 interface AuthCheckResponse {
   isAuthenticated: boolean;
@@ -88,6 +90,31 @@ function RootComponent() {
       };
     }
   }, [navigate]);
+
+  // Clear IndexedDB cache when token changes (user login/logout)
+  useEffect(() => {
+    if (typeof chrome === 'undefined' || !chrome.storage) return;
+
+    const handleStorageChange = (changes: Record<string, chrome.storage.StorageChange>) => {
+      if (changes[AUTH_STORAGE_KEY]) {
+        const newAuth = changes[AUTH_STORAGE_KEY].newValue as StoredAuth | undefined;
+        const oldAuth = changes[AUTH_STORAGE_KEY].oldValue as StoredAuth | undefined;
+
+        const newToken = newAuth?.token;
+        const oldToken = oldAuth?.token;
+
+        if (newToken !== oldToken) {
+          // Token changed - clear IndexedDB cache
+          clearAllCache();
+        }
+      }
+    };
+
+    chrome.storage.onChanged.addListener(handleStorageChange);
+    return () => {
+      chrome.storage.onChanged.removeListener(handleStorageChange);
+    };
+  }, []);
   const isLoginPage = routerState.location.pathname === '/login';
 
   if (isLoginPage) {

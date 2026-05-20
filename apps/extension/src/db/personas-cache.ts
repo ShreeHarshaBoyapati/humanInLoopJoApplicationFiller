@@ -56,19 +56,6 @@ export async function setCachedPage(
 }
 
 /**
- * Clear all cached personas pages from IndexedDB
- */
-export async function clearAllPersonasCache(): Promise<void> {
-  try {
-    const db = await getDB();
-    await db.clear('personas');
-    console.log('[PersonasCache] Personas cache cleared');
-  } catch (error) {
-    console.error('[PersonasCache] Error clearing cache:', error);
-  }
-}
-
-/**
  * Clear all cached data (personas, resumes, metadata)
  */
 export async function clearAllCache(): Promise<void> {
@@ -80,32 +67,6 @@ export async function clearAllCache(): Promise<void> {
     console.log('[PersonasCache] All cache cleared');
   } catch (error) {
     console.error('[PersonasCache] Error clearing all cache:', error);
-  }
-}
-
-/**
- * Get stored token from metadata
- */
-export async function getStoredToken(): Promise<string | null> {
-  try {
-    const db = await getDB();
-    const token = await db.get('metadata', 'token');
-    return typeof token === 'string' ? token : null;
-  } catch (error) {
-    console.error('[PersonasCache] Error getting stored token:', error);
-    return null;
-  }
-}
-
-/**
- * Set stored token in metadata
- */
-export async function setStoredToken(token: string): Promise<void> {
-  try {
-    const db = await getDB();
-    await db.put('metadata', token, 'token');
-  } catch (error) {
-    console.error('[PersonasCache] Error setting stored token:', error);
   }
 }
 
@@ -131,32 +92,16 @@ export async function getCurrentToken(): Promise<string | null> {
 }
 
 /**
- * Check if token has changed and clear cache if needed
- * @returns Object with tokenChanged flag and currentToken
+ * Clear all cached personas pages from IndexedDB
  */
-export async function checkTokenChange(): Promise<{ tokenChanged: boolean; token: string | null }> {
-  const currentToken = await getCurrentToken();
-  const storedToken = await getStoredToken();
-
-  // No current token (logged out)
-  if (!currentToken) {
-    if (storedToken) {
-      // Was logged in, now logged out - clear cache
-      await clearAllCache();
-      return { tokenChanged: true, token: null };
-    }
-    return { tokenChanged: false, token: null };
+export async function clearAllPersonasCache(): Promise<void> {
+  try {
+    const db = await getDB();
+    await db.clear('personas');
+    console.log('[PersonasCache] Personas cache cleared');
+  } catch (error) {
+    console.error('[PersonasCache] Error clearing cache:', error);
   }
-
-  // Token changed or first time
-  if (currentToken !== storedToken) {
-    console.log('[PersonasCache] Token changed, clearing cache');
-    await clearAllCache();
-    await setStoredToken(currentToken);
-    return { tokenChanged: true, token: currentToken };
-  }
-
-  return { tokenChanged: false, token: currentToken };
 }
 
 // Re-export types for convenience

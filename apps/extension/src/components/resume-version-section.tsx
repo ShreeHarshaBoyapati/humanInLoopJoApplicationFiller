@@ -311,15 +311,36 @@ export function ResumeVersionSection({
       setActiveLoading(true);
       chrome.runtime.sendMessage(
         { action: 'SET_ACTIVE_VERSION', payload: { resumeId, versionId: id, personaId } },
-        async (res: { success: boolean; message?: string }) => {
+        async (res: {
+          success: boolean;
+          message?: string;
+          data?: {
+            previousPersonaId: string | null;
+            newPersonaId: string;
+            previousResumeId: string | null;
+            newResumeId: string;
+          };
+        }) => {
           if (res?.success) {
             dispatch({ type: 'SET_ACTIVE', id });
-            // Targeted invalidation: clear all personas, specific persona's resumes, specific resume's versions
-            await Promise.all([
-              invalidatePersonasCache(),
-              invalidateForPersona(personaId),
-              invalidateForResume(resumeId),
-            ]);
+
+            const invalidationPromises: Promise<void>[] = [];
+            if (
+              res.data?.previousPersonaId !== null &&
+              res.data?.previousPersonaId !== res.data?.newPersonaId
+            ) {
+              invalidationPromises.push(invalidatePersonasCache());
+            }
+
+            if (
+              res.data?.previousResumeId !== null &&
+              res.data?.previousResumeId !== res.data?.newResumeId
+            ) {
+              invalidationPromises.push(invalidateForPersona(personaId));
+            }
+            invalidationPromises.push(invalidateForResume(resumeId));
+
+            await Promise.all(invalidationPromises);
             dispatch({ type: 'RESET' });
             fetchVersions(1, searchQuery);
           }

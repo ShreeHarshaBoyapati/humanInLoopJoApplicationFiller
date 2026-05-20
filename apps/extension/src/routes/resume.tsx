@@ -25,7 +25,7 @@ export const Route = createFileRoute('/resume')({
 
 function ResumePage() {
   const navigate = Route.useNavigate();
-  const { personaId, title, from } = Route.useSearch();
+  const { personaId, from } = Route.useSearch();
 
   const handleBack = () => {
     navigate({ to: from || '/personas' });
@@ -45,7 +45,6 @@ function ResumePage() {
   return (
     <ResumeSection
       personaId={personaId || ''}
-      personaTitle={title || ''}
       onSelectResume={handleSelectResume}
       onBack={handleBack}
     />

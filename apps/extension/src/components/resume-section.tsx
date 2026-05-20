@@ -118,7 +118,7 @@ function paginationReducer(state: PaginationState, action: PaginationAction): Pa
 
 interface ResumeSectionProps {
   personaId: string;
-  onSelectResume: (resumeId: string) => void;
+  onSelectResume: (resume: PaginatedResumeListItem) => void;
   onBack: () => void;
   isFromAutofill?: boolean;
 }
@@ -440,7 +440,7 @@ export function ResumeSection({
                     <button
                       type="button"
                       className={`${styles.actionButton} ${styles.arrow}`}
-                      onClick={() => onSelectResume(resume.id)}
+                      onClick={() => onSelectResume(resume)}
                     >
                       <ArrowForward sx={{ fontSize: '1.25rem' }} />
                     </button>

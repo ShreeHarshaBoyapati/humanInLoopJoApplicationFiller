@@ -52,10 +52,6 @@ export type ExtensionMessage =
   | { action: 'DELETE_PROVIDER'; payload: { id: string } }
   | { action: 'DECRYPT_API_KEY'; payload: { encryptedKey: string } }
   | { action: 'SELECT_PROVIDER'; payload: { id: string } }
-  | { action: 'CREATE_PERSONA'; payload: { title: string; keywords?: string[] } }
-  | { action: 'UPDATE_PERSONA'; payload: { id: string; title?: string; keywords?: string[] } }
-  | { action: 'DELETE_PERSONA'; payload: { id: string } }
-  | { action: 'GET_ACTIVE_PERSONA' }
   | {
       action: 'GET_PERSONAS';
       payload?: { page?: number; limit?: number; search?: string };
