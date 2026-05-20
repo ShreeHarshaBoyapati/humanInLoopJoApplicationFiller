@@ -10,7 +10,7 @@ import type {
   GetResumeByIdInput,
   CreateResumeInput,
 } from '../middlewares/resume.js';
-import { Like } from 'typeorm';
+import { ILike } from 'typeorm';
 import { ApiResponse } from '@repo/shared-types';
 import type {
   ResumeMetadata,
@@ -231,43 +231,6 @@ class ResumeController {
     const limitNum = parseInt(limitParam as string, 10) || 10;
     const searchQuery = search ? (search as string).trim() : '';
 
-    // Build base where clause
-    const buildBaseWhereClause = () => {
-      const where: Record<string, unknown> = {
-        persona: { user: { id: userId } },
-      };
-      if (personaId) {
-        where.persona = { id: personaId, user: { id: userId } };
-      }
-      if (searchQuery) {
-        where.fileName = Like(`%${searchQuery}%`);
-      }
-      return where;
-    };
-
-    // Get active resume
-    let activeResume = await resumeRepository.findOne({
-      where: { persona: { id: personaId, user: { id: userId } }, active: true },
-      relations: ['persona'],
-    });
-
-    if (activeResume && personaId) {
-      if (activeResume.persona.id !== personaId) {
-        activeResume = null;
-      }
-    }
-
-    // Check if active resume matches search query
-    const activeMatchesSearch =
-      activeResume && searchQuery
-        ? activeResume.fileName.toLowerCase().includes(searchQuery.toLowerCase())
-        : true;
-
-    // Count total matching resumes
-    const total = await resumeRepository.count({
-      where: buildBaseWhereClause(),
-    });
-
     // Helper function to build resume list item for a single resume
     const buildResumeListItem = async (resume: {
       id: string;
@@ -297,37 +260,105 @@ class ResumeController {
       };
     };
 
-    let resumes: {
-      id: string;
-      fileName: string;
-      active: boolean;
-      updatedAt: Date;
-    }[] = [];
+    // Build base where clause
+    const buildBaseWhereClause = (includeSearch: boolean = true) => {
+      const where: Record<string, unknown> = {
+        persona: { user: { id: userId } },
+      };
+      if (personaId) {
+        where.persona = { id: personaId, user: { id: userId } };
+      }
+      if (includeSearch && searchQuery) {
+        where.fileName = ILike(`%${searchQuery}%`);
+      }
+      return where;
+    };
+
+    // When searching, return all matching resumes in normal order
+    if (searchQuery) {
+      const whereClause = buildBaseWhereClause(true);
+      const total = await resumeRepository.count({ where: whereClause });
+
+      const resumes = await resumeRepository.find({
+        where: whereClause,
+        order: { createdAt: 'DESC' },
+        skip: (pageNum - 1) * limitNum,
+        take: limitNum,
+      });
+
+      const items = await Promise.all(resumes.map(buildResumeListItem));
+
+      const paginatedResponse: PaginatedResumeResponse = {
+        items,
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum) || 1,
+      };
+
+      const data: ApiResponse<PaginatedResumeResponse> = {
+        success: true,
+        data: paginatedResponse,
+      };
+      res.status(200).json(data);
+      return;
+    }
+
+    // No search - existing behavior with active resume first
+    const totalWhere = buildBaseWhereClause(false);
+    const total = await resumeRepository.count({
+      where: totalWhere,
+    });
+
+    const items: PaginatedResumeListItem[] = [];
 
     if (pageNum === 1) {
-      // Page 1: active resume first if it matches search, then latest matching
-      if (activeResume && activeMatchesSearch) {
-        resumes.push(activeResume);
+      // Page 1: get active resume first, then non-active
+      // Only query for active resume on page 1 to save DB queries
+      const activeResumeWhere: Record<string, unknown> = {
+        persona: { user: { id: userId } },
+        active: true,
+      };
+      if (personaId) {
+        activeResumeWhere.persona = { id: personaId, user: { id: userId } };
       }
 
-      // Calculate how many non-active resumes to fetch
-      const nonActiveLimit = activeResume && activeMatchesSearch ? limitNum - 1 : limitNum;
+      const activeResume = await resumeRepository.findOne({
+        where: activeResumeWhere,
+      });
 
-      // Get matching non-active resumes
-      const whereClause = { ...buildBaseWhereClause(), active: false };
+      if (activeResume) {
+        items.push(await buildResumeListItem(activeResume));
+      }
+
+      // Get non-active resumes
+      const whereClause = { ...buildBaseWhereClause(false), active: false };
       const nonActiveResumes = await resumeRepository.find({
         where: whereClause,
         order: { createdAt: 'DESC' },
-        take: nonActiveLimit,
+        take: activeResume ? limitNum - 1 : limitNum,
       });
 
-      resumes = resumes.concat(nonActiveResumes);
+      for (const resume of nonActiveResumes) {
+        items.push(await buildResumeListItem(resume));
+      }
     } else {
-      // For pages after 1, adjust skip if active resume is shown on page 1
-      const baseSkip = (pageNum - 1) * limitNum;
-      const skip = activeResume && activeMatchesSearch ? baseSkip - 1 : baseSkip;
+      // For pages after 1, check if there's an active resume to adjust skip
+      const activeResumeWhere: Record<string, unknown> = {
+        persona: { user: { id: userId } },
+        active: true,
+      };
+      if (personaId) {
+        activeResumeWhere.persona = { id: personaId, user: { id: userId } };
+      }
 
-      const whereClause = { ...buildBaseWhereClause(), active: false };
+      const hasActiveResume = await resumeRepository.count({
+        where: activeResumeWhere,
+      });
+
+      const skip = hasActiveResume > 0 ? (pageNum - 1) * limitNum - 1 : (pageNum - 1) * limitNum;
+
+      const whereClause = { ...buildBaseWhereClause(false), active: false };
       const nonActiveResumes = await resumeRepository.find({
         where: whereClause,
         order: { createdAt: 'DESC' },
@@ -335,11 +366,10 @@ class ResumeController {
         take: limitNum,
       });
 
-      resumes = nonActiveResumes;
+      for (const resume of nonActiveResumes) {
+        items.push(await buildResumeListItem(resume));
+      }
     }
-
-    // Build items using Promise.all for parallel queries
-    const items = await Promise.all(resumes.map(buildResumeListItem));
 
     const paginatedResponse: PaginatedResumeResponse = {
       items,

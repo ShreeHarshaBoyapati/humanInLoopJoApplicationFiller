@@ -2,54 +2,21 @@ import type { AxiosError, AxiosInstance } from 'axios';
 import type {
   ExtensionMessage,
   ApiResponse,
-  ResumeMetadata,
-  ResumeFull,
   GetResumeParams,
-  CreateResumeParams,
-  UpdateResumeParams,
-  DeleteResumeParams,
-  GetResumeByIdParams,
   ResumeData,
   PaginatedResumeResponse,
   GetResumeVersionsParams,
   SetActiveVersionParams,
   GetVersionParsedDataParams,
   PaginatedVersionResponse,
+  ResumeVersionMetadata,
 } from '@repo/shared-types';
 
-/**
- * Handles all resume-related background messages: GET_RESUMES, CREATE_RESUME, UPDATE_RESUME, DELETE_RESUME, GET_RESUME_BY_ID.
- * Returns `true` if the message was handled (caller should keep the channel open),
- * `false` if the message was not a resume-related action.
- */
 export function handleResumeMessage(
   message: ExtensionMessage,
   sendResponse: (response: unknown) => void,
   api: AxiosInstance
 ): boolean {
-  if (message.action === 'GET_ACTIVE_RESUME') {
-    const payload = message.payload as { personaId: string } | undefined;
-
-    api
-      .get<ApiResponse<ResumeMetadata>>('/resume/active', {
-        params: payload?.personaId ? { personaId: payload.personaId } : undefined,
-      })
-      .then((response) => {
-        const { data } = response;
-        if (data.success) {
-          sendResponse({ success: true, data: data.data });
-        } else {
-          sendResponse({ success: false, error: data.message || 'Failed to get active resume' });
-        }
-      })
-      .catch((error: AxiosError<ApiResponse>) => {
-        console.error('Get active resume error:', error);
-        sendResponse({ success: false, error: error.response?.data?.message || error.message });
-      });
-
-    return true;
-  }
-
   if (message.action === 'GET_RESUMES') {
     const payload = message.payload as
       | (GetResumeParams & { page?: number; limit?: number; search?: string })
@@ -67,210 +34,6 @@ export function handleResumeMessage(
       })
       .catch((error: AxiosError<ApiResponse>) => {
         console.error('Resume fetching error:', error);
-        sendResponse({ success: false, error: error.response?.data?.message || error.message });
-      });
-
-    return true;
-  }
-
-  if (message.action === 'CREATE_RESUME') {
-    (async () => {
-      const payload = message.payload as CreateResumeParams;
-      const formData = new FormData();
-      formData.append('personaId', payload.personaId);
-
-      const fileResponse = await fetch(payload.file.base64);
-      const blob = await fileResponse.blob();
-      formData.append('file', blob, payload.file.name);
-
-      if (payload.keywords && payload.keywords.length > 0) {
-        formData.append('keywords', JSON.stringify(payload.keywords));
-      }
-
-      if (payload.parsedData) {
-        formData.append('parsedData', JSON.stringify(payload.parsedData));
-      }
-
-      api
-        .post<ApiResponse<ResumeMetadata>>('/resume', formData)
-        .then((response) => {
-          const { data } = response;
-          if (data.success) {
-            sendResponse({ success: true, data: data.data, message: data.message });
-          } else {
-            sendResponse({ success: false, message: data.message || 'Failed to create resume' });
-          }
-        })
-        .catch((error: AxiosError<ApiResponse>) => {
-          console.error('Resume creation error:', error);
-          sendResponse({ success: false, message: error.response?.data?.message || error.message });
-        });
-    })();
-
-    return true;
-  }
-
-  if (message.action === 'UPDATE_RESUME') {
-    (async () => {
-      const payload = message.payload as UpdateResumeParams;
-      const formData = new FormData();
-      formData.append('id', payload.id);
-
-      if (payload.file) {
-        const fileResponse = await fetch(payload.file.base64);
-        const blob = await fileResponse.blob();
-        formData.append('file', blob, payload.file.name);
-      }
-
-      if (payload.keywords) {
-        formData.append('keywords', JSON.stringify(payload.keywords));
-      }
-
-      api
-        .put<ApiResponse<ResumeMetadata>>('/resume', formData)
-        .then((response) => {
-          const { data } = response;
-          if (data.success) {
-            sendResponse({ success: true, data: data.data, message: data.message });
-          } else {
-            sendResponse({ success: false, message: data.message || 'Failed to update resume' });
-          }
-        })
-        .catch((error: AxiosError<ApiResponse>) => {
-          console.error('Resume update error:', error);
-          sendResponse({ success: false, message: error.response?.data?.message || error.message });
-        });
-    })();
-
-    return true;
-  }
-
-  if (message.action === 'DELETE_RESUME') {
-    const payload = message.payload as DeleteResumeParams;
-
-    api
-      .delete<ApiResponse<null>>('/resume', { data: payload })
-      .then((response) => {
-        const { data } = response;
-        if (data.success) {
-          sendResponse({ success: true, message: data.message });
-        } else {
-          sendResponse({ success: false, message: data.message || 'Failed to delete resume' });
-        }
-      })
-      .catch((error: AxiosError<ApiResponse>) => {
-        console.error('Resume deletion error:', error);
-        sendResponse({ success: false, message: error.response?.data?.message || error.message });
-      });
-
-    return true;
-  }
-
-  if (message.action === 'GET_RESUME_BY_ID') {
-    const payload = message.payload as GetResumeByIdParams;
-
-    api
-      .get<ApiResponse<ResumeFull>>(`/resume/${payload.id}`)
-      .then((response) => {
-        const { data } = response;
-        if (data.success && data.data) {
-          const resumeData = data.data as ResumeFull & {
-            file?: { type: string; data: number[] };
-            text?: string;
-            contentType?: string;
-          };
-
-          // Check if backend returned text (for TXT files)
-          if (resumeData.text) {
-            sendResponse({
-              success: true,
-              data: { text: resumeData.text },
-              fileName: resumeData.fileName,
-              contentType: 'text/plain',
-            });
-            return;
-          }
-
-          // For PDF, DOCX and other binary files
-          if (resumeData.file) {
-            const fileData = resumeData.file;
-
-            // Determine content type based on file extension
-            const fileName = resumeData.fileName.toLowerCase();
-            let contentType = 'application/octet-stream';
-            if (fileName.endsWith('.pdf')) {
-              contentType = 'application/pdf';
-            } else if (fileName.endsWith('.doc')) {
-              contentType = 'application/msword';
-            } else if (fileName.endsWith('.docx')) {
-              contentType =
-                'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
-            } else if (fileName.endsWith('.txt')) {
-              contentType = 'text/plain';
-            }
-
-            // Send the raw array data and content type to the frontend to construct the Blob
-            sendResponse({
-              success: true,
-              data: { array: fileData.data, contentType },
-              fileName: resumeData.fileName,
-            });
-          }
-        } else {
-          sendResponse({ success: false, message: data.message || 'Failed to get resume' });
-        }
-      })
-      .catch((error: AxiosError<ApiResponse>) => {
-        console.error('Resume fetch error:', error);
-        sendResponse({ success: false, message: error.response?.data?.message || error.message });
-      });
-
-    return true;
-  }
-
-  if (message.action === 'PARSE_FILE_RESUME') {
-    (async () => {
-      const payload = message.payload as {
-        file: { name: string; type: string; size: number; base64: string };
-      };
-      const formData = new FormData();
-
-      const fileResponse = await fetch(payload.file.base64);
-      const blob = await fileResponse.blob();
-      formData.append('file', blob, payload.file.name);
-
-      api
-        .post<ApiResponse<ResumeData>>('/resume/versions/parse-file', formData)
-        .then((response) => {
-          const { data } = response;
-          if (data.success) {
-            sendResponse({ success: true, data: data.data, message: data.message });
-          } else {
-            sendResponse({ success: false, message: data.message || 'Failed to parse file' });
-          }
-        })
-        .catch((error: AxiosError<ApiResponse>) => {
-          console.error('File parse error:', error);
-          sendResponse({ success: false, message: error.response?.data?.message || error.message });
-        });
-    })();
-
-    return true;
-  }
-
-  if (message.action === 'GET_PARSED_RESUME') {
-    api
-      .get<ApiResponse<ResumeData>>('/resume/parsed/active')
-      .then((response) => {
-        const { data } = response;
-        if (data.success && data.data) {
-          sendResponse({ success: true, data: data.data });
-        } else {
-          sendResponse({ success: false, error: data.message || 'Failed to get parsed resume' });
-        }
-      })
-      .catch((error: AxiosError<ApiResponse>) => {
-        console.error('Get parsed resume error:', error);
         sendResponse({ success: false, error: error.response?.data?.message || error.message });
       });
 
@@ -305,14 +68,23 @@ export function handleResumeMessage(
     const payload = message.payload as SetActiveVersionParams;
 
     api
-      .post<ApiResponse<null>>(
-        `/resume/${payload.resumeId}/versions/${payload.versionId}/set-active`,
-        { id: payload.resumeId, versionId: payload.versionId }
-      )
+      .post<
+        ApiResponse<
+          ResumeVersionMetadata & {
+            previousPersonaId: string | null;
+            newPersonaId: string;
+            previousResumeId: string | null;
+            newResumeId: string;
+          }
+        >
+      >(`/resume/${payload.resumeId}/versions/${payload.versionId}/set-active`, {
+        id: payload.resumeId,
+        versionId: payload.versionId,
+      })
       .then((response) => {
         const { data } = response;
         if (data.success) {
-          sendResponse({ success: true, message: data.message });
+          sendResponse({ success: true, message: data.message, data: data.data });
         } else {
           sendResponse({
             success: false,
@@ -348,29 +120,6 @@ export function handleResumeMessage(
       })
       .catch((error: AxiosError<ApiResponse>) => {
         console.error('Get version parsed data error:', error);
-        sendResponse({ success: false, error: error.response?.data?.message || error.message });
-      });
-
-    return true;
-  }
-
-  if (message.action === 'GET_ACTIVE_VERSION') {
-    const payload = message.payload as { resumeId?: string } | undefined;
-
-    api
-      .get<ApiResponse<ResumeMetadata>>('/resume/versions/active', {
-        params: payload?.resumeId ? { resumeId: payload.resumeId } : undefined,
-      })
-      .then((response) => {
-        const { data } = response;
-        if (data.success) {
-          sendResponse({ success: true, data: data.data });
-        } else {
-          sendResponse({ success: false, error: data.message || 'Failed to get active version' });
-        }
-      })
-      .catch((error: AxiosError<ApiResponse>) => {
-        console.error('Get active version error:', error);
         sendResponse({ success: false, error: error.response?.data?.message || error.message });
       });
 

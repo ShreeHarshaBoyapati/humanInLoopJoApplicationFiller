@@ -20,15 +20,13 @@ export const Route = createFileRoute('/resume-version')({
 
 function ResumeVersionPage() {
   const navigate = Route.useNavigate();
-  const { resumeId, personaId, from } = Route.useSearch();
+  const { resumeId, personaId } = Route.useSearch();
 
   const handleBack = () => {
     navigate({
       to: '/resume',
       search: {
         personaId,
-        title: '',
-        from: from || '/personas',
       },
     });
   };

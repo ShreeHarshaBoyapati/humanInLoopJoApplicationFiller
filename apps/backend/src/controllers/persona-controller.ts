@@ -1,4 +1,4 @@
-import { Like } from 'typeorm';
+import { ILike } from 'typeorm';
 import type { Response, AuthenticatedTypedRequest } from '../types/index.js';
 import { getPersonaRepository } from '../database/repositories/index.js';
 import type {
@@ -196,7 +196,7 @@ class PersonaController {
     if (searchQuery) {
       const whereClause: Record<string, unknown> = {
         user: { id: userId },
-        title: Like(`%${searchQuery}%`),
+        title: ILike(`%${searchQuery}%`),
       };
       const total = await personaRepository.count({ where: whereClause });
 
@@ -279,7 +279,12 @@ class PersonaController {
         });
       }
     } else {
-      const skip = (pageNum - 1) * limitNum - 1;
+      const hasActivePersona = await personaRepository.count({
+        where: { user: { id: userId }, active: true },
+      });
+
+      const skip = hasActivePersona > 0 ? (pageNum - 1) * limitNum - 1 : (pageNum - 1) * limitNum;
+
       const nonActivePersonas = await personaRepository.find({
         where: { user: { id: userId }, active: false },
         relations: ['resumes'],

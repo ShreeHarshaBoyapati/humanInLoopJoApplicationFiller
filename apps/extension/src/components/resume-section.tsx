@@ -9,6 +9,8 @@ import { EnhancedTextField, EnhancedTooltipWithText } from '@repo/ui';
 import type { PaginatedResumeListItem, PaginatedResumeResponse } from '@repo/shared-types';
 import { useResumesCache } from '../hooks/use-resumes-cache';
 
+const MAX_PAGES = 10;
+
 // Pagination state type
 type PaginationState = {
   resumes: PaginatedResumeListItem[];
@@ -18,6 +20,7 @@ type PaginationState = {
   isInitialLoading: boolean;
   isFetchingNext: boolean;
   isFetchingPrevious: boolean;
+  pageSizes: Map<number, number>;
 };
 
 // Pagination action types
@@ -43,6 +46,7 @@ const initialState: PaginationState = {
   isInitialLoading: true,
   isFetchingNext: false,
   isFetchingPrevious: false,
+  pageSizes: new Map(),
 };
 
 // Reducer function
@@ -60,31 +64,70 @@ function paginationReducer(state: PaginationState, action: PaginationAction): Pa
       const { items, page, totalPages, direction } = action;
 
       if (direction === 'next') {
+        const newPageSizes = new Map(state.pageSizes);
+        newPageSizes.set(page, items.length);
+
+        let newResumes = [...state.resumes, ...items];
+        let newFirstPage = state.firstPage;
+        let newPageSizesAfterEviction = newPageSizes;
+
+        const pageCount = state.lastPage - state.firstPage + 1;
+        if (pageCount >= MAX_PAGES) {
+          const firstPageSize = state.pageSizes.get(state.firstPage) || 0;
+          newResumes = newResumes.slice(firstPageSize);
+          newPageSizesAfterEviction = new Map(newPageSizes);
+          newPageSizesAfterEviction.delete(state.firstPage);
+          newFirstPage = state.firstPage + 1;
+        }
+
         return {
           ...state,
-          resumes: [...state.resumes, ...items],
+          resumes: newResumes,
+          firstPage: newFirstPage,
           lastPage: page,
           totalPages,
+          pageSizes: newPageSizesAfterEviction,
           isFetchingNext: false,
           isInitialLoading: false,
         };
       } else if (direction === 'previous') {
+        const newPageSizes = new Map(state.pageSizes);
+        newPageSizes.set(page, items.length);
+
+        let newResumes = [...items, ...state.resumes];
+        let newLastPage = state.lastPage;
+        let newPageSizesAfterEviction = newPageSizes;
+
+        const pageCount = state.lastPage - state.firstPage + 1;
+        if (pageCount >= MAX_PAGES) {
+          const lastPageSize = state.pageSizes.get(state.lastPage) || 0;
+          newResumes = newResumes.slice(0, newResumes.length - lastPageSize);
+          newPageSizesAfterEviction = new Map(newPageSizes);
+          newPageSizesAfterEviction.delete(state.lastPage);
+          newLastPage = state.lastPage - 1;
+        }
+
         return {
           ...state,
-          resumes: [...items, ...state.resumes],
+          resumes: newResumes,
           firstPage: page,
+          lastPage: newLastPage,
           totalPages,
+          pageSizes: newPageSizesAfterEviction,
           isFetchingPrevious: false,
           isInitialLoading: false,
         };
       }
       // Initial fetch
+      const newPageSizes = new Map();
+      newPageSizes.set(page, items.length);
       return {
         ...state,
         resumes: items,
         firstPage: page,
         lastPage: page,
         totalPages,
+        pageSizes: newPageSizes,
         isInitialLoading: false,
         isFetchingNext: false,
         isFetchingPrevious: false,
@@ -141,7 +184,10 @@ export function ResumeSection({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
-  const previousScrollHeightRef = useRef<number>(0);
+  const pendingScrollRestoreRef = useRef<{
+    firstVisibleElementId: string | null;
+    firstVisibleElementOffset: number;
+  } | null>(null);
 
   // Derived values
   const hasPreviousPage = state.firstPage > 1;
@@ -151,12 +197,39 @@ export function ResumeSection({
     async (pageNum: number, search?: string, direction?: 'next' | 'previous') => {
       if (typeof chrome === 'undefined' || !chrome.runtime) return;
 
-      dispatch({ type: 'FETCH_START', direction });
-
-      // Store scroll height before prepending
+      // Capture the first visible element BEFORE fetching previous page
       if (direction === 'previous' && scrollContainerRef.current) {
-        previousScrollHeightRef.current = scrollContainerRef.current.scrollHeight;
+        const scrollContainer = scrollContainerRef.current;
+        const resumeCards = scrollContainer.querySelectorAll('[data-resume-id]');
+
+        if (resumeCards.length > 0) {
+          const containerRect = scrollContainer.getBoundingClientRect();
+          let firstVisibleElement: Element | null = null;
+          let firstVisibleElementOffset = 0;
+
+          for (let i = 0; i < resumeCards.length; i++) {
+            const card = resumeCards.item(i);
+            if (!card) continue;
+            const cardRect = card.getBoundingClientRect();
+
+            // Check if this card is visible in the viewport
+            if (cardRect.bottom > containerRect.top && cardRect.top < containerRect.bottom) {
+              firstVisibleElement = card;
+              firstVisibleElementOffset = cardRect.top - containerRect.top;
+              break;
+            }
+          }
+
+          if (firstVisibleElement) {
+            pendingScrollRestoreRef.current = {
+              firstVisibleElementId: firstVisibleElement.getAttribute('data-resume-id'),
+              firstVisibleElementOffset: firstVisibleElementOffset,
+            };
+          }
+        }
       }
+
+      dispatch({ type: 'FETCH_START', direction });
 
       // Try to get from cache first
       const cachedData = await getPage(pageNum, personaId, search || '');
@@ -168,17 +241,6 @@ export function ResumeSection({
           totalPages: cachedData.totalPages,
           direction,
         });
-
-        // Restore scroll position after prepending
-        if (direction === 'previous') {
-          requestAnimationFrame(() => {
-            if (scrollContainerRef.current) {
-              const contentAdded =
-                scrollContainerRef.current.scrollHeight - previousScrollHeightRef.current;
-              scrollContainerRef.current.scrollTop += contentAdded;
-            }
-          });
-        }
         return;
       }
 
@@ -200,17 +262,6 @@ export function ResumeSection({
               totalPages: res.data.totalPages,
               direction,
             });
-
-            // Restore scroll position after prepending
-            if (direction === 'previous') {
-              requestAnimationFrame(() => {
-                if (scrollContainerRef.current) {
-                  const contentAdded =
-                    scrollContainerRef.current.scrollHeight - previousScrollHeightRef.current;
-                  scrollContainerRef.current.scrollTop += contentAdded;
-                }
-              });
-            }
           } else {
             dispatch({ type: 'FETCH_ERROR', direction });
           }
@@ -220,10 +271,43 @@ export function ResumeSection({
     [getPage, setPage, personaId]
   );
 
+  // Restore scroll position after fetching previous page completes
+  useEffect(() => {
+    if (
+      !state.isFetchingPrevious &&
+      pendingScrollRestoreRef.current &&
+      scrollContainerRef.current
+    ) {
+      const { firstVisibleElementId, firstVisibleElementOffset } = pendingScrollRestoreRef.current;
+
+      // Find the element by its resume id
+      const targetElement = scrollContainerRef.current.querySelector(
+        `[data-resume-id="${firstVisibleElementId}"]`
+      );
+
+      if (targetElement) {
+        const containerRect = scrollContainerRef.current.getBoundingClientRect();
+        const targetRect = targetElement.getBoundingClientRect();
+        const newScrollTop =
+          scrollContainerRef.current.scrollTop +
+          (targetRect.top - containerRect.top - firstVisibleElementOffset);
+        scrollContainerRef.current.scrollTop = newScrollTop;
+      }
+
+      // Clear pending restore after applying
+      pendingScrollRestoreRef.current = null;
+    }
+  }, [state.isFetchingPrevious, state.resumes.length]);
+
   // Initial fetch and search
   useEffect(() => {
-    dispatch({ type: 'RESET' });
-    fetchResumes(1, searchQuery);
+    if (personaId) {
+      dispatch({ type: 'RESET' });
+      fetchResumes(1, searchQuery);
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTop = 0;
+      }
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, personaId]);
 
@@ -389,6 +473,7 @@ export function ResumeSection({
               return (
                 <div
                   key={resume.id}
+                  data-resume-id={resume.id}
                   className={`${styles.resumeCard} ${resume.active ? styles.selected : ''}`}
                 >
                   {/* Section 1: Radio button with tooltip */}

@@ -25,10 +25,10 @@ export const Route = createFileRoute('/resume')({
 
 function ResumePage() {
   const navigate = Route.useNavigate();
-  const { personaId, from } = Route.useSearch();
+  const { personaId } = Route.useSearch();
 
   const handleBack = () => {
-    navigate({ to: from || '/personas' });
+    navigate({ to: '/personas' });
   };
 
   const handleSelectResume = (resume: PaginatedResumeListItem) => {
@@ -37,7 +37,6 @@ function ResumePage() {
       search: {
         resumeId: resume.id,
         personaId: personaId || '',
-        from: '/resume',
       },
     });
   };

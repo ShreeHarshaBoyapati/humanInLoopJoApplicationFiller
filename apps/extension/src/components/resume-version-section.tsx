@@ -14,10 +14,13 @@ import type {
   PaginatedVersionListItem,
   PaginatedVersionResponse,
   ResumeData,
+  ResumeVersionMetadata,
 } from '@repo/shared-types';
 import { useResumeVersionsCache } from '../hooks/use-resume-versions-cache';
 import { usePersonasCache } from '../hooks/use-personas-cache';
 import { useResumesCache } from '../hooks/use-resumes-cache';
+
+const MAX_PAGES = 10;
 
 // Pagination state type
 type PaginationState = {
@@ -28,6 +31,7 @@ type PaginationState = {
   isInitialLoading: boolean;
   isFetchingNext: boolean;
   isFetchingPrevious: boolean;
+  pageSizes: Map<number, number>;
 };
 
 // Pagination action types
@@ -53,6 +57,7 @@ const initialState: PaginationState = {
   isInitialLoading: true,
   isFetchingNext: false,
   isFetchingPrevious: false,
+  pageSizes: new Map(),
 };
 
 // Reducer function
@@ -70,31 +75,70 @@ function paginationReducer(state: PaginationState, action: PaginationAction): Pa
       const { items, page, totalPages, direction } = action;
 
       if (direction === 'next') {
+        const newPageSizes = new Map(state.pageSizes);
+        newPageSizes.set(page, items.length);
+
+        let newVersions = [...state.versions, ...items];
+        let newFirstPage = state.firstPage;
+        let newPageSizesAfterEviction = newPageSizes;
+
+        const pageCount = state.lastPage - state.firstPage + 1;
+        if (pageCount >= MAX_PAGES) {
+          const firstPageSize = state.pageSizes.get(state.firstPage) || 0;
+          newVersions = newVersions.slice(firstPageSize);
+          newPageSizesAfterEviction = new Map(newPageSizes);
+          newPageSizesAfterEviction.delete(state.firstPage);
+          newFirstPage = state.firstPage + 1;
+        }
+
         return {
           ...state,
-          versions: [...state.versions, ...items],
+          versions: newVersions,
+          firstPage: newFirstPage,
           lastPage: page,
           totalPages,
+          pageSizes: newPageSizesAfterEviction,
           isFetchingNext: false,
           isInitialLoading: false,
         };
       } else if (direction === 'previous') {
+        const newPageSizes = new Map(state.pageSizes);
+        newPageSizes.set(page, items.length);
+
+        let newVersions = [...items, ...state.versions];
+        let newLastPage = state.lastPage;
+        let newPageSizesAfterEviction = newPageSizes;
+
+        const pageCount = state.lastPage - state.firstPage + 1;
+        if (pageCount >= MAX_PAGES) {
+          const lastPageSize = state.pageSizes.get(state.lastPage) || 0;
+          newVersions = newVersions.slice(0, newVersions.length - lastPageSize);
+          newPageSizesAfterEviction = new Map(newPageSizes);
+          newPageSizesAfterEviction.delete(state.lastPage);
+          newLastPage = state.lastPage - 1;
+        }
+
         return {
           ...state,
-          versions: [...items, ...state.versions],
+          versions: newVersions,
           firstPage: page,
+          lastPage: newLastPage,
           totalPages,
+          pageSizes: newPageSizesAfterEviction,
           isFetchingPrevious: false,
           isInitialLoading: false,
         };
       }
       // Initial fetch
+      const newPageSizes = new Map();
+      newPageSizes.set(page, items.length);
       return {
         ...state,
         versions: items,
         firstPage: page,
         lastPage: page,
         totalPages,
+        pageSizes: newPageSizes,
         isInitialLoading: false,
         isFetchingNext: false,
         isFetchingPrevious: false,
@@ -167,7 +211,10 @@ export function ResumeVersionSection({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
-  const previousScrollHeightRef = useRef<number>(0);
+  const pendingScrollRestoreRef = useRef<{
+    firstVisibleElementId: string | null;
+    firstVisibleElementOffset: number;
+  } | null>(null);
 
   // Derived values
   const hasPreviousPage = state.firstPage > 1;
@@ -177,12 +224,39 @@ export function ResumeVersionSection({
     async (pageNum: number, search?: string, direction?: 'next' | 'previous') => {
       if (typeof chrome === 'undefined' || !chrome.runtime) return;
 
-      dispatch({ type: 'FETCH_START', direction });
-
-      // Store scroll height before prepending
+      // Capture the first visible element BEFORE fetching previous page
       if (direction === 'previous' && scrollContainerRef.current) {
-        previousScrollHeightRef.current = scrollContainerRef.current.scrollHeight;
+        const scrollContainer = scrollContainerRef.current;
+        const versionCards = scrollContainer.querySelectorAll('[data-version-id]');
+
+        if (versionCards.length > 0) {
+          const containerRect = scrollContainer.getBoundingClientRect();
+          let firstVisibleElement: Element | null = null;
+          let firstVisibleElementOffset = 0;
+
+          for (let i = 0; i < versionCards.length; i++) {
+            const card = versionCards.item(i);
+            if (!card) continue;
+            const cardRect = card.getBoundingClientRect();
+
+            // Check if this card is visible in the viewport
+            if (cardRect.bottom > containerRect.top && cardRect.top < containerRect.bottom) {
+              firstVisibleElement = card;
+              firstVisibleElementOffset = cardRect.top - containerRect.top;
+              break;
+            }
+          }
+
+          if (firstVisibleElement) {
+            pendingScrollRestoreRef.current = {
+              firstVisibleElementId: firstVisibleElement.getAttribute('data-version-id'),
+              firstVisibleElementOffset: firstVisibleElementOffset,
+            };
+          }
+        }
       }
+
+      dispatch({ type: 'FETCH_START', direction });
 
       // Try to get from cache first
       const cachedData = await getPage(pageNum, resumeId, search || '');
@@ -194,17 +268,6 @@ export function ResumeVersionSection({
           totalPages: cachedData.totalPages,
           direction,
         });
-
-        // Restore scroll position after prepending
-        if (direction === 'previous') {
-          requestAnimationFrame(() => {
-            if (scrollContainerRef.current) {
-              const contentAdded =
-                scrollContainerRef.current.scrollHeight - previousScrollHeightRef.current;
-              scrollContainerRef.current.scrollTop += contentAdded;
-            }
-          });
-        }
         return;
       }
 
@@ -226,17 +289,6 @@ export function ResumeVersionSection({
               totalPages: res.data.totalPages,
               direction,
             });
-
-            // Restore scroll position after prepending
-            if (direction === 'previous') {
-              requestAnimationFrame(() => {
-                if (scrollContainerRef.current) {
-                  const contentAdded =
-                    scrollContainerRef.current.scrollHeight - previousScrollHeightRef.current;
-                  scrollContainerRef.current.scrollTop += contentAdded;
-                }
-              });
-            }
           } else {
             dispatch({ type: 'FETCH_ERROR', direction });
           }
@@ -246,10 +298,41 @@ export function ResumeVersionSection({
     [getPage, setPage, resumeId, personaId]
   );
 
+  // Restore scroll position after fetching previous page completes
+  useEffect(() => {
+    if (
+      !state.isFetchingPrevious &&
+      pendingScrollRestoreRef.current &&
+      scrollContainerRef.current
+    ) {
+      const { firstVisibleElementId, firstVisibleElementOffset } = pendingScrollRestoreRef.current;
+
+      // Find the element by its version id
+      const targetElement = scrollContainerRef.current.querySelector(
+        `[data-version-id="${firstVisibleElementId}"]`
+      );
+
+      if (targetElement) {
+        const containerRect = scrollContainerRef.current.getBoundingClientRect();
+        const targetRect = targetElement.getBoundingClientRect();
+        const newScrollTop =
+          scrollContainerRef.current.scrollTop +
+          (targetRect.top - containerRect.top - firstVisibleElementOffset);
+        scrollContainerRef.current.scrollTop = newScrollTop;
+      }
+
+      // Clear pending restore after applying
+      pendingScrollRestoreRef.current = null;
+    }
+  }, [state.isFetchingPrevious, state.versions.length]);
+
   // Initial fetch and search
   useEffect(() => {
     dispatch({ type: 'RESET' });
     fetchVersions(1, searchQuery);
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = 0;
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery, resumeId]);
 
@@ -314,7 +397,7 @@ export function ResumeVersionSection({
         async (res: {
           success: boolean;
           message?: string;
-          data?: {
+          data?: ResumeVersionMetadata & {
             previousPersonaId: string | null;
             newPersonaId: string;
             previousResumeId: string | null;
@@ -323,7 +406,6 @@ export function ResumeVersionSection({
         }) => {
           if (res?.success) {
             dispatch({ type: 'SET_ACTIVE', id });
-
             const invalidationPromises: Promise<void>[] = [];
             if (
               res.data?.previousPersonaId !== null &&
@@ -336,9 +418,19 @@ export function ResumeVersionSection({
               res.data?.previousResumeId !== null &&
               res.data?.previousResumeId !== res.data?.newResumeId
             ) {
-              invalidationPromises.push(invalidateForPersona(personaId));
+              if (res.data?.previousPersonaId)
+                invalidationPromises.push(invalidateForPersona(res.data?.previousPersonaId));
+              if (
+                res.data?.newPersonaId &&
+                res.data?.previousPersonaId !== res.data?.newPersonaId
+              ) {
+                invalidationPromises.push(invalidateForPersona(res.data?.newPersonaId));
+              }
             }
-            invalidationPromises.push(invalidateForResume(resumeId));
+            if (res.data?.previousResumeId)
+              invalidationPromises.push(invalidateForResume(res.data?.previousResumeId));
+            if (res.data?.newResumeId && res.data?.previousResumeId !== res.data?.newResumeId)
+              invalidationPromises.push(invalidateForResume(res.data?.newResumeId));
 
             await Promise.all(invalidationPromises);
             dispatch({ type: 'RESET' });
@@ -525,7 +617,11 @@ export function ResumeVersionSection({
               };
 
               return (
-                <div key={version.id} className={styles.versionCardWrapper}>
+                <div
+                  key={version.id}
+                  data-version-id={version.id}
+                  className={styles.versionCardWrapper}
+                >
                   <div className={`${styles.versionCard} ${version.active ? styles.selected : ''}`}>
                     {/* Section 1: Radio button with tooltip */}
                     <div className={styles.radioSection}>

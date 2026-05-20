@@ -63,7 +63,8 @@ export async function clearAllCache(): Promise<void> {
     const db = await getDB();
     await db.clear('personas');
     await db.clear('resumes');
-    await db.delete('metadata', 'token');
+    await db.clear('versions');
+    await db.clear('metadata');
     console.log('[PersonasCache] All cache cleared');
   } catch (error) {
     console.error('[PersonasCache] Error clearing all cache:', error);

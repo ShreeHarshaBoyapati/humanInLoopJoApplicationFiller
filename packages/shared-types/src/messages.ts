@@ -1,12 +1,5 @@
 import { GetJobParams, Job, JobPublic } from './job';
-import {
-  GetResumeParams,
-  CreateResumeParams,
-  UpdateResumeParams,
-  DeleteResumeParams,
-  GetResumeByIdParams,
-  FileDataPayload,
-} from './resume';
+import { GetResumeParams } from './resume';
 import {
   GetResumeVersionsParams,
   SetActiveVersionParams,
@@ -61,18 +54,10 @@ export type ExtensionMessage =
       action: 'GET_RESUMES';
       payload?: GetResumeParams & { page?: number; limit?: number; search?: string };
     }
-  | { action: 'GET_ACTIVE_RESUME'; payload?: { personaId: string } }
-  | { action: 'CREATE_RESUME'; payload: CreateResumeParams }
-  | { action: 'UPDATE_RESUME'; payload: UpdateResumeParams }
-  | { action: 'DELETE_RESUME'; payload: DeleteResumeParams }
-  | { action: 'GET_RESUME_BY_ID'; payload: GetResumeByIdParams }
-  | { action: 'PARSE_FILE_RESUME'; payload: { file: FileDataPayload } }
   | { action: 'ANALYZE_RESUME'; payload: { jobId: string; resumeId: string } }
-  | { action: 'GET_PARSED_RESUME' }
   | { action: 'GET_RESUME_VERSIONS'; payload?: GetResumeVersionsParams }
   | { action: 'SET_ACTIVE_VERSION'; payload: SetActiveVersionParams }
   | { action: 'GET_VERSION_PARSED_DATA'; payload: GetVersionParsedDataParams }
-  | { action: 'GET_ACTIVE_VERSION'; payload?: { resumeId?: string } }
   | { action: 'GET_ACTIVE_SELECTION' }
   | { action: 'SYNC_AUTH_FROM_WEB'; payload: StoredAuth }
   | { action: 'AUTH_STATE_CHANGED'; payload: StoredAuth | null }
