@@ -1,4 +1,5 @@
 import { useEffect, useState, useReducer, useCallback, useRef } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 
 import { Radio, CircularProgress } from '@mui/material';
 import { ArrowForward, OpenInNew as OpenInNewIcon } from '@mui/icons-material';
@@ -117,12 +118,18 @@ function paginationReducer(state: PaginationState, action: PaginationAction): Pa
 
 interface ResumeSectionProps {
   personaId: string;
-  personaTitle: string;
-  onSelectResume: (resume: PaginatedResumeListItem) => void;
+  onSelectResume: (resumeId: string) => void;
   onBack: () => void;
+  isFromAutofill?: boolean;
 }
 
-export function ResumeSection({ personaId, onSelectResume, onBack }: ResumeSectionProps) {
+export function ResumeSection({
+  personaId,
+  onSelectResume,
+  onBack,
+  isFromAutofill = false,
+}: ResumeSectionProps) {
+  const navigate = useNavigate();
   const [state, dispatch] = useReducer(paginationReducer, initialState);
   const [searchQuery, setSearchQuery] = useState('');
   const limit = 10;
@@ -314,11 +321,30 @@ export function ResumeSection({ personaId, onSelectResume, onBack }: ResumeSecti
 
       {/* Navigation */}
       <div className={styles.navigation}>
-        <span className={styles.navLink} onClick={onBack}>
-          All Personas
-        </span>
-        <span className={styles.navSeparator}>/</span>
-        <span className={styles.navCurrent}>Resumes</span>
+        {isFromAutofill ? (
+          <>
+            <span
+              className={styles.navLink}
+              onClick={() => navigate({ to: '/autofill', search: { step: 1 } })}
+            >
+              Step 2
+            </span>
+            <span className={styles.navSeparator}>/</span>
+            <span className={styles.navLink} onClick={onBack}>
+              All Personas
+            </span>
+            <span className={styles.navSeparator}>/</span>
+            <span className={styles.navCurrent}>Resumes</span>
+          </>
+        ) : (
+          <>
+            <span className={styles.navLink} onClick={onBack}>
+              All Personas
+            </span>
+            <span className={styles.navSeparator}>/</span>
+            <span className={styles.navCurrent}>Resumes</span>
+          </>
+        )}
       </div>
 
       {/* Search */}
@@ -414,7 +440,7 @@ export function ResumeSection({ personaId, onSelectResume, onBack }: ResumeSecti
                     <button
                       type="button"
                       className={`${styles.actionButton} ${styles.arrow}`}
-                      onClick={() => onSelectResume(resume)}
+                      onClick={() => onSelectResume(resume.id)}
                     >
                       <ArrowForward sx={{ fontSize: '1.25rem' }} />
                     </button>

@@ -1,4 +1,5 @@
 import { useEffect, useState, useReducer, useCallback, useRef } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 
 import { Radio, CircularProgress } from '@mui/material';
 import {
@@ -137,6 +138,8 @@ interface ResumeVersionSectionProps {
   personaId: string;
   onBack: () => void;
   onBackToPersonas: () => void;
+  isFromAutofill?: boolean;
+  onConfirmSelection?: () => void;
 }
 
 export function ResumeVersionSection({
@@ -144,7 +147,10 @@ export function ResumeVersionSection({
   personaId,
   onBack,
   onBackToPersonas,
+  isFromAutofill = false,
+  onConfirmSelection,
 }: ResumeVersionSectionProps) {
+  const navigate = useNavigate();
   const [state, dispatch] = useReducer(paginationReducer, initialState);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeLoading, setActiveLoading] = useState(false);
@@ -421,15 +427,38 @@ export function ResumeVersionSection({
 
       {/* Navigation */}
       <div className={styles.navigation}>
-        <span className={styles.navLink} onClick={onBackToPersonas}>
-          All Personas
-        </span>
-        <span className={styles.navSeparator}>/</span>
-        <span className={styles.navLink} onClick={onBack}>
-          Resumes
-        </span>
-        <span className={styles.navSeparator}>/</span>
-        <span className={styles.navCurrent}>Resume Versions</span>
+        {isFromAutofill ? (
+          <>
+            <span
+              className={styles.navLink}
+              onClick={() => navigate({ to: '/autofill', search: { step: 1 } })}
+            >
+              Step 2
+            </span>
+            <span className={styles.navSeparator}>/</span>
+            <span className={styles.navLink} onClick={onBackToPersonas}>
+              All Personas
+            </span>
+            <span className={styles.navSeparator}>/</span>
+            <span className={styles.navLink} onClick={onBack}>
+              Resumes
+            </span>
+            <span className={styles.navSeparator}>/</span>
+            <span className={styles.navCurrent}>Resume Versions</span>
+          </>
+        ) : (
+          <>
+            <span className={styles.navLink} onClick={onBackToPersonas}>
+              All Personas
+            </span>
+            <span className={styles.navSeparator}>/</span>
+            <span className={styles.navLink} onClick={onBack}>
+              Resumes
+            </span>
+            <span className={styles.navSeparator}>/</span>
+            <span className={styles.navCurrent}>Resume Versions</span>
+          </>
+        )}
       </div>
 
       {/* Search */}

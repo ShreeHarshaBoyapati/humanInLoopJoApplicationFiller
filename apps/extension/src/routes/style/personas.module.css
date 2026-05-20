@@ -66,6 +66,23 @@
   gap: calc(var(--spacing) * 2);
 }
 
+.navLink {
+  color: var(--blue-500);
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: opacity 0.2s;
+}
+
+.navLink:hover {
+  opacity: 0.8;
+}
+
+.navSeparator {
+  color: var(--white-700);
+  font-size: 0.875rem;
+}
+
 .navCurrent {
   color: var(--white-900);
   font-size: 0.875rem;

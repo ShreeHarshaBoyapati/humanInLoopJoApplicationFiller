@@ -76,6 +76,8 @@ export type ExtensionMessage =
   | { action: 'GET_RESUME_VERSIONS'; payload?: GetResumeVersionsParams }
   | { action: 'SET_ACTIVE_VERSION'; payload: SetActiveVersionParams }
   | { action: 'GET_VERSION_PARSED_DATA'; payload: GetVersionParsedDataParams }
+  | { action: 'GET_ACTIVE_VERSION'; payload?: { resumeId?: string } }
+  | { action: 'GET_ACTIVE_SELECTION' }
   | { action: 'SYNC_AUTH_FROM_WEB'; payload: StoredAuth }
   | { action: 'AUTH_STATE_CHANGED'; payload: StoredAuth | null }
   | { action: 'AUTH_STORAGE_SET'; payload: StoredAuth }

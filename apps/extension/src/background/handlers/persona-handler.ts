@@ -4,6 +4,8 @@ import type {
   ApiResponse,
   Persona,
   PaginatedPersonasResponse,
+  ResumeMetadata,
+  ResumeVersionMetadata,
 } from '@repo/shared-types';
 
 /**
@@ -125,6 +127,35 @@ export function handlePersonaMessage(
       })
       .catch((error: AxiosError<ApiResponse>) => {
         console.error('Persona fetching error:', error);
+        sendResponse({ success: false, error: error.response?.data?.message || error.message });
+      });
+
+    return true;
+  }
+
+  if (message.action === 'GET_ACTIVE_SELECTION') {
+    // Fetch all three in parallel: active persona, active resume, active version
+    Promise.all([
+      api.get<ApiResponse<Persona>>('/persona/active').catch(() => null),
+      api.get<ApiResponse<ResumeMetadata>>('/resume/active').catch(() => null),
+      api.get<ApiResponse<ResumeVersionMetadata>>('/resume/versions/active').catch(() => null),
+    ])
+      .then(([personaRes, resumeRes, versionRes]) => {
+        const personaData = personaRes?.data;
+        const resumeData = resumeRes?.data;
+        const versionData = versionRes?.data;
+
+        sendResponse({
+          success: true,
+          data: {
+            persona: personaData?.success && personaData.data ? personaData.data : null,
+            resume: resumeData?.success && resumeData.data ? resumeData.data : null,
+            version: versionData?.success && versionData.data ? versionData.data : null,
+          },
+        });
+      })
+      .catch((error: AxiosError<ApiResponse>) => {
+        console.error('Get active selection error:', error);
         sendResponse({ success: false, error: error.response?.data?.message || error.message });
       });
 

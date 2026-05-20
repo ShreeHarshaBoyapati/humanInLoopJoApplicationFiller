@@ -37,6 +37,69 @@ interface PaginationQuery {
 
 class ResumeVersionController {
   /**
+   * Get the active resume version for a user
+   */
+  async getActive(req: AuthenticatedTypedRequest<null>, res: Response) {
+    const versionRepository = getResumeVersionRepository();
+
+    const userId = req.userId;
+    const resumeId = req.query.resumeId as string | undefined;
+
+    // Build query to find active version
+    const queryBuilder = versionRepository
+      .createQueryBuilder('version')
+      .leftJoin('version.resume', 'resume')
+      .leftJoin('resume.persona', 'persona')
+      .leftJoin('persona.user', 'user')
+      .where('user.id = :userId', { userId })
+      .andWhere('version.active = :active', { active: true });
+
+    if (resumeId) {
+      queryBuilder.andWhere('resume.id = :resumeId', { resumeId });
+    }
+
+    const version = await queryBuilder
+      .select([
+        'version.id',
+        'version.fileSize',
+        'version.keywords',
+        'version.active',
+        'version.versionName',
+        'version.comment',
+        'version.createdAt',
+        'version.updatedAt',
+        'resume.id',
+        'resume.fileName',
+      ])
+      .getOne();
+
+    if (!version) {
+      const data: ApiResponse = {
+        success: false,
+        message: 'No active resume version found',
+      };
+      res.status(404).json(data);
+      return;
+    }
+
+    const data: ApiResponse<ResumeVersionMetadata> = {
+      success: true,
+      data: {
+        id: version.id,
+        fileName: version.resume.fileName,
+        fileSize: version.fileSize,
+        keywords: version.keywords,
+        active: version.active,
+        versionName: version.versionName,
+        comment: version.comment,
+        createdAt: version.createdAt,
+        updatedAt: version.updatedAt,
+      },
+    };
+    res.status(200).json(data);
+  }
+
+  /**
    * List all versions for a resume with pagination
    */
   async getAll(

@@ -16,6 +16,9 @@ import type { Request, Response, NextFunction } from 'express';
 
 const router: express.Router = express.Router();
 
+// Get active resume version (MUST come before /:id)
+router.get('/versions/active', authMiddleware, asHandler(ResumeVersionController.getActive));
+
 // Configure multer for file uploads (in-memory storage)
 const upload = multer({
   storage: multer.memoryStorage(),

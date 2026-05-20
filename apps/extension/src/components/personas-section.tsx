@@ -116,7 +116,12 @@ function paginationReducer(state: PaginationState, action: PaginationAction): Pa
   }
 }
 
-export function PersonasSection() {
+interface PersonasSectionProps {
+  onSelectPersona?: (personaId: string) => void;
+  isFromAutofill?: boolean;
+}
+
+export function PersonasSection({ onSelectPersona, isFromAutofill = false }: PersonasSectionProps) {
   const navigate = useNavigate();
   const [state, dispatch] = useReducer(paginationReducer, initialState);
   const [searchQuery, setSearchQuery] = useState('');
@@ -281,14 +286,18 @@ export function PersonasSection() {
   };
 
   const handleNavigateToResumes = (persona: Persona) => {
-    navigate({
-      to: '/resume',
-      search: {
-        personaId: persona.id,
-        title: persona.title,
-        from: '/personas',
-      },
-    });
+    if (isFromAutofill && onSelectPersona) {
+      onSelectPersona(persona.id);
+    } else {
+      navigate({
+        to: '/resume',
+        search: {
+          personaId: persona.id,
+          title: persona.title,
+          from: '/personas',
+        },
+      });
+    }
   };
 
   const getInitials = (name: string) => {
@@ -320,7 +329,20 @@ export function PersonasSection() {
 
       {/* Navigation */}
       <div className={styles.navigation}>
-        <span className={styles.navCurrent}>All Personas</span>
+        {isFromAutofill ? (
+          <>
+            <span
+              className={styles.navLink}
+              onClick={() => navigate({ to: '/autofill', search: { step: 1 } })}
+            >
+              Step 2
+            </span>
+            <span className={styles.navSeparator}>/</span>
+            <span className={styles.navCurrent}>All Personas</span>
+          </>
+        ) : (
+          <span className={styles.navCurrent}>All Personas</span>
+        )}
       </div>
 
       {/* Search */}
