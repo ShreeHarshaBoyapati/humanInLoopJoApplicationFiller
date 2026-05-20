@@ -545,3 +545,74 @@
   color: var(--white-700);
   font-size: 0.875rem;
 }
+
+/* Active Section Styles */
+.activeSection {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 2);
+}
+
+.activeHeader {
+  align-items: center;
+  display: flex;
+}
+
+.activeLabel {
+  color: var(--green-500);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.activeName {
+  color: var(--white-900);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.activeMeta {
+  color: var(--white-700);
+  font-size: 0.75rem;
+}
+
+/* Hierarchy Section Styles */
+.hierarchySection {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 2);
+}
+
+.hierarchyLabel {
+  color: var(--white-600);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.hierarchyCard {
+  align-items: center;
+  background-color: var(--black-800);
+  border: 1px solid var(--grey-700);
+  border-radius: var(--border-radius);
+  display: flex;
+  padding: calc(var(--spacing) * 3);
+}
+
+.hierarchyName {
+  color: var(--white-800);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+/* No Selection Styles */
+.noSelectionSection {
+  padding: calc(var(--spacing) * 4);
+  text-align: center;
+}
+
+.noSelectionText {
+  color: var(--white-600);
+  font-size: 0.875rem;
+}

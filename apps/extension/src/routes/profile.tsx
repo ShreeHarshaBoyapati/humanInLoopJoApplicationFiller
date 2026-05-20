@@ -3,12 +3,30 @@ import { useState, useEffect } from 'react';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import type { Persona, ResumeData, ResumeMetadata } from '@repo/shared-types';
+import type {
+  Persona,
+  ResumeData,
+  ResumeMetadata,
+  ResumeVersionMetadata,
+} from '@repo/shared-types';
 import styles from './style/profile.module.css';
 
-type ActivePersonaResponse = { success: boolean; data?: Persona; error?: string };
-type ActiveResumeResponse = { success: boolean; data?: ResumeMetadata; error?: string };
+type ActiveSelectionResponse = {
+  success: boolean;
+  data?: {
+    persona: Persona | null;
+    resume: ResumeMetadata | null;
+    version: ResumeVersionMetadata | null;
+  };
+  error?: string;
+};
 type ParsedResumeResponse = { success: boolean; data?: ResumeData; error?: string };
+
+interface ActiveSelectionInfo {
+  persona: Persona | null;
+  resume: ResumeMetadata | null;
+  version: ResumeVersionMetadata | null;
+}
 
 export const Route = createFileRoute('/profile')({
   component: RouteComponent,
@@ -29,8 +47,11 @@ function sendMessage<T>(message: object): Promise<T> {
 
 function RouteComponent() {
   const navigate = useNavigate();
-  const [activePersona, setActivePersona] = useState<Persona | null>(null);
-  const [activeResume, setActiveResume] = useState<ResumeMetadata | null>(null);
+  const [activeInfo, setActiveInfo] = useState<ActiveSelectionInfo>({
+    persona: null,
+    resume: null,
+    version: null,
+  });
   const [parsedResumeData, setParsedResumeData] = useState<ResumeData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,44 +64,42 @@ function RouteComponent() {
   // Copy feedback state
   const [copiedItems, setCopiedItems] = useState<Set<string>>(new Set());
 
-  // Initial data load - only on mount, sequential calls
+  // Initial data load - use GET_ACTIVE_SELECTION like step2-select-resume.tsx
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      setError(null);
+    setLoading(true);
+    if (typeof chrome !== 'undefined' && chrome.runtime) {
+      chrome.runtime.sendMessage(
+        { action: 'GET_ACTIVE_SELECTION' },
+        async (res: ActiveSelectionResponse) => {
+          setLoading(false);
+          if (res?.success && res.data) {
+            setActiveInfo(res.data);
 
-      // Step 1: Get active persona directly
-      const personaRes = await sendMessage<ActivePersonaResponse>({ action: 'GET_ACTIVE_PERSONA' });
-      if (!personaRes?.success || !personaRes?.data) {
-        setLoading(false);
-        return;
-      }
-      setActivePersona(personaRes.data);
-
-      // Step 2: Get active resume directly
-      const resumeRes = await sendMessage<ActiveResumeResponse>({
-        action: 'GET_ACTIVE_RESUME',
-        payload: { personaId: personaRes.data.id },
-      });
-      if (resumeRes?.success && resumeRes?.data) {
-        setActiveResume(resumeRes.data);
-
-        // Step 3: Get parsed resume data (only if we have a resume)
-        const parsedRes = await sendMessage<ParsedResumeResponse>({ action: 'GET_PARSED_RESUME' });
-        if (parsedRes?.success && parsedRes?.data) {
-          setParsedResumeData(parsedRes.data);
-        } else if (parsedRes?.error) {
-          setError(parsedRes.error);
+            // If we have both resume and version, fetch parsed data
+            if (res.data.resume && res.data.version) {
+              const parsedRes = await sendMessage<ParsedResumeResponse>({
+                action: 'GET_VERSION_PARSED_DATA',
+                payload: {
+                  resumeId: res.data.resume.id,
+                  versionId: res.data.version.id,
+                },
+              });
+              if (parsedRes?.success && parsedRes?.data) {
+                setParsedResumeData(parsedRes.data);
+              } else if (parsedRes?.error) {
+                setError(parsedRes.error);
+              }
+            }
+          } else if (res?.error) {
+            setError(res.error);
+          }
         }
-      } else if (resumeRes?.error) {
-        setError(resumeRes.error);
-      }
-
+      );
+    } else {
       setLoading(false);
-    };
-
-    loadData();
-  }, []); // Empty deps = mount only
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chrome.runtime]);
 
   // Toggle section expansion
   const toggleSection = (section: string) => {
@@ -140,6 +159,9 @@ function RouteComponent() {
     );
   }
 
+  // Destructure for easier access
+  const { persona: activePersona, resume: activeResume, version: activeVersion } = activeInfo;
+
   // Show empty state if no active persona
   if (!activePersona) {
     return (
@@ -163,84 +185,49 @@ function RouteComponent() {
         <h1 className={styles.headerTitle}>Profile</h1>
       </div>
 
-      {/* Active Persona & Resume Cards */}
-      <div className={styles.activeCardsContainer}>
-        {/* Persona Card */}
-        <div className={styles.activeCard}>
-          <div className={styles.activeCardHeader}>
-            <span className={styles.activeCardLabel}>PERSONA</span>
-            <span className={styles.activeCardBadge}>ACTIVE</span>
+      {/* Active Version Display */}
+      {activeVersion && (
+        <div className={styles.activeSection}>
+          <div className={styles.activeHeader}>
+            <span className={styles.activeLabel}>VERSION</span>
           </div>
-          <div className={styles.activeCardContent}>
-            <h3 className={styles.activeCardTitle}>{formatName(activePersona.title)}</h3>
-            <p className={styles.activeCardMeta}>
-              Keywords: {activePersona.keywords?.join(', ') || 'None'}
-            </p>
-          </div>
-          <button
-            className={styles.changeBtn}
-            onClick={() => navigate({ to: '/settings', search: { returnTo: '/profile' } })}
-          >
-            Change Persona
-          </button>
-        </div>
-
-        {/* Resume Card */}
-        {activeResume ? (
           <div className={styles.activeCard}>
-            <div className={styles.activeCardHeader}>
-              <span className={styles.activeCardLabel}>RESUME</span>
-              <span className={styles.activeCardBadge}>ACTIVE</span>
-            </div>
-            <div className={styles.activeCardContent}>
-              <h3 className={styles.activeCardTitle}>{activeResume.fileName}</h3>
-              <div className={styles.resumeMetaRow}>
-                <span className={styles.resumeFileSize}>
-                  {activeResume.fileSize ? formatFileSize(activeResume.fileSize) : '0 Bytes'}
-                </span>
-                <span className={styles.resumeSeparator}>•</span>
-                <span className={styles.resumeDateTime}>
-                  {activeResume.updatedAt
-                    ? new Date(activeResume.updatedAt).toLocaleString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })
-                    : 'Unknown date'}
-                </span>
-              </div>
-            </div>
-            <button
-              className={styles.changeBtn}
-              onClick={() =>
-                navigate({
-                  to: '/resume',
-                  search: { personaId: activePersona.id, title: activePersona.title },
-                })
-              }
-            >
-              Change Resume
-            </button>
+            <span className={styles.activeName}>{activeVersion.versionName}</span>
+            <span className={styles.activeMeta}>
+              {activeVersion.fileSize ? formatFileSize(activeVersion.fileSize) : 'Unknown size'}
+            </span>
           </div>
-        ) : (
-          <div className={styles.noActiveCard}>
-            <span className={styles.noActiveText}>No active resume</span>
-            <button
-              className={styles.changeBtn}
-              onClick={() =>
-                navigate({
-                  to: '/resume',
-                  search: { personaId: activePersona.id, title: activePersona.title },
-                })
-              }
-            >
-              Add Resume
-            </button>
+        </div>
+      )}
+
+      {/* Parent Resume Display */}
+      {activeResume && (
+        <div className={styles.hierarchySection}>
+          <div className={styles.hierarchyLabel}>Resume</div>
+          <div className={styles.hierarchyCard}>
+            <span className={styles.hierarchyName}>{activeResume.fileName}</span>
           </div>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Parent Persona Display */}
+      {activePersona && (
+        <div className={styles.hierarchySection}>
+          <div className={styles.hierarchyLabel}>Persona</div>
+          <div className={styles.hierarchyCard}>
+            <span className={styles.hierarchyName}>{formatName(activePersona.title)}</span>
+          </div>
+        </div>
+      )}
+
+      {/* No Active Selection */}
+      {!activePersona && (
+        <div className={styles.noSelectionSection}>
+          <div className={styles.noSelectionText}>
+            No active persona found. Please create and activate a persona in Settings.
+          </div>
+        </div>
+      )}
 
       {/* Error Display */}
       {error && (
