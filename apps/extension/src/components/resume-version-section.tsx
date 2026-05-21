@@ -183,6 +183,7 @@ interface ResumeVersionSectionProps {
   onBack: () => void;
   onBackToPersonas: () => void;
   isFromAutofill?: boolean;
+  onConfirmSelection?: () => void;
 }
 
 export function ResumeVersionSection({
@@ -191,6 +192,7 @@ export function ResumeVersionSection({
   onBack,
   onBackToPersonas,
   isFromAutofill = false,
+  onConfirmSelection,
 }: ResumeVersionSectionProps) {
   const navigate = useNavigate();
   const [state, dispatch] = useReducer(paginationReducer, initialState);
@@ -502,7 +504,7 @@ export function ResumeVersionSection({
   };
 
   const formatFileSize = (bytes: number | null): string => {
-    if (!bytes) return '';
+    if (!bytes) return 'Unknown size';
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -618,9 +620,9 @@ export function ResumeVersionSection({
                 <div
                   key={version.id}
                   data-version-id={version.id}
-                  className={`${styles.versionCardWrapper} ${version.active ? styles.selected : ''}`}
+                  className={styles.versionCardWrapper}
                 >
-                  <div className={styles.versionCard}>
+                  <div className={`${styles.versionCard} ${version.active ? styles.selected : ''}`}>
                     {/* Section 1: Radio button with tooltip */}
                     <div className={styles.radioSection}>
                       <EnhancedTooltipWithText
@@ -650,31 +652,31 @@ export function ResumeVersionSection({
                     {/* Section 2: Data */}
                     <div className={styles.dataSection}>
                       <div className={styles.versionInfo}>
-                        <div className={styles.versionNameRow}>
-                          <p className={styles.versionName}>{version.versionName}</p>
+                        <p className={styles.versionName}>{version.versionName}</p>
+                        <div className={styles.versionMeta}>
                           <span className={styles.versionSize}>
                             {formatFileSize(version.fileSize)}
                           </span>
-                        </div>
-                        <div className={styles.versionMeta}>
                           <span className={styles.versionDate}>
-                            Updated: {formatDate(version.updatedAt)}
+                            Updated {formatDate(version.updatedAt)}
                           </span>
-                          <p className={styles.versionComment}>{version.comment}</p>
                         </div>
                         {version.keywords && version.keywords.length > 0 && (
                           <div className={styles.versionKeywords}>
-                            {version.keywords.slice(0, 2).map((keyword, idx) => (
+                            {version.keywords.slice(0, 3).map((keyword, idx) => (
                               <span key={idx} className={styles.keywordTag}>
                                 {keyword}
                               </span>
                             ))}
-                            {version.keywords.length > 2 && (
+                            {version.keywords.length > 3 && (
                               <span className={styles.keywordTag}>
-                                +{version.keywords.length - 2} more
+                                +{version.keywords.length - 3} more
                               </span>
                             )}
                           </div>
+                        )}
+                        {version.comment && (
+                          <p className={styles.versionComment}>{version.comment}</p>
                         )}
                       </div>
                     </div>
@@ -712,9 +714,7 @@ export function ResumeVersionSection({
                         {cardState.isLoadingData ? (
                           <p className={styles.loadingText}>Loading parsed data...</p>
                         ) : cardState.parsedData ? (
-                          <pre
-                            className={`${styles.jsonPreview} ${scrollbarStyles.scrollbarVerticalContainer}`}
-                          >
+                          <pre className={styles.jsonPreview}>
                             {JSON.stringify(cardState.parsedData, null, 2)}
                           </pre>
                         ) : (
