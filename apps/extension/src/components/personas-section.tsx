@@ -379,7 +379,7 @@ export function PersonasSection({ onSelectPersona, isFromAutofill = false }: Per
   };
 
   return (
-    <div className={`${styles.sectionContainer} ${scrollbarStyles.scrollbarContainer}`}>
+    <div className={`${styles.sectionContainer}`}>
       {/* Header */}
       <div className={styles.header}>
         <h1 className={styles.headerTitle}>Personas</h1>

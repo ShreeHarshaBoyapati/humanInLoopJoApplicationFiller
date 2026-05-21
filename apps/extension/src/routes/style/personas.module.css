@@ -1,32 +1,16 @@
-.container {
+.sectionContainer {
   display: flex;
   flex-direction: column;
   gap: calc(var(--spacing) * 5);
-  padding: calc(var(--spacing) * 5);
-  padding-right: calc(calc(var(--spacing) * 5) - 8px);
+  height: 100%;
 }
 
 .header {
   align-items: center;
   display: flex;
-  gap: calc(var(--spacing) * 6);
-  margin-bottom: calc(var(--spacing) * 2);
-}
-
-.backBtn {
-  align-items: center;
-  background: none;
-  border: none;
-  color: var(--white-900);
-  cursor: pointer;
-  display: flex;
-  justify-content: center;
-  padding: 0;
-  transition: opacity 0.2s;
-}
-
-.backBtn:hover {
-  opacity: 0.8;
+  padding: calc(var(--spacing) * 5);
+  padding-bottom: 0;
+  padding-right: calc(calc(var(--spacing) * 5) - 8px);
 }
 
 .headerTitle {
@@ -41,6 +25,10 @@
   background-color: var(--black-800);
   border: 1px solid var(--grey-700);
   border-radius: var(--border-radius);
+  margin: calc(var(--spacing) * 5);
+  margin-bottom: 0;
+  margin-right: calc(calc(var(--spacing) * 5) - 8px);
+  margin-top: 0;
   padding: calc(var(--spacing) * 3) calc(var(--spacing) * 4);
 }
 
@@ -64,6 +52,10 @@
   align-items: center;
   display: flex;
   gap: calc(var(--spacing) * 2);
+  padding: calc(var(--spacing) * 5);
+  padding-bottom: 0;
+  padding-right: calc(calc(var(--spacing) * 5) - 8px);
+  padding-top: 0;
 }
 
 .navLink {
@@ -92,13 +84,18 @@
 .searchContainer {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--spacing) * 2);
+  padding: calc(var(--spacing) * 5);
+  padding-bottom: 0;
+  padding-right: calc(calc(var(--spacing) * 5) - 8px);
+  padding-top: 0;
 }
 
 .personaList {
   display: flex;
   flex-direction: column;
   gap: calc(var(--spacing) * 3);
+  padding-left: calc(var(--spacing) * 5);
+  padding-right: calc(calc(var(--spacing) * 5) - 8px);
 }
 
 /* Persona Card Styles */
@@ -242,22 +239,14 @@
   align-items: center;
   display: flex;
   justify-content: center;
-  min-height: 200px;
   padding: calc(var(--spacing) * 8);
-}
-
-.loadingText {
-  color: var(--white-700);
-  font-size: 0.875rem;
-  padding: calc(var(--spacing) * 4);
-  text-align: center;
 }
 
 .sentinel {
   align-items: center;
   display: flex;
   justify-content: center;
-  min-height: 20px;
+  min-height: 10px;
 }
 
 .sentinelLoader {
@@ -288,28 +277,9 @@
   margin: 0;
 }
 
-.viewMoreContainer {
-  display: flex;
-  justify-content: center;
-  padding: calc(var(--spacing) * 2) 0;
-}
-
-.sectionContainer {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
 .scrollContainer {
   flex: 1;
   overflow-y: auto;
   scrollbar-gutter: stable;
   scrollbar-width: auto;
-}
-
-.scrollbarContainer {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  overflow: hidden;
 }
