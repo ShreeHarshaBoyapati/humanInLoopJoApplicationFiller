@@ -369,7 +369,7 @@ export function ResumeSection({
   };
 
   const formatFileSize = (bytes: number | null): string => {
-    if (!bytes) return 'Unknown size';
+    if (!bytes) return '';
     if (bytes < 1024) return `${bytes} B`;
     if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
@@ -381,7 +381,7 @@ export function ResumeSection({
   };
 
   return (
-    <div className={`${styles.sectionContainer} ${scrollbarStyles.scrollbarContainer}`}>
+    <div className={`${styles.sectionContainer}`}>
       {/* Header */}
       <div className={styles.header}>
         <h1 className={styles.headerTitle}>Resumes</h1>
@@ -514,7 +514,7 @@ export function ResumeSection({
                           {resume.versionsCount || 0} version{resume.versionsCount !== 1 ? 's' : ''}
                         </span>
                         <span className={styles.resumeDate}>
-                          Updated {formatDate(resume.updatedAt)}
+                          Updated: {formatDate(resume.updatedAt)}
                         </span>
                       </div>
                     </div>
