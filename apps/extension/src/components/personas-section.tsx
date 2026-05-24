@@ -1,10 +1,10 @@
 import { useEffect, useState, useReducer, useCallback, useRef } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { Radio, CircularProgress } from '@mui/material';
-import { ArrowForward } from '@mui/icons-material';
+import { ArrowForward, Refresh } from '@mui/icons-material';
 import styles from '../routes/style/personas.module.css';
 import scrollbarStyles from '@repo/ui/scroll-bar.module.css';
-import { EnhancedTextField, EnhancedTooltipWithText } from '@repo/ui';
+import { EnhancedTextField, EnhancedTooltipWithText, EnhancedButton } from '@repo/ui';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import type { Persona, PaginatedPersonasResponse } from '@repo/shared-types';
 import { usePersonasCache } from '../hooks/use-personas-cache';
@@ -20,6 +20,9 @@ type PaginationState = {
   isInitialLoading: boolean;
   isFetchingNext: boolean;
   isFetchingPrevious: boolean;
+  isError: boolean;
+  errorPage: number | null;
+  errorDirection: 'next' | 'previous' | undefined;
   pageSizes: Map<number, number>;
 };
 
@@ -33,7 +36,7 @@ type PaginationAction =
       totalPages: number;
       direction?: 'next' | 'previous';
     }
-  | { type: 'FETCH_ERROR'; direction?: 'next' | 'previous' }
+  | { type: 'FETCH_ERROR'; page: number; direction?: 'next' | 'previous' }
   | { type: 'RESET' }
   | { type: 'SET_ACTIVE'; id: string };
 
@@ -46,6 +49,9 @@ const initialState: PaginationState = {
   isInitialLoading: true,
   isFetchingNext: false,
   isFetchingPrevious: false,
+  isError: false,
+  errorPage: null,
+  errorDirection: undefined,
   pageSizes: new Map(),
 };
 
@@ -54,11 +60,11 @@ function paginationReducer(state: PaginationState, action: PaginationAction): Pa
   switch (action.type) {
     case 'FETCH_START':
       if (action.direction === 'next') {
-        return { ...state, isFetchingNext: true };
+        return { ...state, isFetchingNext: true, isError: false };
       } else if (action.direction === 'previous') {
-        return { ...state, isFetchingPrevious: true };
+        return { ...state, isFetchingPrevious: true, isError: false };
       }
-      return { ...state, isInitialLoading: true };
+      return { ...state, isInitialLoading: true, isError: false };
 
     case 'FETCH_SUCCESS': {
       const { items, page, totalPages, direction } = action;
@@ -140,6 +146,9 @@ function paginationReducer(state: PaginationState, action: PaginationAction): Pa
         isInitialLoading: false,
         isFetchingNext: false,
         isFetchingPrevious: false,
+        isError: true,
+        errorPage: action.page,
+        errorDirection: action.direction,
       };
 
     case 'RESET':
@@ -256,7 +265,7 @@ export function PersonasSection({ onSelectPersona, isFromAutofill = false }: Per
               direction,
             });
           } else {
-            dispatch({ type: 'FETCH_ERROR', direction });
+            dispatch({ type: 'FETCH_ERROR', page: pageNum, direction });
           }
         }
       );
@@ -319,7 +328,8 @@ export function PersonasSection({ onSelectPersona, isFromAutofill = false }: Per
           topEntry?.isIntersecting &&
           hasPreviousPage &&
           !state.isFetchingPrevious &&
-          !state.isInitialLoading
+          !state.isInitialLoading &&
+          !state.isError
         ) {
           fetchPersonas(state.firstPage - 1, searchQuery, 'previous');
         }
@@ -328,7 +338,8 @@ export function PersonasSection({ onSelectPersona, isFromAutofill = false }: Per
           bottomEntry?.isIntersecting &&
           hasNextPage &&
           !state.isFetchingNext &&
-          !state.isInitialLoading
+          !state.isInitialLoading &&
+          !state.isError
         ) {
           fetchPersonas(state.lastPage + 1, searchQuery, 'next');
         }
@@ -350,6 +361,7 @@ export function PersonasSection({ onSelectPersona, isFromAutofill = false }: Per
     state.isFetchingNext,
     state.isFetchingPrevious,
     state.isInitialLoading,
+    state.isError,
     state.firstPage,
     state.lastPage,
     searchQuery,
@@ -376,6 +388,12 @@ export function PersonasSection({ onSelectPersona, isFromAutofill = false }: Per
 
   const getInitials = (name: string) => {
     return name.charAt(0).toUpperCase();
+  };
+
+  const handleRetry = () => {
+    if (state.errorPage !== null) {
+      fetchPersonas(state.errorPage, searchQuery, state.errorDirection);
+    }
   };
 
   return (
@@ -433,6 +451,17 @@ export function PersonasSection({ onSelectPersona, isFromAutofill = false }: Per
       {state.isInitialLoading && state.personas.length === 0 ? (
         <div className={styles.loadingContainer}>
           <CircularProgress size={32} sx={{ color: 'var(--blue-500)' }} />
+        </div>
+      ) : state.isError && state.personas.length === 0 ? (
+        <div className={styles.errorContainer}>
+          <p className={styles.errorText}>Failed to load personas. Please try again.</p>
+          <EnhancedButton
+            label="Retry"
+            colorTheme="secondary"
+            size="small"
+            onClick={handleRetry}
+            startIcon={<Refresh fontSize="small" />}
+          />
         </div>
       ) : state.personas.length === 0 ? (
         <p className={styles.emptyText}>
@@ -527,6 +556,19 @@ export function PersonasSection({ onSelectPersona, isFromAutofill = false }: Per
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {state.isError && state.personas.length > 0 && (
+        <div className={styles.errorContainer}>
+          <p className={styles.errorText}>Failed to load more personas. Please try again.</p>
+          <EnhancedButton
+            label="Retry"
+            colorTheme="secondary"
+            size="small"
+            onClick={handleRetry}
+            startIcon={<Refresh fontSize="small" />}
+          />
         </div>
       )}
     </div>
