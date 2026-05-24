@@ -20,7 +20,8 @@
     "axios": "^1.13.5",
     "idb": "^8.0.2",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-dom": "^19.2.0",
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.3.0",

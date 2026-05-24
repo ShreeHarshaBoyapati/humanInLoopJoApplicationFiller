@@ -16,6 +16,8 @@ import scrollStyles from '@repo/ui/scroll-bar.module.css';
 import styles from './style/__root.module.css';
 import { AUTH_STORAGE_KEY, type StoredAuth } from '@repo/shared-types';
 import { clearAllCache } from '../db/personas-cache';
+import { EnhancedSnackbar } from '@repo/ui';
+import { useSnackbar } from '../hooks/use-snackbar';
 
 interface AuthCheckResponse {
   isAuthenticated: boolean;
@@ -71,6 +73,7 @@ export const Route = createRootRoute({
 function RootComponent() {
   const routerState = useRouterState();
   const navigate = useNavigate();
+  const { snackbar, hideSnackbar } = useSnackbar();
 
   useEffect(() => {
     if (typeof chrome !== 'undefined' && chrome.runtime) {
@@ -123,6 +126,14 @@ function RootComponent() {
         <main className={styles.mainContent}>
           <Outlet />
         </main>
+        <EnhancedSnackbar
+          open={snackbar.open}
+          message={snackbar.message}
+          header={snackbar.header}
+          severity={snackbar.severity}
+          autoHideDuration={snackbar.autoHideDuration}
+          onClose={hideSnackbar}
+        />
       </div>
     );
   }
@@ -176,6 +187,14 @@ function RootComponent() {
           <span>Profile</span>
         </Link>
       </nav>
+      <EnhancedSnackbar
+        open={snackbar.open}
+        message={snackbar.message}
+        header={snackbar.header}
+        severity={snackbar.severity}
+        autoHideDuration={snackbar.autoHideDuration}
+        onClose={hideSnackbar}
+      />
     </div>
   );
 }
