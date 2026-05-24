@@ -26,6 +26,7 @@ export const Step2SelectResume = ({ savedJobId, onChange }: Step2SelectResumePro
     version: null,
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch active persona, resume, and version in parallel
   useEffect(() => {
@@ -40,6 +41,8 @@ export const Step2SelectResume = ({ savedJobId, onChange }: Step2SelectResumePro
             if (res.data.persona && res.data.resume) {
               onChange(res.data.persona.id, res.data.resume.id);
             }
+          } else if (res?.error) {
+            setError(res.error);
           }
         }
       );
@@ -106,8 +109,14 @@ export const Step2SelectResume = ({ savedJobId, onChange }: Step2SelectResumePro
             </div>
           )}
 
-          {/* No Active Selection */}
-          {!activeInfo.persona && (
+          {/* Error Display */}
+          {error && (
+            <div className={styles.noSelectionSection}>
+              <div className={styles.noSelectionText}>{error}</div>
+            </div>
+          )}
+
+          {!error && (!activeInfo.persona || !activeInfo.resume || !activeInfo.version) && (
             <div className={styles.noSelectionSection}>
               <div className={styles.noSelectionText}>No active resume found.</div>
             </div>

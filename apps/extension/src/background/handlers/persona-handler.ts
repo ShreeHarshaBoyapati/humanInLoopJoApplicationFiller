@@ -46,27 +46,61 @@ export function handlePersonaMessage(
   if (message.action === 'GET_ACTIVE_SELECTION') {
     // Fetch all three in parallel: active persona, active resume, active version
     Promise.all([
-      api.get<ApiResponse<Persona>>('/persona/active').catch(() => null),
-      api.get<ApiResponse<ResumeMetadata>>('/resume/active').catch(() => null),
-      api.get<ApiResponse<ResumeVersionMetadata>>('/resume/versions/active').catch(() => null),
+      api.get<ApiResponse<Persona>>('/persona/active'),
+      api.get<ApiResponse<ResumeMetadata>>('/resume/active'),
+      api.get<ApiResponse<ResumeVersionMetadata>>('/resume/versions/active'),
     ])
       .then(([personaRes, resumeRes, versionRes]) => {
-        const personaData = personaRes?.data;
-        const resumeData = resumeRes?.data;
-        const versionData = versionRes?.data;
+        // Check persona response
+        if (!personaRes?.data) {
+          throw new Error('Failed to fetch active persona: No response data');
+        }
+        if (!personaRes.data.success) {
+          throw new Error(
+            'Failed to fetch active persona: ' + (personaRes.data.message || 'Unknown error')
+          );
+        }
+
+        // Check resume response
+        if (!resumeRes?.data) {
+          throw new Error('Failed to fetch active resume: No response data');
+        }
+        if (!resumeRes.data.success) {
+          throw new Error(
+            'Failed to fetch active resume: ' + (resumeRes.data.message || 'Unknown error')
+          );
+        }
+
+        // Check version response
+        if (!versionRes?.data) {
+          throw new Error('Failed to fetch active resume version: No response data');
+        }
+        if (!versionRes.data.success) {
+          throw new Error(
+            'Failed to fetch active resume version: ' + (versionRes.data.message || 'Unknown error')
+          );
+        }
 
         sendResponse({
           success: true,
           data: {
-            persona: personaData?.success && personaData.data ? personaData.data : null,
-            resume: resumeData?.success && resumeData.data ? resumeData.data : null,
-            version: versionData?.success && versionData.data ? versionData.data : null,
+            persona: personaRes.data.data,
+            resume: resumeRes.data.data,
+            version: versionRes.data.data,
           },
         });
       })
-      .catch((error: AxiosError<ApiResponse>) => {
+      .catch((error: unknown) => {
         console.error('Get active selection error:', error);
-        sendResponse({ success: false, error: error.response?.data?.message || error.message });
+        let errorMessage: string;
+        if (error instanceof Error) {
+          errorMessage = error.message;
+        } else {
+          const axiosError = error as AxiosError<ApiResponse>;
+          errorMessage =
+            axiosError.response?.data?.message || axiosError.message || 'Unknown error';
+        }
+        sendResponse({ success: false, error: errorMessage });
       });
 
     return true;

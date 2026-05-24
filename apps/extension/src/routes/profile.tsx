@@ -171,7 +171,7 @@ function RouteComponent() {
         </div>
         <div className={styles.emptyState}>
           <span className={styles.emptyStateText}>
-            No active persona found. Please create and activate a persona in Settings.
+            {error || 'No active persona found. Please create and activate a persona in Persona.'}
           </span>
         </div>
       </div>
@@ -216,15 +216,6 @@ function RouteComponent() {
           <div className={styles.hierarchyLabel}>Persona</div>
           <div className={styles.hierarchyCard}>
             <span className={styles.hierarchyName}>{formatName(activePersona.title)}</span>
-          </div>
-        </div>
-      )}
-
-      {/* No Active Selection */}
-      {!activePersona && (
-        <div className={styles.noSelectionSection}>
-          <div className={styles.noSelectionText}>
-            No active persona found. Please create and activate a persona in Settings.
           </div>
         </div>
       )}
