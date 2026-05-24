@@ -39,10 +39,12 @@ export async function authMiddleware(
   next: NextFunction
 ): Promise<void> {
   try {
-    let token = req.cookies?.[TOKEN_COOKIE_NAME] || req.cookies?.token;
-    // Fallback to Authorization header if no cookie (used by Extension)
-    if (!token && req.headers.authorization?.startsWith('Bearer ')) {
+    let token: string | undefined;
+
+    if (req.headers.authorization?.startsWith('Bearer ')) {
       token = req.headers.authorization.split(' ')[1];
+    } else {
+      token = req.cookies?.[TOKEN_COOKIE_NAME] || req.cookies?.token;
     }
 
     if (!token) {
@@ -67,7 +69,6 @@ export async function authMiddleware(
       });
       return;
     }
-
     (req as AuthenticatedTypedRequest<unknown>).userId = decoded.userId;
     (req as AuthenticatedTypedRequest<unknown>).sessionId = decoded.sessionId;
 
