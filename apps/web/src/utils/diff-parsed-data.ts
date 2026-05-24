@@ -1,5 +1,4 @@
 import type { ResumeData } from '@repo/shared-types';
-import * as jsondiffpatch from 'jsondiffpatch';
 
 // Delta type from jsondiffpatch
 export type JsonDiff = jsondiffpatch.Delta | undefined;

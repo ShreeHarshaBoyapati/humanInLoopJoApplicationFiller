@@ -1,5 +1,4 @@
 import { type StateCreator } from 'zustand';
-import type { SnackbarProps } from '@mui/material';
 
 export type SnackbarSeverity = 'success' | 'warning' | 'error' | 'info';
 
