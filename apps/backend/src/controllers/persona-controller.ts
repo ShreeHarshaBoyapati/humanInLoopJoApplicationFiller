@@ -264,7 +264,7 @@ class PersonaController {
         where: { user: { id: userId }, active: false },
         relations: ['resumes'],
         order: { createdAt: 'DESC' },
-        take: limitNum - 1,
+        take: activePersona ? limitNum - 1 : limitNum,
       });
 
       for (const p of nonActivePersonas) {
