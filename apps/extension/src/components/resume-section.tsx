@@ -2,10 +2,10 @@ import { useEffect, useState, useReducer, useCallback, useRef } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 
 import { Radio, CircularProgress } from '@mui/material';
-import { ArrowForward, OpenInNew as OpenInNewIcon } from '@mui/icons-material';
+import { ArrowForward, OpenInNew as OpenInNewIcon, Refresh } from '@mui/icons-material';
 import styles from '../routes/style/resume.module.css';
 import scrollbarStyles from '@repo/ui/scroll-bar.module.css';
-import { EnhancedTextField, EnhancedTooltipWithText } from '@repo/ui';
+import { EnhancedTextField, EnhancedTooltipWithText, EnhancedButton } from '@repo/ui';
 import type { PaginatedResumeListItem, PaginatedResumeResponse } from '@repo/shared-types';
 import { useResumesCache } from '../hooks/use-resumes-cache';
 
@@ -20,6 +20,9 @@ type PaginationState = {
   isInitialLoading: boolean;
   isFetchingNext: boolean;
   isFetchingPrevious: boolean;
+  isError: boolean;
+  errorPage: number | null;
+  errorDirection: 'next' | 'previous' | undefined;
   pageSizes: Map<number, number>;
 };
 
@@ -33,7 +36,7 @@ type PaginationAction =
       totalPages: number;
       direction?: 'next' | 'previous';
     }
-  | { type: 'FETCH_ERROR'; direction?: 'next' | 'previous' }
+  | { type: 'FETCH_ERROR'; page: number; direction?: 'next' | 'previous' }
   | { type: 'RESET' }
   | { type: 'SET_ACTIVE'; id: string };
 
@@ -46,6 +49,9 @@ const initialState: PaginationState = {
   isInitialLoading: true,
   isFetchingNext: false,
   isFetchingPrevious: false,
+  isError: false,
+  errorPage: null,
+  errorDirection: undefined,
   pageSizes: new Map(),
 };
 
@@ -54,11 +60,11 @@ function paginationReducer(state: PaginationState, action: PaginationAction): Pa
   switch (action.type) {
     case 'FETCH_START':
       if (action.direction === 'next') {
-        return { ...state, isFetchingNext: true };
+        return { ...state, isFetchingNext: true, isError: false };
       } else if (action.direction === 'previous') {
-        return { ...state, isFetchingPrevious: true };
+        return { ...state, isFetchingPrevious: true, isError: false };
       }
-      return { ...state, isInitialLoading: true };
+      return { ...state, isInitialLoading: true, isError: false };
 
     case 'FETCH_SUCCESS': {
       const { items, page, totalPages, direction } = action;
@@ -140,6 +146,9 @@ function paginationReducer(state: PaginationState, action: PaginationAction): Pa
         isInitialLoading: false,
         isFetchingNext: false,
         isFetchingPrevious: false,
+        isError: true,
+        errorPage: action.page,
+        errorDirection: action.direction,
       };
 
     case 'RESET':
@@ -263,7 +272,7 @@ export function ResumeSection({
               direction,
             });
           } else {
-            dispatch({ type: 'FETCH_ERROR', direction });
+            dispatch({ type: 'FETCH_ERROR', page: pageNum, direction });
           }
         }
       );
@@ -328,7 +337,8 @@ export function ResumeSection({
           topEntry?.isIntersecting &&
           hasPreviousPage &&
           !state.isFetchingPrevious &&
-          !state.isInitialLoading
+          !state.isInitialLoading &&
+          !state.isError
         ) {
           fetchResumes(state.firstPage - 1, searchQuery, 'previous');
         }
@@ -337,7 +347,8 @@ export function ResumeSection({
           bottomEntry?.isIntersecting &&
           hasNextPage &&
           !state.isFetchingNext &&
-          !state.isInitialLoading
+          !state.isInitialLoading &&
+          !state.isError
         ) {
           fetchResumes(state.lastPage + 1, searchQuery, 'next');
         }
@@ -359,6 +370,7 @@ export function ResumeSection({
     state.isFetchingNext,
     state.isFetchingPrevious,
     state.isInitialLoading,
+    state.isError,
     state.firstPage,
     state.lastPage,
     searchQuery,
@@ -378,6 +390,12 @@ export function ResumeSection({
   const formatDate = (date: Date | string): string => {
     const d = new Date(date);
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const handleRetry = () => {
+    if (state.errorPage !== null) {
+      fetchResumes(state.errorPage, searchQuery, state.errorDirection);
+    }
   };
 
   return (
@@ -445,6 +463,17 @@ export function ResumeSection({
       {state.isInitialLoading && state.resumes.length === 0 ? (
         <div className={styles.loadingContainer}>
           <CircularProgress size={32} sx={{ color: 'var(--blue-500)' }} />
+        </div>
+      ) : state.isError && state.resumes.length === 0 ? (
+        <div className={styles.errorContainer}>
+          <p className={styles.errorText}>Failed to load resumes. Please try again.</p>
+          <EnhancedButton
+            label="Retry"
+            colorTheme="secondary"
+            size="small"
+            onClick={handleRetry}
+            startIcon={<Refresh fontSize="small" />}
+          />
         </div>
       ) : state.resumes.length === 0 ? (
         <p className={styles.emptyText}>
@@ -543,6 +572,19 @@ export function ResumeSection({
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {state.isError && state.resumes.length > 0 && (
+        <div className={styles.errorContainer}>
+          <p className={styles.errorText}>Failed to load more resumes. Please try again.</p>
+          <EnhancedButton
+            label="Retry"
+            colorTheme="secondary"
+            size="small"
+            onClick={handleRetry}
+            startIcon={<Refresh fontSize="small" />}
+          />
         </div>
       )}
     </div>
