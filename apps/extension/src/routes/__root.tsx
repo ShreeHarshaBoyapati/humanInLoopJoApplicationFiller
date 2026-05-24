@@ -133,6 +133,11 @@ function RootComponent() {
           severity={snackbar.severity}
           autoHideDuration={snackbar.autoHideDuration}
           onClose={hideSnackbar}
+          customProps={{
+            styledAlertProps: {
+              actionStyle: { position: 'relative' },
+            },
+          }}
         />
       </div>
     );
@@ -143,7 +148,6 @@ function RootComponent() {
       <main className={`${styles.mainContent} ${scrollStyles.scrollbarVerticalContainer}`}>
         <Outlet />
       </main>
-
       <nav className={styles.bottomNav}>
         <Link
           to="/"
@@ -194,6 +198,11 @@ function RootComponent() {
         severity={snackbar.severity}
         autoHideDuration={snackbar.autoHideDuration}
         onClose={hideSnackbar}
+        customProps={{
+          styledAlertProps: {
+            actionStyle: { position: 'relative' },
+          },
+        }}
       />
     </div>
   );

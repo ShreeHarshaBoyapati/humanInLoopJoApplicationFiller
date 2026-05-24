@@ -6,10 +6,11 @@ import {
   KeyboardArrowDown,
   KeyboardArrowUp,
   OpenInNew as OpenInNewIcon,
+  Refresh,
 } from '@mui/icons-material';
 import styles from '../routes/style/resume-version.module.css';
 import scrollbarStyles from '@repo/ui/scroll-bar.module.css';
-import { EnhancedTextField, EnhancedTooltipWithText } from '@repo/ui';
+import { EnhancedTextField, EnhancedTooltipWithText, EnhancedButton } from '@repo/ui';
 import type {
   PaginatedVersionListItem,
   PaginatedVersionResponse,
@@ -19,8 +20,9 @@ import type {
 import { useResumeVersionsCache } from '../hooks/use-resume-versions-cache';
 import { usePersonasCache } from '../hooks/use-personas-cache';
 import { useResumesCache } from '../hooks/use-resumes-cache';
+import { useStore } from '../store';
 
-const MAX_PAGES = 10;
+const MAX_PAGES = 3;
 
 // Pagination state type
 type PaginationState = {
@@ -31,6 +33,9 @@ type PaginationState = {
   isInitialLoading: boolean;
   isFetchingNext: boolean;
   isFetchingPrevious: boolean;
+  isError: boolean;
+  errorPage: number | null;
+  errorDirection: 'next' | 'previous' | undefined;
   pageSizes: Map<number, number>;
 };
 
@@ -44,7 +49,7 @@ type PaginationAction =
       totalPages: number;
       direction?: 'next' | 'previous';
     }
-  | { type: 'FETCH_ERROR'; direction?: 'next' | 'previous' }
+  | { type: 'FETCH_ERROR'; page: number; direction?: 'next' | 'previous' }
   | { type: 'RESET' }
   | { type: 'SET_ACTIVE'; id: string };
 
@@ -57,6 +62,9 @@ const initialState: PaginationState = {
   isInitialLoading: true,
   isFetchingNext: false,
   isFetchingPrevious: false,
+  isError: false,
+  errorPage: null,
+  errorDirection: undefined,
   pageSizes: new Map(),
 };
 
@@ -65,11 +73,11 @@ function paginationReducer(state: PaginationState, action: PaginationAction): Pa
   switch (action.type) {
     case 'FETCH_START':
       if (action.direction === 'next') {
-        return { ...state, isFetchingNext: true };
+        return { ...state, isFetchingNext: true, isError: false };
       } else if (action.direction === 'previous') {
-        return { ...state, isFetchingPrevious: true };
+        return { ...state, isFetchingPrevious: true, isError: false };
       }
-      return { ...state, isInitialLoading: true };
+      return { ...state, isInitialLoading: true, isError: false };
 
     case 'FETCH_SUCCESS': {
       const { items, page, totalPages, direction } = action;
@@ -151,6 +159,9 @@ function paginationReducer(state: PaginationState, action: PaginationAction): Pa
         isInitialLoading: false,
         isFetchingNext: false,
         isFetchingPrevious: false,
+        isError: true,
+        errorPage: action.page,
+        errorDirection: action.direction,
       };
 
     case 'RESET':
@@ -204,6 +215,9 @@ export function ResumeVersionSection({
   const { getPage, setPage, invalidateForResume } = useResumeVersionsCache();
   const { invalidateCache: invalidatePersonasCache } = usePersonasCache();
   const { invalidateForPersona } = useResumesCache();
+
+  // Snackbar for error handling
+  const showSnackbar = useStore((state) => state.showSnackbar);
 
   // Refs for infinite scroll
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -288,7 +302,7 @@ export function ResumeVersionSection({
               direction,
             });
           } else {
-            dispatch({ type: 'FETCH_ERROR', direction });
+            dispatch({ type: 'FETCH_ERROR', page: pageNum, direction });
           }
         }
       );
@@ -351,7 +365,8 @@ export function ResumeVersionSection({
           topEntry?.isIntersecting &&
           hasPreviousPage &&
           !state.isFetchingPrevious &&
-          !state.isInitialLoading
+          !state.isInitialLoading &&
+          !state.isError
         ) {
           fetchVersions(state.firstPage - 1, searchQuery, 'previous');
         }
@@ -360,7 +375,8 @@ export function ResumeVersionSection({
           bottomEntry?.isIntersecting &&
           hasNextPage &&
           !state.isFetchingNext &&
-          !state.isInitialLoading
+          !state.isInitialLoading &&
+          !state.isError
         ) {
           fetchVersions(state.lastPage + 1, searchQuery, 'next');
         }
@@ -382,6 +398,7 @@ export function ResumeVersionSection({
     state.isFetchingNext,
     state.isFetchingPrevious,
     state.isInitialLoading,
+    state.isError,
     state.firstPage,
     state.lastPage,
     searchQuery,
@@ -401,6 +418,7 @@ export function ResumeVersionSection({
             previousResumeId: string | null;
             newResumeId: string;
           };
+          error?: string;
         }) => {
           if (res?.success) {
             dispatch({ type: 'SET_ACTIVE', id });
@@ -433,6 +451,8 @@ export function ResumeVersionSection({
             await Promise.all(invalidationPromises);
             dispatch({ type: 'RESET' });
             fetchVersions(1, searchQuery);
+          } else {
+            showSnackbar(res?.error || 'Failed to set active version', { severity: 'error' });
           }
           setActiveLoading(false);
         }
@@ -513,6 +533,12 @@ export function ResumeVersionSection({
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
+  const handleRetry = () => {
+    if (state.errorPage !== null) {
+      fetchVersions(state.errorPage, searchQuery, state.errorDirection);
+    }
+  };
+
   return (
     <div className={`${styles.sectionContainer} ${scrollbarStyles.scrollbarContainer}`}>
       {/* Header */}
@@ -586,6 +612,17 @@ export function ResumeVersionSection({
       {state.isInitialLoading && state.versions.length === 0 ? (
         <div className={styles.loadingContainer}>
           <CircularProgress size={32} sx={{ color: 'var(--blue-400)' }} />
+        </div>
+      ) : state.isError && state.versions.length === 0 ? (
+        <div className={styles.errorContainer}>
+          <p className={styles.errorText}>Failed to load resume versions. Please try again.</p>
+          <EnhancedButton
+            label="Retry"
+            colorTheme="secondary"
+            size="small"
+            onClick={handleRetry}
+            startIcon={<Refresh fontSize="small" />}
+          />
         </div>
       ) : state.versions.length === 0 ? (
         <p className={styles.emptyText}>
@@ -736,6 +773,19 @@ export function ResumeVersionSection({
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {state.isError && state.versions.length > 0 && (
+        <div className={styles.errorContainer}>
+          <p className={styles.errorText}>Failed to load more versions. Please try again.</p>
+          <EnhancedButton
+            label="Retry"
+            colorTheme="secondary"
+            size="small"
+            onClick={handleRetry}
+            startIcon={<Refresh fontSize="small" />}
+          />
         </div>
       )}
     </div>

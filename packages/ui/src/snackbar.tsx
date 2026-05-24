@@ -13,10 +13,12 @@ type SnackbarSeverity = 'success' | 'warning' | 'error' | 'info';
 
 interface StyledAlertProps {
   header?: string | boolean;
+  actionStyle?: React.CSSProperties;
 }
 
 interface StyledBoxProps {
   header?: string | boolean;
+  style?: React.CSSProperties;
 }
 
 interface StyledWrapperBoxProps {
@@ -31,6 +33,7 @@ interface MessageWrapperBoxProps {
 type CustomProps = {
   snackbarProps?: Partial<SnackbarProps>;
   styledWrapperBoxProps?: Partial<StyledWrapperBoxProps>;
+  styledAlertProps?: Partial<StyledAlertProps>;
   headerTypographyProps?: Partial<TypographyProps>;
   messageTypographyProps?: Partial<TypographyProps>;
   closeButtonParentBoxProps?: Partial<StyledBoxProps>;
@@ -50,8 +53,8 @@ interface EnhancedSnackbarProps {
 }
 
 const StyledAlert = styled(Alert, {
-  shouldForwardProp: (prop) => prop !== 'header',
-})<StyledAlertProps>(({ header }) => ({
+  shouldForwardProp: (prop) => prop !== 'header' && prop !== 'actionStyle',
+})<StyledAlertProps>(({ header, actionStyle }) => ({
   padding: '8px 10px',
   borderRadius: styleConstants.borderRadius,
   width: '290px',
@@ -96,6 +99,7 @@ const StyledAlert = styled(Alert, {
     paddingTop: '0px',
     position: 'absolute',
     right: '10px',
+    ...actionStyle,
   },
   '& .MuiAlert-icon': {
     padding: 0,
@@ -239,6 +243,7 @@ const EnhancedSnackbar = forwardRef<HTMLDivElement, EnhancedSnackbarProps>(
             variant="filled"
             icon={icon}
             header={headerValue || false}
+            actionStyle={customProps.styledAlertProps?.actionStyle}
             action={
               <StyledBox header={headerValue || false} {...customProps.closeButtonParentBoxProps}>
                 <CloseButton onClick={onClose} {...customProps.closeButtonProps}>
