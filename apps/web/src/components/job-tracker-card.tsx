@@ -36,13 +36,16 @@ export const JobTrackerCard = ({
     onStatusChange(job, stepLabel.toLowerCase());
   };
 
+  const isArchived = ['archived', 'rejected'].includes(job.status.toLowerCase());
+
   return (
     <div className={styles.jobCard}>
       {/* Section 1: Favorite Icon */}
       <div className={styles.favoriteSection}>
         <button
           type="button"
-          className={`${styles.favoriteButton} ${job.favorite ? styles.active : ''}`}
+          className={`${styles.favoriteButton} ${job.favorite ? styles.active : ''} ${isLoading ? styles.disabled : ''}`}
+          disabled={isLoading}
           onClick={handleFavoriteClick}
         >
           {job.favorite ? (
@@ -75,26 +78,28 @@ export const JobTrackerCard = ({
       </div>
 
       {/* Section 3: Status Stepper */}
-      <div className={styles.statusSection}>
-        <div className={styles.stepperWrapper}>
-          <EnhancedStepper
-            steps={statusSteps}
-            activeStep={activeStep}
-            disabled={isLoading}
-            onStepClick={handleStepClick}
-            customProps={{
-              childProps: {
-                stepConnector: {
-                  sx: {
-                    left: `calc(-50% + 4px)`,
-                    right: `calc(50% + 4px)`,
+      {!isArchived && (
+        <div className={styles.statusSection}>
+          <div className={styles.stepperWrapper}>
+            <EnhancedStepper
+              steps={statusSteps}
+              activeStep={activeStep}
+              disabled={isLoading}
+              onStepClick={handleStepClick}
+              customProps={{
+                childProps: {
+                  stepConnector: {
+                    sx: {
+                      left: `calc(-50% + 4px)`,
+                      right: `calc(50% + 4px)`,
+                    },
                   },
                 },
-              },
-            }}
-          />
+              }}
+            />
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
