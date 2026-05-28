@@ -179,12 +179,12 @@ export function AddApplicationModal({ isOpen, onClose, onSuccess }: AddApplicati
         childProps: {
           body: {
             className: scrollStyles.scrollbarVerticalContainer,
-            sx: { maxHeight: '60vh', overflowY: 'auto' },
+            sx: { maxHeight: '70vh', overflowY: 'auto' },
           },
         },
       }}
       footer={
-        <div className={styles.footer}>
+        <div className={styles.footerContainer}>
           <EnhancedButton
             label="Cancel"
             colorTheme="secondary"
