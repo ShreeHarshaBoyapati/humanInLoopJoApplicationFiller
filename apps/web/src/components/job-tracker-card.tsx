@@ -39,7 +39,7 @@ export const JobTrackerCard = ({
   const isArchived = ['archived', 'rejected'].includes(job.status.toLowerCase());
 
   return (
-    <div className={styles.jobCard}>
+    <div className={styles.jobCard} data-job-id={job.id}>
       {/* Section 1: Favorite Icon */}
       <div className={styles.favoriteSection}>
         <button

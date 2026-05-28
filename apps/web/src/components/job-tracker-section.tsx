@@ -6,7 +6,7 @@ import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import { PageHeader } from './page-header';
 import { SearchBar } from './search-bar';
 import { JobTrackerCard } from './job-tracker-card';
-import { EnhancedSelectDropdown, EnhancedAutocompleteDropdown } from '@repo/ui';
+import { EnhancedSelectDropdown, EnhancedAutocompleteDropdown, EnhancedButton } from '@repo/ui';
 import type { AutocompleteOption } from '@repo/ui';
 import type { Job, PaginatedJobsResponse, Persona } from '@repo/shared-types';
 import { useJobs, useUpdateJob } from '../hooks/use-jobs';
@@ -114,7 +114,10 @@ export function JobTrackerSection() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const topSentinelRef = useRef<HTMLDivElement>(null);
   const bottomSentinelRef = useRef<HTMLDivElement>(null);
-  const previousScrollHeightRef = useRef<number>(0);
+  const pendingScrollRestoreRef = useRef<{
+    firstVisibleElementId: string | null;
+    firstVisibleElementOffset: number;
+  } | null>(null);
 
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current;
@@ -129,15 +132,38 @@ export function JobTrackerSection() {
         const bottomEntry = entries.find((e) => e.target === bottomSentinel);
 
         if (topEntry?.isIntersecting && hasPreviousPage && !isFetchingPreviousPage && !isError) {
-          const currentScrollTop = scrollContainer.scrollTop;
-          previousScrollHeightRef.current = scrollContainer.scrollHeight;
+          // Capture the first visible element BEFORE fetching previous page
+          if (scrollContainer) {
+            const jobCards = scrollContainer.querySelectorAll('[data-job-id]');
 
-          fetchPreviousPage().then(() => {
-            if (scrollContainer) {
-              const contentAdded = scrollContainer.scrollHeight - previousScrollHeightRef.current;
-              scrollContainer.scrollTop = currentScrollTop + contentAdded;
+            if (jobCards.length > 0) {
+              const containerRect = scrollContainer.getBoundingClientRect();
+              let firstVisibleElement: Element | null = null;
+              let firstVisibleElementOffset = 0;
+
+              for (let i = 0; i < jobCards.length; i++) {
+                const card = jobCards.item(i);
+                if (!card) continue;
+                const cardRect = card.getBoundingClientRect();
+
+                // Check if this card is visible in the viewport
+                if (cardRect.bottom > containerRect.top && cardRect.top < containerRect.bottom) {
+                  firstVisibleElement = card;
+                  firstVisibleElementOffset = cardRect.top - containerRect.top;
+                  break;
+                }
+              }
+
+              if (firstVisibleElement) {
+                pendingScrollRestoreRef.current = {
+                  firstVisibleElementId: firstVisibleElement.getAttribute('data-job-id'),
+                  firstVisibleElementOffset: firstVisibleElementOffset,
+                };
+              }
             }
-          });
+          }
+
+          fetchPreviousPage();
         }
 
         if (bottomEntry?.isIntersecting && hasNextPage && !isFetchingNextPage && !isError) {
@@ -163,6 +189,30 @@ export function JobTrackerSection() {
     isFetchingPreviousPage,
     isError,
   ]);
+
+  // Restore scroll position after fetching previous page completes
+  useEffect(() => {
+    if (!isFetchingPreviousPage && pendingScrollRestoreRef.current && scrollContainerRef.current) {
+      const { firstVisibleElementId, firstVisibleElementOffset } = pendingScrollRestoreRef.current;
+
+      // Find the element by its job id
+      const targetElement = scrollContainerRef.current.querySelector(
+        `[data-job-id="${firstVisibleElementId}"]`
+      );
+
+      if (targetElement) {
+        const containerRect = scrollContainerRef.current.getBoundingClientRect();
+        const targetRect = targetElement.getBoundingClientRect();
+        const newScrollTop =
+          scrollContainerRef.current.scrollTop +
+          (targetRect.top - containerRect.top - firstVisibleElementOffset);
+        scrollContainerRef.current.scrollTop = newScrollTop;
+      }
+
+      // Clear pending restore after applying
+      pendingScrollRestoreRef.current = null;
+    }
+  }, [isFetchingPreviousPage, jobs.length]);
 
   const handleFavoriteToggle = useCallback(
     (job: Job) => {
@@ -335,10 +385,13 @@ export function JobTrackerSection() {
       {isError && (
         <div className={sectionStyles.errorContainer}>
           <p className={sectionStyles.errorText}>Failed to load jobs. Please try again.</p>
-          <button type="button" onClick={() => refetch()} className={sectionStyles.retryButton}>
-            <RefreshIcon fontSize="small" />
-            Retry
-          </button>
+          <EnhancedButton
+            label="Retry"
+            colorTheme="secondary"
+            size="small"
+            onClick={() => refetch()}
+            startIcon={<RefreshIcon fontSize="small" />}
+          />
         </div>
       )}
 
