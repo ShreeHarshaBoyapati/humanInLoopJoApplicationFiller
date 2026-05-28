@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as PersonaResumesRouteImport } from './routes/persona-resumes'
 import { Route as MuiDesignRouteImport } from './routes/mui-design'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as JobTrackerRouteImport } from './routes/job-tracker'
 import { Route as GoogleCallbackRouteImport } from './routes/google-callback'
 import { Route as IndexRouteImport } from './routes/index'
 
@@ -30,6 +31,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const JobTrackerRoute = JobTrackerRouteImport.update({
+  id: '/job-tracker',
+  path: '/job-tracker',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const GoogleCallbackRoute = GoogleCallbackRouteImport.update({
   id: '/google-callback',
   path: '/google-callback',
@@ -44,6 +50,7 @@ const IndexRoute = IndexRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/google-callback': typeof GoogleCallbackRoute
+  '/job-tracker': typeof JobTrackerRoute
   '/login': typeof LoginRoute
   '/mui-design': typeof MuiDesignRoute
   '/persona-resumes': typeof PersonaResumesRoute
@@ -51,6 +58,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/google-callback': typeof GoogleCallbackRoute
+  '/job-tracker': typeof JobTrackerRoute
   '/login': typeof LoginRoute
   '/mui-design': typeof MuiDesignRoute
   '/persona-resumes': typeof PersonaResumesRoute
@@ -59,6 +67,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/google-callback': typeof GoogleCallbackRoute
+  '/job-tracker': typeof JobTrackerRoute
   '/login': typeof LoginRoute
   '/mui-design': typeof MuiDesignRoute
   '/persona-resumes': typeof PersonaResumesRoute
@@ -68,15 +77,23 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/google-callback'
+    | '/job-tracker'
     | '/login'
     | '/mui-design'
     | '/persona-resumes'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/google-callback' | '/login' | '/mui-design' | '/persona-resumes'
+  to:
+    | '/'
+    | '/google-callback'
+    | '/job-tracker'
+    | '/login'
+    | '/mui-design'
+    | '/persona-resumes'
   id:
     | '__root__'
     | '/'
     | '/google-callback'
+    | '/job-tracker'
     | '/login'
     | '/mui-design'
     | '/persona-resumes'
@@ -85,6 +102,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GoogleCallbackRoute: typeof GoogleCallbackRoute
+  JobTrackerRoute: typeof JobTrackerRoute
   LoginRoute: typeof LoginRoute
   MuiDesignRoute: typeof MuiDesignRoute
   PersonaResumesRoute: typeof PersonaResumesRoute
@@ -113,6 +131,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/job-tracker': {
+      id: '/job-tracker'
+      path: '/job-tracker'
+      fullPath: '/job-tracker'
+      preLoaderRoute: typeof JobTrackerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/google-callback': {
       id: '/google-callback'
       path: '/google-callback'
@@ -133,6 +158,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GoogleCallbackRoute: GoogleCallbackRoute,
+  JobTrackerRoute: JobTrackerRoute,
   LoginRoute: LoginRoute,
   MuiDesignRoute: MuiDesignRoute,
   PersonaResumesRoute: PersonaResumesRoute,

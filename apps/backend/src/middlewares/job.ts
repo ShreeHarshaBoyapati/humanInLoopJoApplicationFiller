@@ -8,7 +8,9 @@ const CreateJobSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   tags: z.array(z.string()).default([]),
   persona: z.string().default('default'),
-  status: z.enum(['draft', 'active', 'archived']).default('draft'),
+  status: z
+    .enum(['draft', 'applied', 'interview', 'offer', 'rejected', 'active', 'archived'])
+    .default('draft'),
   acceptanceLevel: z.number().int().min(0).max(100).default(0),
   companyName: z.string().default(''),
   notes: z.string().default(''),
@@ -25,7 +27,9 @@ const UpdateJobSchema = z.object({
   title: z.string().min(1, 'Title is required').optional(),
   tags: z.array(z.string()).optional(),
   persona: z.string().optional(),
-  status: z.enum(['draft', 'active', 'archived']).optional(),
+  status: z
+    .enum(['draft', 'applied', 'interview', 'offer', 'rejected', 'active', 'archived'])
+    .optional(),
   acceptanceLevel: z.number().int().min(0).max(100).optional(),
   companyName: z.string().optional(),
   notes: z.string().optional(),
@@ -34,6 +38,7 @@ const UpdateJobSchema = z.object({
   description: z.string().optional(),
   highlights: z.record(z.string(), z.unknown()).optional(),
   keySkills: z.array(z.string()).optional(),
+  favorite: z.boolean().optional(),
 });
 
 // Schema for deleting a job
@@ -56,6 +61,7 @@ const validJobFields = [
   'description',
   'highlights',
   'keySkills',
+  'favorite',
   'createdAt',
   'updatedAt',
 ] as const;
@@ -68,8 +74,11 @@ const GetJobsSchema = z.object({
 
   // Filtering
   id: z.uuid('Invalid job ID').optional(),
-  status: z.enum(['draft', 'active', 'archived']).optional(),
+  status: z
+    .enum(['draft', 'applied', 'interview', 'offer', 'rejected', 'active', 'archived'])
+    .optional(),
   persona: z.string().optional(),
+  favorite: z.coerce.boolean().optional(),
 
   // Searching
   search: z.string().optional(),

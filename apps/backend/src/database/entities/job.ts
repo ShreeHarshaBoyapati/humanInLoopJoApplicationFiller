@@ -49,6 +49,9 @@ export default class Job {
   @Column('simple-array', { default: [] })
   keySkills!: string[];
 
+  @Column('boolean', { default: false })
+  favorite!: boolean;
+
   @ManyToOne('User', 'jobs', { onDelete: 'CASCADE' })
   user!: User;
 

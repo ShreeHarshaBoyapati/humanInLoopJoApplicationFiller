@@ -16,6 +16,7 @@ export interface Job {
   highlights: Record<string, unknown>;
   keySkills: string[];
   notes: string;
+  favorite: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -52,13 +53,79 @@ export interface JobList {
   };
 }
 
+export type JobStatus =
+  | 'draft'
+  | 'applied'
+  | 'interview'
+  | 'offer'
+  | 'rejected'
+  | 'active'
+  | 'archived';
+
 export interface GetJobParams {
   page?: number;
   limit?: number;
-  status?: 'draft' | 'active' | 'archived';
+  status?: JobStatus;
   persona?: string;
   search?: string;
   sortBy?: 'createdAt' | 'updatedAt' | 'acceptanceLevel';
   sortOrder?: 'ASC' | 'DESC';
   select?: string;
+  favorite?: boolean;
+}
+
+// Paginated Jobs Response for frontend hooks
+export interface PaginatedJobsResponse {
+  items: Job[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
+// Hook params for fetching jobs
+export interface UseJobsParams {
+  limit?: number;
+  searchQuery?: string;
+  status?: string;
+  persona?: string;
+  favorite?: boolean;
+  sortBy?: 'createdAt' | 'updatedAt' | 'acceptanceLevel';
+  sortOrder?: 'ASC' | 'DESC';
+}
+
+// Create Job Input
+export interface CreateJobInput {
+  title: string;
+  companyName: string;
+  description?: string;
+  requirements?: string;
+  tags?: string[];
+  keySkills?: string[];
+  persona?: string;
+  status?: string;
+  notes?: string;
+  acceptanceLevel?: number;
+}
+
+// Update Job Input
+export interface UpdateJobInput {
+  id: string;
+  title?: string;
+  companyName?: string;
+  description?: string;
+  requirements?: string;
+  tags?: string[];
+  keySkills?: string[];
+  persona?: string;
+  status?: string;
+  notes?: string;
+  favorite?: boolean;
+}
+
+// Delete Job Input
+export interface DeleteJobInput {
+  id: string;
 }

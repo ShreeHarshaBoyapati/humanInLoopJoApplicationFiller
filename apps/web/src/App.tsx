@@ -5,6 +5,10 @@ import { EnhancedTextField as TextField } from '@repo/ui/text-field.tsx';
 import { EnhancedButton as Button } from '@repo/ui/button.tsx';
 import { EnhancedChip as Chip } from '@repo/ui/chip.tsx';
 import { EnhancedSelectDropdown as SelectDropdown } from '@repo/ui/select-dropdown.tsx';
+import {
+  EnhancedAutocompleteDropdown as AutocompleteDropdown,
+  type AutocompleteOption,
+} from '@repo/ui/autocomplete-dropdown.tsx';
 import { EnhancedTextInputArea as TextInputArea } from '@repo/ui/text-input-area.tsx';
 import { FileUploader } from '@repo/ui/file-uploader.tsx';
 import { EnhancedStepper } from '@repo/ui/stepper.tsx';
@@ -28,12 +32,26 @@ function App() {
   const [selectedValue, setSelectedValue] = useState<string | number | readonly string[]>(
     'option1'
   );
+  const [autocompleteValue, setAutocompleteValue] = useState<AutocompleteOption | null>(null);
+  const [autocompleteSearchValue, setAutocompleteSearchValue] = useState<AutocompleteOption | null>(
+    null
+  );
+  const [autocompleteLoadingValue, setAutocompleteLoadingValue] =
+    useState<AutocompleteOption | null>(null);
   const { showSnackbar } = useSnackbar();
 
   const dropdownOptions = [
     { dataId: 'opt-1', value: 'option1', label: 'Option 1' },
     { dataId: 'opt-2', value: 'option2', label: 'Option 2' },
     { dataId: 'opt-3', value: 'option3', label: 'Option 3' },
+  ];
+
+  const autocompleteOptions: AutocompleteOption[] = [
+    { value: 'persona1', label: 'Software Engineer' },
+    { value: 'persona2', label: 'Product Manager' },
+    { value: 'persona3', label: 'UX Designer' },
+    { value: 'persona4', label: 'Data Scientist' },
+    { value: 'persona5', label: 'DevOps Engineer' },
   ];
 
   // Fetch data from backend on component mount
@@ -755,6 +773,95 @@ function App() {
                     header: 'Custom Info',
                   })
                 }
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className={styles.section}>
+          <h2 className={styles.sectionTitle}>Autocomplete Dropdowns</h2>
+          <div className={styles.grid}>
+            <div className={styles.variantContainer}>
+              <span className={styles.variantLabel}>Default</span>
+              <AutocompleteDropdown
+                id="autocomplete-1"
+                testId="autocomplete-1"
+                label="Select Persona"
+                placeholder="Search personas..."
+                options={autocompleteOptions}
+                value={autocompleteValue}
+                onChange={(newValue) => setAutocompleteValue(newValue)}
+              />
+            </div>
+            <div className={styles.variantContainer}>
+              <span className={styles.variantLabel}>With Tooltip & Supporting Text</span>
+              <AutocompleteDropdown
+                id="autocomplete-2"
+                testId="autocomplete-2"
+                label="Select Role"
+                placeholder="Type to search..."
+                showTooltip={true}
+                tooltipText="Search and select a role from the list."
+                showSupportingText={true}
+                supportingText="Start typing to filter options."
+                options={autocompleteOptions}
+                value={autocompleteSearchValue}
+                onChange={(newValue) => setAutocompleteSearchValue(newValue)}
+                onInputChange={(inputValue) => console.log('Search:', inputValue)}
+              />
+            </div>
+            <div className={styles.variantContainer}>
+              <span className={styles.variantLabel}>Error State</span>
+              <AutocompleteDropdown
+                id="autocomplete-3"
+                testId="autocomplete-3"
+                label="Required Field"
+                placeholder="Select an option..."
+                error={true}
+                showErrorMsg={true}
+                errorText="This field is required."
+                options={autocompleteOptions}
+                value={null}
+                onChange={() => {}}
+              />
+            </div>
+            <div className={styles.variantContainer}>
+              <span className={styles.variantLabel}>Disabled</span>
+              <AutocompleteDropdown
+                id="autocomplete-4"
+                testId="autocomplete-4"
+                label="Disabled Dropdown"
+                placeholder="Cannot edit..."
+                disabled={true}
+                options={autocompleteOptions}
+                value={autocompleteOptions[0]}
+                onChange={() => {}}
+              />
+            </div>
+            <div className={styles.variantContainer}>
+              <span className={styles.variantLabel}>Loading State</span>
+              <AutocompleteDropdown
+                id="autocomplete-5"
+                testId="autocomplete-5"
+                label="Search Users"
+                placeholder="Type to search..."
+                loading={true}
+                options={autocompleteOptions}
+                value={autocompleteLoadingValue}
+                onChange={(newValue) => setAutocompleteLoadingValue(newValue)}
+                onInputChange={(inputValue) => console.log('Search:', inputValue)}
+              />
+            </div>
+            <div className={styles.variantContainer}>
+              <span className={styles.variantLabel}>Pre-selected Value</span>
+              <AutocompleteDropdown
+                id="autocomplete-6"
+                testId="autocomplete-6"
+                label="Assigned To"
+                placeholder="Select person..."
+                options={autocompleteOptions}
+                value={autocompleteOptions[1]}
+                onChange={() => {}}
               />
             </div>
           </div>

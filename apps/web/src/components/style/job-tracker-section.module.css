@@ -1,0 +1,133 @@
+.tabsContainer {
+  border-bottom: 1px solid rgb(255 255 255 / 20%);
+  border-radius: 0;
+  display: flex;
+  gap: calc(var(--spacing) * 4);
+  margin-bottom: calc(var(--spacing) * 4);
+  max-width: 1000px;
+  width: 100%;
+}
+
+.tab {
+  appearance: none;
+  background: transparent;
+  background-color: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--white-700);
+  cursor: pointer;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-medium);
+  margin: 0;
+  margin-bottom: -1px;
+  outline: 0;
+  padding: calc(var(--spacing) * 3) calc(var(--spacing) * 2);
+  position: relative;
+  transition:
+    color 0.2s ease,
+    border-bottom-color 0.2s ease;
+}
+
+.tab:hover,
+.tab:focus,
+.tab:focus-visible,
+.tab:active {
+  background: transparent;
+  background-color: transparent;
+  border-color: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--white-900);
+  outline: 0;
+}
+
+.tab.active,
+.tab.active:hover,
+.tab.active:focus,
+.tab.active:focus-visible,
+.tab.active:active {
+  background: transparent;
+  background-color: transparent;
+  border-bottom-color: var(--blue-500);
+  border-radius: 0;
+  box-shadow: none;
+  color: var(--blue-500);
+  outline: 0;
+}
+
+.filtersRow {
+  align-items: flex-end;
+  display: flex;
+  gap: calc(var(--spacing) * 4);
+  max-width: 1000px;
+  width: 80%;
+}
+
+.filterGroup {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 2);
+  max-width: 200px;
+}
+
+.searchWrapper {
+  flex: 1;
+  max-width: 400px;
+}
+
+.favoriteToggleButton {
+  align-items: center;
+  background-color: var(--black-700);
+  border: 1px solid var(--grey-700);
+  border-radius: var(--border-radius);
+  color: var(--white-700);
+  cursor: pointer;
+  display: flex;
+  height: 38px;
+  justify-content: center;
+  transition: all 0.2s ease;
+  width: 38px;
+}
+
+.favoriteToggleButton:hover {
+  background-color: var(--grey-700);
+  color: var(--white-900);
+}
+
+.favoriteToggleButton.active {
+  background-color: var(--yellow-400);
+  border-color: var(--yellow-400);
+  color: var(--black-800);
+}
+
+.favoriteToggleButton.active:hover {
+  background-color: var(--yellow-500);
+  border-color: var(--yellow-500);
+}
+
+/* Tablet and smaller screens - full width */
+@media (width <=1024px) {
+  .filtersRow {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  .filterGroup {
+    max-width: none;
+  }
+
+  .searchWrapper {
+    max-width: none;
+  }
+}
+
+/* Mobile responsive styles */
+@media (width <=768px) {
+  .filtersRow {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

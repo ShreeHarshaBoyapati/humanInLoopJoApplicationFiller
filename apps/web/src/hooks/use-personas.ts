@@ -18,7 +18,7 @@ export type { PaginatedPersonasResponse };
 
 export const usePersonas = (limit: number = 10, searchQuery: string = '') => {
   return useInfiniteQuery({
-    queryKey: [...PERSONA_KEYS.lists(), { search: searchQuery }],
+    queryKey: [...PERSONA_KEYS.lists(), { limit, search: searchQuery }],
     initialPageParam: 1,
     maxPages: 20,
     queryFn: async ({ pageParam }: { pageParam: number }) => {

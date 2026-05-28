@@ -6,7 +6,7 @@ import type {
   DeleteJobInput,
   GetJobsInfer,
 } from '../middlewares/job.js';
-import { ApiResponse, JobList, JobPublic } from '@repo/shared-types';
+import { ApiResponse, JobList, Job } from '@repo/shared-types';
 
 class JobController {
   async create(req: AuthenticatedTypedRequest<CreateJobInput>, res: Response) {
@@ -28,7 +28,7 @@ class JobController {
     });
 
     await jobRepository.save(job);
-    const data: ApiResponse<JobPublic> = {
+    const data: ApiResponse<{ id: string }> = {
       success: true,
       message: 'Job created successfully',
       data: {
@@ -72,11 +72,9 @@ class JobController {
 
     await jobRepository.save(job);
 
-    const data: ApiResponse<JobPublic> = {
+    const data: ApiResponse<Job> = {
       success: true,
-      data: {
-        id: job.id,
-      },
+      data: job,
     };
     res.status(200).json(data);
   }
@@ -121,14 +119,14 @@ class JobController {
     res.status(200).json(data);
   }
 
-  // Pagination, filtering by status/persona, searching by title/companyName/keySkills/tags,
+  // Pagination, filtering by status/persona/favorite, searching by title/companyName/keySkills/tags,
   // sorting by createdAt/updatedAt/acceptanceLevel, field selection
   async get(req: AuthenticatedTypedRequest<null>, res: Response) {
     const jobRepository = getJobRepository();
 
     const userId = req.userId;
 
-    const { page, limit, status, persona, search, sortBy, sortOrder, select, id } = (
+    const { page, limit, status, persona, search, sortBy, sortOrder, select, id, favorite } = (
       req as AuthenticatedTypedRequest<null> & { parsedQuery: GetJobsInfer }
     ).parsedQuery;
 
@@ -149,6 +147,7 @@ class JobController {
       'requirements',
       'highlights',
       'keySkills',
+      'favorite',
       'createdAt',
       'updatedAt',
     ];
@@ -166,7 +165,13 @@ class JobController {
     }
 
     if (status) {
-      queryBuilder.andWhere('job.status = :status', { status });
+      if (status === 'active') {
+        queryBuilder.andWhere('job.status != :archivedStatus', { archivedStatus: 'archived' });
+      } else if (status === 'archived') {
+        queryBuilder.andWhere('job.status = :status', { status: 'archived' });
+      } else {
+        queryBuilder.andWhere('job.status = :status', { status });
+      }
     }
 
     if (persona) {
@@ -178,6 +183,10 @@ class JobController {
         '(job.title LIKE :search OR job.companyName LIKE :search OR job.keySkills LIKE :search OR job.tags LIKE :search)',
         { search: `%${search}%` }
       );
+    }
+
+    if (favorite !== undefined) {
+      queryBuilder.andWhere('job.favorite = :favorite', { favorite });
     }
 
     queryBuilder.orderBy(`job.${sortBy}`, sortOrder);

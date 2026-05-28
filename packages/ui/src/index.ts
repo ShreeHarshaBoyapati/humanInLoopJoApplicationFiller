@@ -7,6 +7,7 @@ export * from './text-input-area';
 export * from './tool-tip';
 export * from './theme';
 export * from './select-dropdown';
+export * from './autocomplete-dropdown';
 export * from './chip';
 export * from './accordion';
 export * from './action-card';

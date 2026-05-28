@@ -1,0 +1,164 @@
+.jobCard {
+  align-items: stretch;
+  background-color: var(--black-700);
+  border: 1px solid var(--grey-700);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  display: flex;
+  flex-direction: row;
+  gap: calc(var(--spacing) * 4);
+  min-height: 80px;
+  padding: calc(var(--spacing) * 4);
+  transition: border-color 0.2s ease;
+  width: 100%;
+}
+
+.jobCard:hover {
+  border-color: var(--blue-500);
+}
+
+.jobCard.selected {
+  border-color: var(--blue-500);
+}
+
+/* Section 1: Favorite icon (full height) */
+.favoriteSection {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  justify-content: center;
+}
+
+.favoriteButton {
+  align-items: center;
+  background-color: transparent;
+  border: none;
+  color: var(--grey-500);
+  cursor: pointer;
+  display: flex;
+  padding: calc(var(--spacing) * 1);
+  transition: color 0.2s ease;
+}
+
+.favoriteButton:hover {
+  color: var(--yellow-400);
+}
+
+.favoriteButton.active {
+  color: var(--yellow-400);
+}
+
+/* Section 2: Data with icon, title, company, tags */
+.dataSection {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  gap: calc(var(--spacing) * 3);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.jobIcon {
+  align-items: center;
+  background-color: var(--blue-500);
+  border-radius: 50%;
+  color: var(--white-900);
+  display: flex;
+  flex-shrink: 0;
+  font-family: var(--heading-font);
+  font-size: 1rem;
+  font-weight: 600;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
+}
+
+.jobInfo {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 1);
+  min-width: 0;
+}
+
+.jobTitleRow {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--spacing) * 2);
+}
+
+.jobTitle {
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  font-size: 1rem;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.jobCompany {
+  color: var(--white-700);
+  flex-shrink: 0;
+  font-family: var(--secondary-font);
+  font-size: 0.75rem;
+}
+
+.jobTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--spacing) * 1);
+}
+
+.jobTag {
+  background-color: var(--black-600);
+  border-radius: var(--border-radius-sm);
+  color: var(--white-700);
+  font-size: var(--font-size-xs);
+  padding: calc(var(--spacing) * 1) calc(var(--spacing) * 2);
+}
+
+/* Section 3: Status section with stepper and dropdown */
+.statusSection {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: calc(var(--spacing) * 2);
+  min-width: 200px;
+}
+
+.stepperWrapper {
+  width: 100%;
+}
+
+/* Mobile responsive styles */
+@media (width <=768px) {
+  .jobCard {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: calc(var(--spacing) * 3);
+  }
+
+  .favoriteSection {
+    display: none;
+  }
+
+  .dataSection {
+    width: 100%;
+  }
+
+  .statusSection {
+    border-top: 1px solid var(--grey-700);
+    justify-content: flex-start;
+    padding-top: calc(var(--spacing) * 2);
+    width: 100%;
+  }
+
+  .jobTitleRow {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: calc(var(--spacing) * 1);
+  }
+}
