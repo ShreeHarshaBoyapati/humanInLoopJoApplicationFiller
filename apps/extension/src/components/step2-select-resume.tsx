@@ -8,8 +8,8 @@ import styles from '../routes/style/step2-select-resume.module.css';
 export interface Step2SelectResumeProps {
   savedJobId: string | null;
   selectedPersonaId: string | null;
-  selectedResumeId: string | null;
-  onChange: (personaId: string | null, resumeId: string | null) => void;
+  selectedVersionId: string | null;
+  onChange: (personaId: string | null, versionId: string | null) => void;
 }
 
 interface ActiveSelectionInfo {
@@ -38,8 +38,8 @@ export const Step2SelectResume = ({ savedJobId, onChange }: Step2SelectResumePro
           setLoading(false);
           if (res?.success && res.data) {
             setActiveInfo(res.data);
-            if (res.data.persona && res.data.resume) {
-              onChange(res.data.persona.id, res.data.resume.id);
+            if (res.data.persona && res.data.version) {
+              onChange(res.data.persona.id, res.data.version.id);
             }
           } else if (res?.error) {
             setError(res.error);

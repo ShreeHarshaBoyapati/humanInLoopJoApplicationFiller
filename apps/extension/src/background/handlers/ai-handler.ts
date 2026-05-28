@@ -11,10 +11,10 @@ export function handleAiMessage(
   api: AxiosInstance
 ): boolean {
   if (message.action === 'ANALYZE_RESUME') {
-    const { jobId, resumeId } = message.payload;
+    const { jobId, resumeVersionId } = message.payload;
 
     api
-      .post<ApiResponse<AnalysisResult>>('/ai/analyze-keywords', { jobId, resumeId })
+      .post<ApiResponse<AnalysisResult>>('/ai/analyze-keywords', { jobId, resumeVersionId })
       .then((response) => {
         const { data } = response;
         if (data.success) {

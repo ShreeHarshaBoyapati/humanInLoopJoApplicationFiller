@@ -3,7 +3,6 @@ import { getLanguageModel, ProviderName } from '../services/ai/registry.js';
 import {
   getApiKeyRepository,
   getJobRepository,
-  getResumeRepository,
   getResumeVersionRepository,
 } from '../database/repositories/index.js';
 import { decryptText } from '../utils/encryption.js';
@@ -55,18 +54,18 @@ class AiController {
   async analyzeKeywords(
     req: AuthenticatedTypedRequest<{
       jobId: string;
-      resumeId: string;
+      resumeVersionId: string;
     }>,
     res: Response
   ): Promise<void> {
     try {
       const userId = req.userId!;
-      const { jobId, resumeId } = req.body;
+      const { jobId, resumeVersionId } = req.body;
 
-      if (!jobId || !resumeId) {
+      if (!jobId || !resumeVersionId) {
         const data: ApiResponse = {
           success: false,
-          message: 'jobId and resumeId are required fields',
+          message: 'jobId and resumeVersionId are required fields',
         };
         res.status(400).json(data);
         return;
@@ -87,25 +86,21 @@ class AiController {
         return;
       }
 
-      // 2. Fetch resume (ownership check via persona → user)
-      const resumeRepository = getResumeRepository();
+      // 2. Fetch resume version (ownership check via resume → persona → user)
       const versionRepository = getResumeVersionRepository();
-      const resume = await resumeRepository.findOne({
-        where: { id: resumeId },
-        relations: ['persona', 'persona.user'],
+      const resumeVersion = await versionRepository.findOne({
+        where: { id: resumeVersionId },
+        relations: ['resume', 'resume.persona', 'resume.persona.user'],
       });
 
-      if (!resume || resume.persona.user.id !== userId) {
-        const data: ApiResponse = { success: false, message: 'Resume not found or not authorized' };
+      if (!resumeVersion || resumeVersion.resume.persona.user.id !== userId) {
+        const data: ApiResponse = {
+          success: false,
+          message: 'Resume version not found or not authorized',
+        };
         res.status(404).json(data);
         return;
       }
-
-      // 2.1 Fetch active resume version for keywords
-      const activeVersion = await versionRepository.findOne({
-        where: { resume: { id: resumeId }, active: true },
-        select: ['keywords'],
-      });
 
       // 3. Resolve active API key for this user
       const apiKeyRepository = getApiKeyRepository();
@@ -163,7 +158,7 @@ class AiController {
       const jobText = jobParts.join('\n\n');
 
       // 6. Build resume text from stored keywords
-      const resumeText = activeVersion?.keywords?.join(', ') || '(no keywords extracted)';
+      const resumeText = resumeVersion?.keywords?.join(', ') || '(no keywords extracted)';
 
       // 7. Call AI model
       const prompt = `

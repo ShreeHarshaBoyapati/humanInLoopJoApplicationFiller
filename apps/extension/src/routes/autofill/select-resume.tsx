@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { ResumeSection } from '../../components/resume-section';
+import { PaginatedResumeListItem } from '@repo/shared-types';
 
 export interface SelectResumeSearch {
   personaId: string;
@@ -20,12 +21,12 @@ function SelectResumeComponent() {
   const navigate = Route.useNavigate();
   const { personaId, jobId } = Route.useSearch();
 
-  const handleSelectResume = (resumeId: string) => {
+  const handleSelectResume = (resume: PaginatedResumeListItem) => {
     navigate({
       to: '/autofill/select-version',
       search: {
         personaId,
-        resumeId,
+        resumeId: resume.id,
         jobId,
       },
     });

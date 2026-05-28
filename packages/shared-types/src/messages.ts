@@ -54,7 +54,7 @@ export type ExtensionMessage =
       action: 'GET_RESUMES';
       payload?: GetResumeParams & { page?: number; limit?: number; search?: string };
     }
-  | { action: 'ANALYZE_RESUME'; payload: { jobId: string; resumeId: string } }
+  | { action: 'ANALYZE_RESUME'; payload: { jobId: string; resumeVersionId: string } }
   | { action: 'GET_RESUME_VERSIONS'; payload?: GetResumeVersionsParams }
   | { action: 'SET_ACTIVE_VERSION'; payload: SetActiveVersionParams }
   | { action: 'GET_VERSION_PARSED_DATA'; payload: GetVersionParsedDataParams }

@@ -28,7 +28,7 @@ export const AutofillWizard = ({
 
   // Step 2 selections
   const [selectedPersonaId, setSelectedPersonaId] = useState<string | null>(null);
-  const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null);
+  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
 
   // Step 3 analysis
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
@@ -65,8 +65,8 @@ export const AutofillWizard = ({
         setGlobalError(null);
       }
     } else if (activeStep === 1) {
-      if (!selectedPersonaId || !selectedResumeId) {
-        setGlobalError('Please select a persona and a resume to proceed.');
+      if (!selectedPersonaId || !selectedVersionId) {
+        setGlobalError('Please select a persona and a resume version to proceed.');
         return;
       }
 
@@ -76,7 +76,10 @@ export const AutofillWizard = ({
       setActiveStep((prev) => prev + 1);
 
       chrome.runtime.sendMessage(
-        { action: 'ANALYZE_RESUME', payload: { jobId: savedJobId, resumeId: selectedResumeId } },
+        {
+          action: 'ANALYZE_RESUME',
+          payload: { jobId: savedJobId, resumeVersionId: selectedVersionId },
+        },
         (response: { success: boolean; data?: AnalysisResult; error?: string }) => {
           setIsAnalyzing(false);
           if (response?.success && response.data) {
@@ -93,10 +96,10 @@ export const AutofillWizard = ({
     <Step2SelectResume
       savedJobId={savedJobId}
       selectedPersonaId={selectedPersonaId}
-      selectedResumeId={selectedResumeId}
-      onChange={(personaId, resumeId) => {
+      selectedVersionId={selectedVersionId}
+      onChange={(personaId, versionId) => {
         setSelectedPersonaId(personaId);
-        setSelectedResumeId(resumeId);
+        setSelectedVersionId(versionId);
         setGlobalError(null);
       }}
     />
@@ -137,7 +140,7 @@ export const AutofillWizard = ({
                 colorTheme="primary"
                 onClick={handleSaveAndProceed}
                 disabled={
-                  activeStep === 0 ? step1.loading : !selectedPersonaId || !selectedResumeId
+                  activeStep === 0 ? step1.loading : !selectedPersonaId || !selectedVersionId
                 }
                 customProps={{ props: { sx: { width: 'fit-content', maxWidth: 'fit-content' } } }}
               />
