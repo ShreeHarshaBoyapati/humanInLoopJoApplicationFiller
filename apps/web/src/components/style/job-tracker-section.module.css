@@ -93,19 +93,22 @@
 }
 
 .favoriteToggleButton:hover {
-  background-color: var(--grey-700);
-  color: var(--white-900);
+  background-color: var(--grey-300);
+  border: 1px solid var(--grey-700);
+  color: var(--yellow-400);
 }
 
 .favoriteToggleButton.active {
-  background-color: var(--yellow-400);
-  border-color: var(--yellow-400);
-  color: var(--black-800);
+  color: var(--yellow-400);
 }
 
 .favoriteToggleButton.active:hover {
   background-color: var(--yellow-500);
-  border-color: var(--yellow-500);
+}
+
+.favoriteToggleButton:focus-visible,
+.favoriteToggleButton:focus {
+  outline: none;
 }
 
 /* Tablet and smaller screens - full width */

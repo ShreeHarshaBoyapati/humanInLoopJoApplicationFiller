@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import { PageHeader } from './page-header';
 import { SearchBar } from './search-bar';
 import { JobTrackerCard } from './job-tracker-card';
@@ -286,7 +288,11 @@ export function JobTrackerSection() {
           className={`${styles.favoriteToggleButton} ${showFavoritesOnly ? styles.active : ''}`}
           onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
         >
-          {showFavoritesOnly ? '★' : '☆'}
+          {showFavoritesOnly ? (
+            <FavoriteIcon sx={{ fontSize: '1.25rem' }} />
+          ) : (
+            <FavoriteBorderIcon sx={{ fontSize: '1.25rem' }} />
+          )}
         </button>
       </div>
 
