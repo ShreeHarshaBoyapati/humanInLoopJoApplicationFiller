@@ -7,6 +7,7 @@ import { Typography } from '@mui/material';
 
 const TABS: Array<{ id: string; label: string; route?: string }> = [
   { id: 'dashboard', label: 'Dashboard' },
+  { id: 'job-tracker', label: 'Job tracker', route: '/job-tracker' },
   { id: 'persona-resumes', label: 'Persona and Resumes', route: '/persona-resumes' },
   { id: 'settings', label: 'Settings' },
 ];
