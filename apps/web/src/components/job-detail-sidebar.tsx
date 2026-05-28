@@ -9,6 +9,7 @@ import type { Job } from '@repo/shared-types';
 import { useUpdateJob, useDeleteJob } from '../hooks/use-jobs';
 import { useStore } from '../store';
 import styles from './style/job-detail-sidebar.module.css';
+import { JobOverviewTab } from './job-overview-tab';
 
 interface JobDetailSidebarProps {
   job: Job;
@@ -161,12 +162,15 @@ export function JobDetailSidebar({ job: initialJob, onClose }: JobDetailSidebarP
               ))}
             </div>
             <div className={styles.tabContent}>
-              <div className={styles.tabContentPlaceholder}>
-                {activeTab === 'overview' && <div>Overview content goes here</div>}
-                {activeTab === 'resume' && <div>Resume content goes here</div>}
-                {activeTab === 'matching' && <div>Matching content goes here</div>}
-                {activeTab === 'notes' && <div>Notes content goes here</div>}
-              </div>
+              {activeTab === 'overview' && (
+                <JobOverviewTab
+                  job={localJob}
+                  onJobUpdate={(updatedJob) => setLocalJob(updatedJob)}
+                />
+              )}
+              {activeTab === 'resume' && <div>Resume content goes here</div>}
+              {activeTab === 'matching' && <div>Matching content goes here</div>}
+              {activeTab === 'notes' && <div>Notes content goes here</div>}
             </div>
           </div>
 

@@ -52,6 +52,7 @@ export const EnhancedAccordion: React.FC<EnhancedAccordionProps> = ({
           padding: '0 1rem',
           '& .MuiAccordionSummary-content': { margin: '0' },
           '&.Mui-expanded': { minHeight: '38px' },
+          '&:focus-visible, &:focus': { outline: 'none' },
         }}
         {...(customProps?.childProps?.summary || {})}
       >
