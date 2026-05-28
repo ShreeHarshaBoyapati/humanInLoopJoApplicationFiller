@@ -9,6 +9,7 @@ interface JobTrackerCardProps {
   isLoading?: boolean;
   onFavoriteToggle: (job: Job) => void;
   onStatusChange: (job: Job, newStatus: string) => void;
+  onClick?: (job: Job) => void;
 }
 
 export const JobTrackerCard = ({
@@ -17,6 +18,7 @@ export const JobTrackerCard = ({
   isLoading = false,
   onFavoriteToggle,
   onStatusChange,
+  onClick,
 }: JobTrackerCardProps) => {
   const getCompanyInitial = (companyName: string) => {
     return companyName ? companyName.charAt(0).toUpperCase() : 'C';
@@ -36,10 +38,26 @@ export const JobTrackerCard = ({
     onStatusChange(job, stepLabel.toLowerCase());
   };
 
+  const handleStatusSectionClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
   const isArchived = ['archived', 'rejected'].includes(job.status.toLowerCase());
 
+  const handleCardClick = () => {
+    if (onClick) {
+      onClick(job);
+    }
+  };
+
   return (
-    <div className={styles.jobCard} data-job-id={job.id}>
+    <div
+      className={styles.jobCard}
+      data-job-id={job.id}
+      onClick={handleCardClick}
+      role="button"
+      tabIndex={0}
+    >
       {/* Section 1: Favorite Icon */}
       <div className={styles.favoriteSection}>
         <button
@@ -79,7 +97,7 @@ export const JobTrackerCard = ({
 
       {/* Section 3: Status Stepper */}
       {!isArchived && (
-        <div className={styles.statusSection}>
+        <div className={styles.statusSection} onClick={handleStatusSectionClick}>
           <div className={styles.stepperWrapper}>
             <EnhancedStepper
               steps={statusSteps}

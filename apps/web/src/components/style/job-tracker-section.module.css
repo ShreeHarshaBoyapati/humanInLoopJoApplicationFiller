@@ -95,15 +95,15 @@
 .favoriteToggleButton:hover {
   background-color: var(--grey-300);
   border: 1px solid var(--grey-700);
-  color: var(--yellow-400);
+  color: var(--blue-500);
 }
 
 .favoriteToggleButton.active {
-  color: var(--yellow-400);
+  color: var(--blue-500);
 }
 
 .favoriteToggleButton.active:hover {
-  background-color: var(--yellow-500);
+  background-color: var(--grey-300);
 }
 
 .favoriteToggleButton:focus-visible,

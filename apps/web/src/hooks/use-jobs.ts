@@ -97,8 +97,9 @@ export const useUpdateJob = () => {
 
   return useMutation({
     mutationFn: async (data: UpdateJobInput) => {
+      const { invalidateQueries: _invalidate, ...apiData } = data;
       try {
-        const response = await axiosInstance.put<ApiResponse<Job>>('/job', data);
+        const response = await axiosInstance.put<ApiResponse<Job>>('/job', apiData);
         if (!response.data.success || !response.data.data) {
           throw new Error(response.data.message || 'Failed to update job');
         }
@@ -113,22 +114,26 @@ export const useUpdateJob = () => {
         throw err;
       }
     },
-    onSuccess: (updatedJob: Job) => {
-      queryClient.setQueriesData(
-        { queryKey: JOB_KEYS.lists() },
-        (oldData: { pages: PaginatedJobsResponse[]; pageParams?: number[] } | undefined) => {
-          if (!oldData?.pages) return oldData;
-          const updatedPages = oldData.pages.map((page) => ({
-            ...page,
-            items: page.items.map((job: Job) => (job.id === updatedJob.id ? updatedJob : job)),
-          }));
+    onSuccess: (updatedJob: Job, variables: UpdateJobInput) => {
+      if (variables.invalidateQueries) {
+        queryClient.invalidateQueries({ queryKey: JOB_KEYS.lists() });
+      } else {
+        queryClient.setQueriesData(
+          { queryKey: JOB_KEYS.lists() },
+          (oldData: { pages: PaginatedJobsResponse[]; pageParams?: number[] } | undefined) => {
+            if (!oldData?.pages) return oldData;
+            const updatedPages = oldData.pages.map((page) => ({
+              ...page,
+              items: page.items.map((job: Job) => (job.id === updatedJob.id ? updatedJob : job)),
+            }));
 
-          return {
-            pages: updatedPages,
-            pageParams: oldData.pageParams || updatedPages.map((_, index) => index + 1),
-          };
-        }
-      );
+            return {
+              pages: updatedPages,
+              pageParams: oldData.pageParams || updatedPages.map((_, index) => index + 1),
+            };
+          }
+        );
+      }
     },
   });
 };

@@ -6,6 +6,7 @@ import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import { PageHeader } from './page-header';
 import { SearchBar } from './search-bar';
 import { JobTrackerCard } from './job-tracker-card';
+import { JobDetailSidebar } from './job-detail-sidebar';
 import { EnhancedSelectDropdown, EnhancedAutocompleteDropdown, EnhancedButton } from '@repo/ui';
 import type { AutocompleteOption } from '@repo/ui';
 import type { Job, PaginatedJobsResponse, Persona } from '@repo/shared-types';
@@ -46,6 +47,7 @@ export function JobTrackerSection() {
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState('DESC');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
   const updateJob = useUpdateJob();
   const showSnackbar = useStore((state) => state.showSnackbar);
@@ -258,6 +260,14 @@ export function JobTrackerSection() {
     refetch();
   };
 
+  const handleJobClick = useCallback((job: Job) => {
+    setSelectedJob(job);
+  }, []);
+
+  const handleCloseSidebar = useCallback(() => {
+    setSelectedJob(null);
+  }, []);
+
   return (
     <div className={`${sectionStyles.sectionContainer} ${scrollbarStyles.scrollbarContainer}`}>
       {/* Header */}
@@ -368,6 +378,7 @@ export function JobTrackerSection() {
                 isLoading={updateJob.isPending && updateJob.variables?.id === job.id}
                 onFavoriteToggle={handleFavoriteToggle}
                 onStatusChange={handleStatusChange}
+                onClick={handleJobClick}
               />
             ))}
           </div>
@@ -401,6 +412,9 @@ export function JobTrackerSection() {
         onClose={handleCloseModal}
         onSuccess={handleJobCreated}
       />
+
+      {/* Job Detail Sidebar */}
+      {selectedJob && <JobDetailSidebar job={selectedJob} onClose={handleCloseSidebar} />}
     </div>
   );
 }

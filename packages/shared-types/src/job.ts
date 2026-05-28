@@ -123,6 +123,7 @@ export interface UpdateJobInput {
   status?: string;
   notes?: string;
   favorite?: boolean;
+  invalidateQueries?: boolean;
 }
 
 // Delete Job Input

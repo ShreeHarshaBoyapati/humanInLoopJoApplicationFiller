@@ -46,11 +46,11 @@
 }
 
 .favoriteButton:hover {
-  color: var(--yellow-400);
+  color: var(--blue-500);
 }
 
 .favoriteButton.active {
-  color: var(--yellow-400);
+  color: var(--blue-500);
 }
 
 .favoriteButton.disabled {
