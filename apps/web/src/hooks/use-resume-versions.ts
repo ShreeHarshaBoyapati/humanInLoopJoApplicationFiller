@@ -10,6 +10,7 @@ import type {
 } from '@repo/shared-types';
 import type { ApiResponse } from '@repo/shared-types';
 import { RESUME_KEYS } from './use-resumes.ts';
+import { PERSONA_KEYS } from './use-personas.ts';
 
 const VERSION_KEYS = {
   all: ['versions'] as const,
@@ -143,14 +144,31 @@ export const useSetActiveVersion = () => {
   return useMutation({
     mutationFn: async (data: SetActiveVersionParams) => {
       try {
-        const response = await axiosInstance.post<ApiResponse<ResumeVersionMetadata>>(
-          `/resume/${data.resumeId}/versions/${data.versionId}/set-active`,
-          { id: data.resumeId, versionId: data.versionId }
-        );
+        const response = await axiosInstance.post<
+          ApiResponse<
+            ResumeVersionMetadata & {
+              previousPersonaId: string | null;
+              newPersonaId: string;
+              previousResumeId: string | null;
+              newResumeId: string;
+            }
+          >
+        >(`/resume/${data.resumeId}/versions/${data.versionId}/set-active`, {
+          id: data.resumeId,
+          versionId: data.versionId,
+        });
         if (!response.data.success || !response.data.data) {
           throw new Error(response.data.message || 'Failed to set active version');
         }
-        return { version: response.data.data, resumeId: data.resumeId };
+        return {
+          version: response.data.data,
+          resumeId: data.resumeId,
+          personaId: data.personaId,
+          previousPersonaId: response.data.data.previousPersonaId,
+          newPersonaId: response.data.data.newPersonaId,
+          previousResumeId: response.data.data.previousResumeId,
+          newResumeId: response.data.data.newResumeId,
+        };
       } catch (err) {
         if (err && typeof err === 'object' && 'response' in err) {
           const error = err as { response: { data: ApiResponse<never> } };
@@ -162,11 +180,39 @@ export const useSetActiveVersion = () => {
       }
     },
     onSuccess: (
-      _result: { version: ResumeVersionMetadata; resumeId: string },
-      variables: SetActiveVersionParams
+      result: {
+        version: ResumeVersionMetadata;
+        resumeId: string;
+        personaId: string;
+        previousPersonaId: string | null;
+        newPersonaId: string;
+        previousResumeId: string | null;
+        newResumeId: string;
+      },
+      _variables: SetActiveVersionParams
     ) => {
       queryClient.invalidateQueries({
-        queryKey: VERSION_KEYS.byPersonaAndResume(variables.personaId, variables.resumeId),
+        queryKey: PERSONA_KEYS.lists(),
+      });
+
+      if (result.previousPersonaId && result.previousPersonaId !== result.newPersonaId) {
+        queryClient.invalidateQueries({
+          queryKey: RESUME_KEYS.byPersona(result.previousPersonaId),
+        });
+      }
+
+      queryClient.invalidateQueries({
+        queryKey: RESUME_KEYS.byPersona(result.newPersonaId),
+      });
+
+      if (result.previousResumeId && result.previousResumeId !== result.newResumeId) {
+        queryClient.invalidateQueries({
+          queryKey: VERSION_KEYS.byPersonaAndResume(result.newPersonaId, result.previousResumeId),
+        });
+      }
+
+      queryClient.invalidateQueries({
+        queryKey: VERSION_KEYS.byPersonaAndResume(result.newPersonaId, result.newResumeId),
       });
     },
   });

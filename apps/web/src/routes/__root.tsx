@@ -6,6 +6,7 @@ import {
   useNavigate,
   useRouterState,
 } from '@tanstack/react-router';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { axiosInstance } from '../utils/axios.ts';
 import styles from './style/__root.module.css';
@@ -48,6 +49,7 @@ export const Route = createRootRoute({
 function RootComponent() {
   const navigate = useNavigate();
   const routerState = useRouterState();
+  const queryClient = useQueryClient();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
@@ -97,6 +99,7 @@ function RootComponent() {
       clearTokenAuth();
       useStore.getState().clearUser();
       setIsAuthenticated(false);
+      queryClient.clear();
 
       notifyExtensionLogout();
       navigate({ to: '/login' });

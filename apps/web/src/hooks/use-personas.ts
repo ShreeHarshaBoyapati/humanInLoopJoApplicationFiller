@@ -138,33 +138,3 @@ export const useDeletePersona = () => {
     },
   });
 };
-
-export const useSetActivePersona = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (id: string) => {
-      try {
-        const response = await axiosInstance.post<ApiResponse<Persona>>('/persona/set-active', {
-          id,
-        });
-        if (!response.data.success || !response.data.data) {
-          throw new Error(response.data.message || 'Failed to set active persona');
-        }
-        return response.data.data;
-      } catch (err) {
-        if (err && typeof err === 'object' && 'response' in err) {
-          const error = err as { response: { data: ApiResponse<never> } };
-          if (!error.response.data.success) {
-            throw new Error(error.response.data.message);
-          }
-        }
-        throw err;
-      }
-    },
-    onSuccess: () => {
-      // Invalidate all persona list queries to refetch fresh data
-      queryClient.invalidateQueries({ queryKey: PERSONA_KEYS.lists() });
-    },
-  });
-};

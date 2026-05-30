@@ -7,8 +7,6 @@ import styles from './style/persona-card.module.css';
 interface PersonaCardProps {
   persona: Persona;
   isSelected: boolean;
-  disabled?: boolean;
-  onSetActive: (persona: Persona) => void;
   onNavigate: (persona: Persona) => void;
   onEdit: (persona: Persona, e: React.MouseEvent) => void;
   onDelete: (personaId: string, e: React.MouseEvent) => void;
@@ -17,8 +15,6 @@ interface PersonaCardProps {
 export const PersonaCard = ({
   persona,
   isSelected,
-  disabled = false,
-  onSetActive,
   onNavigate,
   onEdit,
   onDelete,
@@ -35,9 +31,8 @@ export const PersonaCard = ({
       <div className={styles.radioSection}>
         <EnhancedTooltipWithText description={radioTooltip} showIcon={false} placement="top">
           <Radio
-            checked={isSelected}
-            onChange={() => onSetActive(persona)}
-            disabled={disabled}
+            checked={persona.active}
+            disabled={true}
             sx={{
               color: 'var(--grey-500)',
               '&.Mui-disabled': {

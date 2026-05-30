@@ -12,7 +12,6 @@ import { CreatePersonaModal } from './create-persona-modal';
 import { ConfirmModal } from './confirm-modal';
 import {
   usePersonas,
-  useSetActivePersona,
   useDeletePersona,
   type PaginatedPersonasResponse,
 } from '../hooks/use-personas';
@@ -32,7 +31,6 @@ export function PersonaSection({ onSelectPersona }: PersonaSectionProps) {
   const [deletePersonaId, setDeletePersonaId] = useState<string | null>(null);
 
   const deletePersona = useDeletePersona();
-  const setActivePersona = useSetActivePersona();
   const showSnackbar = useStore((state) => state.showSnackbar);
 
   // Debounce search query
@@ -128,21 +126,6 @@ export function PersonaSection({ onSelectPersona }: PersonaSectionProps) {
     isError,
   ]);
 
-  const handleSetActivePersona = (persona: Persona) => {
-    if (!persona.active) {
-      setActivePersona.mutate(persona.id, {
-        onSuccess: (activePersona) => {
-          setSelectedPersonaId(activePersona.id);
-        },
-        onError: (error) => {
-          showSnackbar(error instanceof Error ? error.message : 'Failed to set active persona', {
-            severity: 'error',
-          });
-        },
-      });
-    }
-  };
-
   const handleAddPersona = () => {
     setIsCreateModalOpen(true);
   };
@@ -224,8 +207,6 @@ export function PersonaSection({ onSelectPersona }: PersonaSectionProps) {
                 key={persona.id}
                 persona={persona}
                 isSelected={selectedPersonaId === persona.id}
-                disabled={setActivePersona.isPending}
-                onSetActive={handleSetActivePersona}
                 onNavigate={onSelectPersona}
                 onEdit={handleEditClick}
                 onDelete={handleDeleteClick}
