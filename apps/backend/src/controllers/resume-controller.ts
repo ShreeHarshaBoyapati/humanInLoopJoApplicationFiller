@@ -41,7 +41,6 @@ class ResumeController {
     const userId = req.userId;
     const { personaId, fileName, file, keywords, parsedData, comment } = req.body;
 
-    // Verify persona belongs to user
     const persona = await personaRepository.findOne({
       where: { id: personaId },
       relations: ['user'],
@@ -56,9 +55,8 @@ class ResumeController {
       return;
     }
 
-    // Check for duplicate fileName in the same persona
     const duplicateResume = await resumeRepository.findOne({
-      where: { fileName, persona: { id: personaId } },
+      where: { fileName, persona: { id: personaId }, isDeleted: false },
     });
 
     if (duplicateResume) {
@@ -70,9 +68,8 @@ class ResumeController {
       return;
     }
 
-    // Check if there are any existing resumes for this persona
     const existingResumesCount = await resumeRepository.count({
-      where: { persona: { id: personaId } },
+      where: { persona: { id: personaId }, isDeleted: false },
     });
 
     // If no resumes exist for this persona, this resume will be active
@@ -122,7 +119,7 @@ class ResumeController {
     const { id, fileName } = req.body;
 
     const resume = await resumeRepository.findOne({
-      where: { id },
+      where: { id, isDeleted: false },
       relations: ['persona', 'persona.user'],
     });
 
@@ -144,10 +141,9 @@ class ResumeController {
       return;
     }
 
-    // Check for duplicate fileName in the same persona (excluding current resume)
     if (fileName) {
       const duplicateResume = await resumeRepository.findOne({
-        where: { fileName, persona: { id: resume.persona.id } },
+        where: { fileName, persona: { id: resume.persona.id }, isDeleted: false },
       });
 
       if (duplicateResume && duplicateResume.id !== id) {
@@ -180,6 +176,7 @@ class ResumeController {
 
   async delete(req: AuthenticatedTypedRequest<DeleteResumeInput>, res: Response) {
     const resumeRepository = getResumeRepository();
+    const versionRepository = getResumeVersionRepository();
 
     const userId = req.userId;
     const { id } = req.body;
@@ -207,7 +204,20 @@ class ResumeController {
       return;
     }
 
-    await resumeRepository.remove(resume);
+    resume.isDeleted = true;
+    await resumeRepository.save(resume);
+
+    // Soft delete all resume versions for this resume
+    const versions = await versionRepository.find({
+      where: { resume: { id: resume.id } },
+    });
+
+    await Promise.all(
+      versions.map((version) => {
+        version.isDeleted = true;
+        return versionRepository.save(version);
+      })
+    );
 
     const data: ApiResponse = {
       success: true,
@@ -241,6 +251,7 @@ class ResumeController {
       const versionsCount = await versionRepository
         .createQueryBuilder('version')
         .where('version.resumeId = :resumeId', { resumeId: resume.id })
+        .andWhere('version.isDeleted = :isDeleted', { isDeleted: false })
         .getCount();
 
       const activeVersion = await versionRepository
@@ -248,6 +259,7 @@ class ResumeController {
         .select(['version.fileSize'])
         .where('version.resumeId = :resumeId', { resumeId: resume.id })
         .andWhere('version.active = :active', { active: true })
+        .andWhere('version.isDeleted = :isDeleted', { isDeleted: false })
         .getOne();
 
       return {
@@ -260,10 +272,10 @@ class ResumeController {
       };
     };
 
-    // Build base where clause
     const buildBaseWhereClause = (includeSearch: boolean = true) => {
       const where: Record<string, unknown> = {
         persona: { user: { id: userId } },
+        isDeleted: false,
       };
       if (personaId) {
         where.persona = { id: personaId, user: { id: userId } };
@@ -313,11 +325,11 @@ class ResumeController {
     const items: PaginatedResumeListItem[] = [];
 
     if (pageNum === 1) {
-      // Page 1: get active resume first, then non-active
-      // Only query for active resume on page 1 to save DB queries
+      // Page 1: get active resume first, then non-active (exclude soft-deleted)
       const activeResumeWhere: Record<string, unknown> = {
         persona: { user: { id: userId } },
         active: true,
+        isDeleted: false,
       };
       if (personaId) {
         activeResumeWhere.persona = { id: personaId, user: { id: userId } };
@@ -343,10 +355,11 @@ class ResumeController {
         items.push(await buildResumeListItem(resume));
       }
     } else {
-      // For pages after 1, check if there's an active resume to adjust skip
+      // For pages after 1, check if there's an active resume to adjust skip (exclude soft-deleted)
       const activeResumeWhere: Record<string, unknown> = {
         persona: { user: { id: userId } },
         active: true,
+        isDeleted: false,
       };
       if (personaId) {
         activeResumeWhere.persona = { id: personaId, user: { id: userId } };
@@ -393,7 +406,7 @@ class ResumeController {
     const { id } = req.validatedParams;
 
     const resume = await resumeRepository.findOne({
-      where: { id },
+      where: { id, isDeleted: false },
       relations: ['persona', 'persona.user'],
       select: ['id', 'fileName', 'active', 'createdAt', 'updatedAt'],
     });
@@ -441,7 +454,9 @@ class ResumeController {
       .leftJoin('resume.persona', 'persona')
       .leftJoin('persona.user', 'user')
       .where('user.id = :userId', { userId })
-      .andWhere('resume.active = :active', { active: true });
+      .andWhere('resume.active = :active', { active: true })
+      .andWhere('resume.isDeleted = :isDeleted', { isDeleted: false })
+      .andWhere('persona.isDeleted = :personaIsDeleted', { personaIsDeleted: false });
 
     if (personaId) {
       queryBuilder.andWhere('persona.id = :personaId', { personaId });
@@ -467,17 +482,17 @@ class ResumeController {
       return;
     }
 
-    // Fetch the active version
     const activeVersion = await versionRepository.findOne({
-      where: { resume: { id: resume.id }, active: true },
+      where: { resume: { id: resume.id }, active: true, isDeleted: false },
       select: [
         'id',
         'fileSize',
-        'keywords',
         'active',
         'versionName',
         'comment',
+        'keywords',
         'parsedData',
+        'dataUpdatedAt',
         'createdAt',
         'updatedAt',
       ],
@@ -488,10 +503,11 @@ class ResumeController {
           id: activeVersion.id,
           fileName: resume.fileName,
           fileSize: activeVersion.fileSize,
-          keywords: activeVersion.keywords,
           active: activeVersion.active,
           versionName: activeVersion.versionName,
           comment: activeVersion.comment,
+          keywords: activeVersion.keywords || [],
+          dataUpdatedAt: activeVersion.dataUpdatedAt,
           createdAt: activeVersion.createdAt,
           updatedAt: activeVersion.updatedAt,
         }

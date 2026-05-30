@@ -167,21 +167,6 @@
   font-size: 0.75rem;
 }
 
-.versionKeywords {
-  display: flex;
-  flex-wrap: wrap;
-  gap: calc(var(--spacing));
-  margin-top: calc(var(--spacing));
-}
-
-.keywordTag {
-  background-color: var(--blue-700);
-  border-radius: calc(var(--spacing));
-  color: var(--blue-400);
-  font-size: 0.75rem;
-  padding: calc(var(--spacing)) calc(var(--spacing) * 1.5);
-}
-
 .versionComment {
   -webkit-box-orient: vertical;
   color: var(--white-700);

@@ -78,10 +78,11 @@ export interface ResumeVersionMetadata {
   id: string;
   fileName: string;
   fileSize: number;
-  keywords: string[];
   active: boolean;
   versionName: string;
   comment: string | null;
+  keywords: string[];
+  dataUpdatedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -90,10 +91,11 @@ export interface ResumeVersionWithFile {
   id: string;
   fileName: string;
   fileSize: number;
-  keywords: string[];
   active: boolean;
   versionName: string;
   comment: string | null;
+  keywords: string[];
+  dataUpdatedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -209,10 +211,11 @@ export interface PaginatedVersionListItem {
   id: string;
   fileName: string;
   fileSize: number;
-  keywords: string[];
   active: boolean;
   versionName: string;
   comment: string | null;
+  keywords: string[];
+  dataUpdatedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }

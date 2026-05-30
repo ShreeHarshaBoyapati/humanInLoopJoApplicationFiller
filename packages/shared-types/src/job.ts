@@ -6,7 +6,7 @@ export interface Job {
   id: string;
   title: string;
   tags: string[];
-  persona: string;
+  personaId: string | null;
   status: string;
   acceptanceLevel: number;
   companyName: string;
@@ -17,6 +17,7 @@ export interface Job {
   keySkills: string[];
   notes: string;
   favorite: boolean;
+  dataUpdatedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -123,6 +124,7 @@ export interface UpdateJobInput {
   status?: string;
   notes?: string;
   favorite?: boolean;
+  primaryVersionId?: string | null;
   invalidateQueries?: boolean;
 }
 

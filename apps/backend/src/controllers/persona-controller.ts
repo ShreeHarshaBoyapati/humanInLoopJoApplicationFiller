@@ -1,6 +1,10 @@
 import { ILike } from 'typeorm';
 import type { Response, AuthenticatedTypedRequest } from '../types/index.js';
-import { getPersonaRepository } from '../database/repositories/index.js';
+import {
+  getPersonaRepository,
+  getResumeRepository,
+  getResumeVersionRepository,
+} from '../database/repositories/index.js';
 import type {
   CreatePersonaInput,
   UpdatePersonaInput,
@@ -20,9 +24,8 @@ class PersonaController {
     const userId = req.userId;
     const { title, keywords } = req.body;
 
-    // Check if title already exists for this user
     const existingPersona = await personaRepository.findOne({
-      where: { title, user: { id: userId } },
+      where: { title, user: { id: userId }, isDeleted: false },
     });
 
     if (existingPersona) {
@@ -34,9 +37,8 @@ class PersonaController {
       return;
     }
 
-    // Check if this is the user's first persona
     const existingPersonasCount = await personaRepository.count({
-      where: { user: { id: userId } },
+      where: { user: { id: userId }, isDeleted: false },
     });
     const isFirstPersona = existingPersonasCount === 0;
 
@@ -93,10 +95,9 @@ class PersonaController {
       return;
     }
 
-    // Check for duplicate title if title is being updated
     if (updateData.title && updateData.title !== persona.title) {
       const existingPersona = await personaRepository.findOne({
-        where: { title: updateData.title, user: { id: userId } },
+        where: { title: updateData.title, user: { id: userId }, isDeleted: false },
       });
 
       if (existingPersona) {
@@ -157,21 +158,35 @@ class PersonaController {
       return;
     }
 
-    const wasActive = persona.active;
-    await personaRepository.remove(persona);
+    persona.isDeleted = true;
+    await personaRepository.save(persona);
 
-    // If deleted persona was active, mark the latest one as active
-    if (wasActive) {
-      const latestPersona = await personaRepository.findOne({
-        where: { user: { id: userId } },
-        order: { createdAt: 'DESC' },
-      });
+    // Soft delete all resumes and their versions for this persona
+    const resumeRepository = getResumeRepository();
+    const versionRepository = getResumeVersionRepository();
 
-      if (latestPersona) {
-        latestPersona.active = true;
-        await personaRepository.save(latestPersona);
-      }
-    }
+    const resumes = await resumeRepository.find({
+      where: { persona: { id: id } },
+    });
+
+    await Promise.all(
+      resumes.map(async (resume) => {
+        resume.isDeleted = true;
+
+        const versions = await versionRepository.find({
+          where: { resume: { id: resume.id } },
+        });
+
+        await Promise.all(
+          versions.map((version) => {
+            version.isDeleted = true;
+            return versionRepository.save(version);
+          })
+        );
+
+        return resumeRepository.save(resume);
+      })
+    );
 
     const data: ApiResponse = {
       success: true,
@@ -192,11 +207,11 @@ class PersonaController {
 
     const items: Persona[] = [];
 
-    // When searching, return all matching personas in normal order
     if (searchQuery) {
       const whereClause: Record<string, unknown> = {
         user: { id: userId },
         title: ILike(`%${searchQuery}%`),
+        isDeleted: false,
       };
       const total = await personaRepository.count({ where: whereClause });
 
@@ -234,16 +249,14 @@ class PersonaController {
       return;
     }
 
-    // No search - existing behavior with active persona first
-    const totalWhere: Record<string, unknown> = { user: { id: userId } };
+    const totalWhere: Record<string, unknown> = { user: { id: userId }, isDeleted: false };
     const total = await personaRepository.count({
       where: totalWhere,
     });
 
     if (pageNum === 1) {
-      // Page 1: get active persona first, then non-active
       const activePersona = await personaRepository.findOne({
-        where: { user: { id: userId }, active: true },
+        where: { user: { id: userId }, active: true, isDeleted: false },
         relations: ['resumes'],
       });
 
@@ -259,9 +272,8 @@ class PersonaController {
         });
       }
 
-      // Get non-active personas
       const nonActivePersonas = await personaRepository.find({
-        where: { user: { id: userId }, active: false },
+        where: { user: { id: userId }, active: false, isDeleted: false },
         relations: ['resumes'],
         order: { createdAt: 'DESC' },
         take: activePersona ? limitNum - 1 : limitNum,
@@ -280,13 +292,13 @@ class PersonaController {
       }
     } else {
       const hasActivePersona = await personaRepository.count({
-        where: { user: { id: userId }, active: true },
+        where: { user: { id: userId }, active: true, isDeleted: false },
       });
 
       const skip = hasActivePersona > 0 ? (pageNum - 1) * limitNum - 1 : (pageNum - 1) * limitNum;
 
       const nonActivePersonas = await personaRepository.find({
-        where: { user: { id: userId }, active: false },
+        where: { user: { id: userId }, active: false, isDeleted: false },
         relations: ['resumes'],
         order: { createdAt: 'DESC' },
         skip: skip,
@@ -325,7 +337,7 @@ class PersonaController {
     const userId = req.userId;
 
     const persona = await personaRepository.findOne({
-      where: { user: { id: userId }, active: true },
+      where: { user: { id: userId }, active: true, isDeleted: false },
       relations: ['resumes'],
     });
 

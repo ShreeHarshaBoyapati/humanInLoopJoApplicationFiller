@@ -1,5 +1,10 @@
 import type { Response, AuthenticatedTypedRequest } from '../types/index.js';
-import { getJobRepository, getUserRepository } from '../database/repositories/index.js';
+import {
+  getJobRepository,
+  getUserRepository,
+  getResumeVersionRepository,
+  getPersonaRepository,
+} from '../database/repositories/index.js';
 import type {
   CreateJobInput,
   UpdateJobInput,
@@ -12,6 +17,7 @@ class JobController {
   async create(req: AuthenticatedTypedRequest<CreateJobInput>, res: Response) {
     const jobRepository = getJobRepository();
     const userRepository = getUserRepository();
+    const personaRepository = getPersonaRepository();
 
     const userId = req.userId;
 
@@ -20,11 +26,29 @@ class JobController {
       throw new Error('User not found');
     }
 
-    const jobData = req.body;
+    const { persona: personaId, ...jobData } = req.body;
+
+    // Validate persona exists if provided
+    if (personaId) {
+      const persona = await personaRepository.findOne({
+        where: { id: personaId },
+        relations: ['user'],
+      });
+      if (!persona || persona.user.id !== userId) {
+        const data: ApiResponse = {
+          success: false,
+          message: 'Persona not found or not authorized',
+        };
+        res.status(400).json(data);
+        return;
+      }
+    }
 
     const job = jobRepository.create({
       ...jobData,
+      personaId: personaId || null,
       user,
+      dataUpdatedAt: new Date(),
     });
 
     await jobRepository.save(job);
@@ -40,14 +64,16 @@ class JobController {
 
   async update(req: AuthenticatedTypedRequest<UpdateJobInput>, res: Response) {
     const jobRepository = getJobRepository();
+    const resumeVersionRepository = getResumeVersionRepository();
+    const personaRepository = getPersonaRepository();
 
     const userId = req.userId;
 
-    const { id, ...updateData } = req.body;
+    const { id, primaryVersionId, persona: personaId, ...updateData } = req.body;
 
     const job = await jobRepository.findOne({
       where: { id },
-      relations: ['user'],
+      relations: ['user', 'primaryVersion'],
     });
 
     if (!job) {
@@ -68,7 +94,56 @@ class JobController {
       return;
     }
 
+    // Handle primaryVersionId - convert to entity relation
+    if (primaryVersionId !== undefined) {
+      if (primaryVersionId === null) {
+        job.primaryVersion = null;
+      } else {
+        const resumeVersion = await resumeVersionRepository.findOne({
+          where: { id: primaryVersionId },
+        });
+        if (resumeVersion) {
+          job.primaryVersion = resumeVersion;
+        }
+      }
+    }
+
+    // Handle personaId - validate and set
+    if (personaId !== undefined) {
+      if (personaId === null) {
+        job.personaId = null;
+      } else {
+        const persona = await personaRepository.findOne({
+          where: { id: personaId },
+          relations: ['user'],
+        });
+        if (!persona || persona.user.id !== userId) {
+          const data: ApiResponse = {
+            success: false,
+            message: 'Persona not found or not authorized',
+          };
+          res.status(400).json(data);
+          return;
+        }
+        job.personaId = personaId;
+      }
+    }
+
     Object.assign(job, updateData);
+
+    const nonContentFields = [
+      'persona',
+      'status',
+      'acceptanceLevel',
+      'favorite',
+      'primaryVersionId',
+    ];
+    const updateKeys = Object.keys(updateData);
+    const hasContentFields = updateKeys.some((key) => !nonContentFields.includes(key));
+
+    if (hasContentFields) {
+      job.dataUpdatedAt = new Date();
+    }
 
     await jobRepository.save(job);
 
@@ -138,7 +213,7 @@ class JobController {
       'id',
       'title',
       'tags',
-      'persona',
+      'personaId',
       'status',
       'acceptanceLevel',
       'companyName',
@@ -148,6 +223,7 @@ class JobController {
       'highlights',
       'keySkills',
       'favorite',
+      'dataUpdatedAt',
       'createdAt',
       'updatedAt',
     ];
@@ -175,7 +251,7 @@ class JobController {
     }
 
     if (persona) {
-      queryBuilder.andWhere('job.persona = :persona', { persona });
+      queryBuilder.andWhere('job.personaId = :persona', { persona });
     }
 
     if (search) {

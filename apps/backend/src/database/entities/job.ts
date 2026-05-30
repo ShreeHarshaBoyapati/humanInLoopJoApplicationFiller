@@ -5,8 +5,11 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import type User from './user.js';
+import Persona from './persona.js';
+import ResumeVersion from './resume-version.js';
 
 @Entity()
 export default class Job {
@@ -19,8 +22,12 @@ export default class Job {
   @Column('simple-array', { default: [] })
   tags!: string[];
 
-  @Column('varchar', { default: 'default' })
-  persona!: string;
+  @Column({ type: 'uuid', nullable: true })
+  personaId!: string | null;
+
+  @ManyToOne(() => Persona, { nullable: true })
+  @JoinColumn({ name: 'personaId' })
+  persona!: Persona | null;
 
   @Column('varchar', { default: 'draft' })
   status!: string; //need to create enum
@@ -52,8 +59,14 @@ export default class Job {
   @Column('boolean', { default: false })
   favorite!: boolean;
 
+  @Column('timestamp', { nullable: true })
+  dataUpdatedAt!: Date | null;
+
   @ManyToOne('User', 'jobs', { onDelete: 'CASCADE' })
   user!: User;
+
+  @ManyToOne(() => ResumeVersion, { nullable: true })
+  primaryVersion!: ResumeVersion | null;
 
   @CreateDateColumn()
   createdAt!: Date;

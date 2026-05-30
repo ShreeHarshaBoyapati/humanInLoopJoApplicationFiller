@@ -24,6 +24,9 @@ export default class Persona {
   @Column('boolean', { default: false })
   active!: boolean;
 
+  @Column('boolean', { default: false })
+  isDeleted!: boolean;
+
   @ManyToOne(() => User, (user) => user.personas, { onDelete: 'CASCADE' })
   user!: User;
 

@@ -23,9 +23,6 @@ export default class ResumeVersion {
   @Column('integer')
   fileSize!: number;
 
-  @Column('simple-array', { default: [] })
-  keywords!: string[];
-
   @Column('boolean', { default: false })
   active!: boolean;
 
@@ -37,6 +34,15 @@ export default class ResumeVersion {
 
   @Column('varchar', { nullable: true })
   comment!: string | null;
+
+  @Column('jsonb', { default: [] })
+  keywords!: string[];
+
+  @Column('timestamp', { nullable: true })
+  dataUpdatedAt!: Date | null;
+
+  @Column('boolean', { default: false })
+  isDeleted!: boolean;
 
   @ManyToOne(() => Resume, (resume) => resume.versions, { onDelete: 'CASCADE' })
   resume!: Resume;

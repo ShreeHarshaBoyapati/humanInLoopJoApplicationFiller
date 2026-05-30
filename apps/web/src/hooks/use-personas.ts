@@ -9,7 +9,7 @@ import type {
 } from '@repo/shared-types';
 import type { ApiResponse } from '@repo/shared-types';
 
-const PERSONA_KEYS = {
+export const PERSONA_KEYS = {
   all: ['personas'] as const,
   lists: () => [...PERSONA_KEYS.all, 'list'] as const,
 };

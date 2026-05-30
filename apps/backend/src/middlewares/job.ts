@@ -39,6 +39,7 @@ const UpdateJobSchema = z.object({
   highlights: z.record(z.string(), z.unknown()).optional(),
   keySkills: z.array(z.string()).optional(),
   favorite: z.boolean().optional(),
+  primaryVersionId: z.string().nullable().optional(),
 });
 
 // Schema for deleting a job
@@ -51,7 +52,7 @@ const validJobFields = [
   'id',
   'title',
   'tags',
-  'persona',
+  'personaId',
   'status',
   'acceptanceLevel',
   'companyName',
@@ -62,6 +63,7 @@ const validJobFields = [
   'highlights',
   'keySkills',
   'favorite',
+  'dataUpdatedAt',
   'createdAt',
   'updatedAt',
 ] as const;

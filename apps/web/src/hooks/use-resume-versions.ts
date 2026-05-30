@@ -6,8 +6,10 @@ import type {
   CompareVersionsResponse,
   ResumeData,
   ViewDocumentResponse,
+  PaginatedResumeResponse,
 } from '@repo/shared-types';
 import type { ApiResponse } from '@repo/shared-types';
+import { RESUME_KEYS } from './use-resumes.ts';
 
 const VERSION_KEYS = {
   all: ['versions'] as const,
@@ -84,6 +86,46 @@ export const useDeleteVersion = () => {
     onSuccess: (_data: DeleteVersionParams, variables: DeleteVersionParams) => {
       queryClient.invalidateQueries({
         queryKey: VERSION_KEYS.byPersonaAndResume(variables.personaId, variables.resumeId),
+      });
+
+      const cachedResumeQueries = queryClient.getQueriesData({
+        queryKey: RESUME_KEYS.lists(),
+        exact: false,
+      });
+
+      cachedResumeQueries.forEach(([queryKey, oldData]) => {
+        const personaIdParam = queryKey.find(
+          (k) => k && typeof k === 'object' && 'personaId' in k
+        ) as { personaId: string } | undefined;
+
+        const personaIdFromQuery = personaIdParam?.personaId;
+        const personaMatches = !personaIdFromQuery || personaIdFromQuery === variables.personaId;
+
+        if (!personaMatches) return;
+
+        if (!oldData || typeof oldData !== 'object') return;
+
+        const cacheData = oldData as {
+          pages?: PaginatedResumeResponse[];
+          pageParams?: number[];
+        };
+
+        if (!cacheData.pages || cacheData.pages.length === 0) return;
+
+        // Decrement versionsCount for the deleted version's resume
+        const updatedPages = cacheData.pages.map((page) => ({
+          ...page,
+          items: page.items.map((item) =>
+            item.id === variables.resumeId
+              ? { ...item, versionsCount: Math.max(0, item.versionsCount - 1) }
+              : item
+          ),
+        }));
+
+        queryClient.setQueryData(queryKey, {
+          pages: updatedPages,
+          pageParams: cacheData.pageParams,
+        });
       });
     },
   });

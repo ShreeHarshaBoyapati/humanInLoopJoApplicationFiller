@@ -48,18 +48,18 @@ const GetResumeVersionByIdSchema = z.object({
 // Schema for creating a resume version
 const CreateResumeVersionSchema = z.object({
   id: z.uuidv4('Invalid resume ID'),
-  keywords: z.array(z.string()).optional(),
   parsedData: z.record(z.string(), z.unknown()).optional(),
   comment: z.string().optional(),
+  keywords: z.array(z.string()).optional(),
 });
 
 // Schema for updating a resume version
 const UpdateResumeVersionSchema = z.object({
   id: z.uuidv4('Invalid resume ID'),
   versionId: z.uuidv4('Invalid resume version ID'),
-  keywords: z.array(z.string()).optional(),
   parsedData: z.record(z.string(), z.unknown()).optional(),
   comment: z.string().optional(),
+  keywords: z.array(z.string()).optional(),
 });
 
 // Schema for deleting a resume version
@@ -264,14 +264,6 @@ export function getResumeVersionByIdValidation(req: Request, res: Response, next
 
 export function createResumeVersionValidation(req: Request, res: Response, next: NextFunction) {
   try {
-    // Parse keywords from body if it's a string (form-data)
-    if (req.body.keywords && typeof req.body.keywords === 'string') {
-      try {
-        req.body.keywords = JSON.parse(req.body.keywords);
-      } catch {
-        req.body.keywords = req.body.keywords.split(',').map((k: string) => k.trim());
-      }
-    }
     if (req.body.parsedData && typeof req.body.parsedData === 'string') {
       req.body.parsedData = JSON.parse(req.body.parsedData);
     }
@@ -298,14 +290,6 @@ export function createResumeVersionValidation(req: Request, res: Response, next:
 
 export function updateResumeVersionValidation(req: Request, res: Response, next: NextFunction) {
   try {
-    // Parse keywords from body if it's a string (form-data)
-    if (req.body.keywords && typeof req.body.keywords === 'string') {
-      try {
-        req.body.keywords = JSON.parse(req.body.keywords);
-      } catch {
-        req.body.keywords = req.body.keywords.split(',').map((k: string) => k.trim());
-      }
-    }
     if (req.body.parsedData && typeof req.body.parsedData === 'string') {
       req.body.parsedData = JSON.parse(req.body.parsedData);
     }

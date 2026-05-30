@@ -699,20 +699,6 @@ export function ResumeVersionSection({
                           </span>
                           <p className={styles.versionComment}>{version.comment}</p>
                         </div>
-                        {version.keywords && version.keywords.length > 0 && (
-                          <div className={styles.versionKeywords}>
-                            {version.keywords.slice(0, 2).map((keyword, idx) => (
-                              <span key={idx} className={styles.keywordTag}>
-                                {keyword}
-                              </span>
-                            ))}
-                            {version.keywords.length > 2 && (
-                              <span className={styles.keywordTag}>
-                                +{version.keywords.length - 2} more
-                              </span>
-                            )}
-                          </div>
-                        )}
                       </div>
                     </div>
 

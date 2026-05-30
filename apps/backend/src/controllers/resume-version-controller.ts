@@ -45,14 +45,14 @@ class ResumeVersionController {
     const userId = req.userId;
     const resumeId = req.query.resumeId as string | undefined;
 
-    // Build query to find active version
     const queryBuilder = versionRepository
       .createQueryBuilder('version')
       .leftJoin('version.resume', 'resume')
       .leftJoin('resume.persona', 'persona')
       .leftJoin('persona.user', 'user')
       .where('user.id = :userId', { userId })
-      .andWhere('version.active = :active', { active: true });
+      .andWhere('version.active = :active', { active: true })
+      .andWhere('version.isDeleted = :isDeleted', { isDeleted: false });
 
     if (resumeId) {
       queryBuilder.andWhere('resume.id = :resumeId', { resumeId });
@@ -62,10 +62,11 @@ class ResumeVersionController {
       .select([
         'version.id',
         'version.fileSize',
-        'version.keywords',
         'version.active',
         'version.versionName',
         'version.comment',
+        'version.keywords',
+        'version.dataUpdatedAt',
         'version.createdAt',
         'version.updatedAt',
         'resume.id',
@@ -88,10 +89,11 @@ class ResumeVersionController {
         id: version.id,
         fileName: version.resume.fileName,
         fileSize: version.fileSize,
-        keywords: version.keywords,
         active: version.active,
         versionName: version.versionName,
         comment: version.comment,
+        keywords: version.keywords || [],
+        dataUpdatedAt: version.dataUpdatedAt,
         createdAt: version.createdAt,
         updatedAt: version.updatedAt,
       },
@@ -133,9 +135,9 @@ class ResumeVersionController {
       return;
     }
 
-    // Build where clause
     const where: Record<string, unknown> = {
       resume: { id: resumeId },
+      isDeleted: false,
     };
     if (searchQuery) {
       where.versionName = Like(`%${searchQuery}%`);
@@ -159,10 +161,11 @@ class ResumeVersionController {
       id: v.id,
       fileName: resume.fileName,
       fileSize: v.fileSize,
-      keywords: v.keywords,
       active: v.active,
       versionName: v.versionName,
       comment: v.comment,
+      keywords: v.keywords || [],
+      dataUpdatedAt: v.dataUpdatedAt,
       createdAt: v.createdAt,
       updatedAt: v.updatedAt,
     }));
@@ -208,14 +211,15 @@ class ResumeVersionController {
     }
 
     const version = await versionRepository.findOne({
-      where: { id: versionId, resume: { id: resumeId } },
+      where: { id: versionId, resume: { id: resumeId }, isDeleted: false },
       select: [
         'id',
         'fileSize',
-        'keywords',
         'active',
         'versionName',
         'comment',
+        'keywords',
+        'dataUpdatedAt',
         'createdAt',
         'updatedAt',
       ],
@@ -236,10 +240,11 @@ class ResumeVersionController {
         id: version.id,
         fileName: resume.fileName,
         fileSize: version.fileSize,
-        keywords: version.keywords,
         active: version.active,
         versionName: version.versionName,
         comment: version.comment,
+        keywords: version.keywords || [],
+        dataUpdatedAt: version.dataUpdatedAt,
         createdAt: version.createdAt,
         updatedAt: version.updatedAt,
       },
@@ -273,7 +278,7 @@ class ResumeVersionController {
     }
 
     const version = await versionRepository.findOne({
-      where: { id: versionId, resume: { id: resumeId } },
+      where: { id: versionId, resume: { id: resumeId }, isDeleted: false },
       select: ['id', 'file', 'fileSize'],
     });
 
@@ -361,7 +366,7 @@ class ResumeVersionController {
     }
 
     const version = await versionRepository.findOne({
-      where: { id: versionId, resume: { id: resumeId } },
+      where: { id: versionId, resume: { id: resumeId }, isDeleted: false },
       select: ['id', 'parsedData'],
     });
 
@@ -394,7 +399,7 @@ class ResumeVersionController {
 
     const userId = req.userId;
     const resumeId = req.body.id;
-    const { keywords, parsedData, comment } = req.body;
+    const { parsedData, comment, keywords } = req.body;
 
     if (!req.file) {
       const data: ApiResponse = {
@@ -420,9 +425,8 @@ class ResumeVersionController {
       return;
     }
 
-    // Count existing versions to generate version name
     const existingVersionsCount = await versionRepository.count({
-      where: { resume: { id: resumeId } },
+      where: { resume: { id: resumeId }, isDeleted: false },
     });
 
     // First version becomes active automatically
@@ -431,11 +435,12 @@ class ResumeVersionController {
     const version = versionRepository.create({
       file: req.file.buffer,
       fileSize: req.file.size,
-      keywords: keywords || [],
       parsedData: parsedData || null,
       versionName: `v${existingVersionsCount + 1}`,
       comment: comment || null,
+      keywords: keywords || [],
       active: isFirstVersion,
+      dataUpdatedAt: parsedData ? new Date() : null,
       resume,
     });
 
@@ -448,10 +453,11 @@ class ResumeVersionController {
         id: version.id,
         fileName: resume.fileName,
         fileSize: version.fileSize,
-        keywords: version.keywords,
         active: version.active,
         versionName: version.versionName,
         comment: version.comment,
+        keywords: version.keywords || [],
+        dataUpdatedAt: version.dataUpdatedAt,
         createdAt: version.createdAt,
         updatedAt: version.updatedAt,
       },
@@ -470,7 +476,7 @@ class ResumeVersionController {
     const versionRepository = getResumeVersionRepository();
 
     const userId = req.userId;
-    const { id: resumeId, versionId, keywords, parsedData, comment } = req.body;
+    const { id: resumeId, versionId, parsedData, comment, keywords } = req.body;
 
     // Verify resume belongs to user
     const resume = await resumeRepository.findOne({
@@ -488,7 +494,7 @@ class ResumeVersionController {
     }
 
     const version = await versionRepository.findOne({
-      where: { id: versionId, resume: { id: resumeId } },
+      where: { id: versionId, resume: { id: resumeId }, isDeleted: false },
     });
 
     if (!version) {
@@ -507,14 +513,15 @@ class ResumeVersionController {
     }
 
     // Update optional fields
-    if (keywords !== undefined) {
-      version.keywords = keywords;
-    }
     if (parsedData !== undefined) {
       version.parsedData = parsedData;
+      version.dataUpdatedAt = new Date();
     }
     if (comment !== undefined) {
       version.comment = comment;
+    }
+    if (keywords !== undefined) {
+      version.keywords = keywords;
     }
 
     await versionRepository.save(version);
@@ -526,10 +533,11 @@ class ResumeVersionController {
         id: version.id,
         fileName: resume.fileName,
         fileSize: version.fileSize,
-        keywords: version.keywords,
         active: version.active,
         versionName: version.versionName,
         comment: version.comment,
+        keywords: version.keywords || [],
+        dataUpdatedAt: version.dataUpdatedAt,
         createdAt: version.createdAt,
         updatedAt: version.updatedAt,
       },
@@ -585,7 +593,8 @@ class ResumeVersionController {
       return;
     }
 
-    await versionRepository.remove(version);
+    version.isDeleted = true;
+    await versionRepository.save(version);
 
     const data: ApiResponse = {
       success: true,
@@ -623,7 +632,7 @@ class ResumeVersionController {
     }
 
     const version = await versionRepository.findOne({
-      where: { id: versionId, resume: { id: resumeId } },
+      where: { id: versionId, resume: { id: resumeId }, isDeleted: false },
     });
 
     if (!version) {
@@ -657,11 +666,10 @@ class ResumeVersionController {
     });
     const previousResumeId = previousActiveResume?.id || null;
 
-    // Get the currently active version for the previous active resume (if exists)
     let previousActiveVersion = null;
     if (previousResumeId) {
       previousActiveVersion = await versionRepository.findOne({
-        where: { resume: { id: previousResumeId }, active: true },
+        where: { resume: { id: previousResumeId }, active: true, isDeleted: false },
       });
     }
 
@@ -709,10 +717,11 @@ class ResumeVersionController {
         id: version.id,
         fileName: resume.fileName,
         fileSize: version.fileSize,
-        keywords: version.keywords,
         active: version.active,
         versionName: version.versionName,
         comment: version.comment,
+        keywords: version.keywords || [],
+        dataUpdatedAt: version.dataUpdatedAt,
         createdAt: version.createdAt,
         updatedAt: version.updatedAt,
         previousPersonaId,
@@ -750,8 +759,8 @@ class ResumeVersionController {
     }
 
     const version = await versionRepository.findOne({
-      where: { id: versionId, resume: { id: resumeId } },
-      select: ['id', 'file', 'fileSize', 'keywords', 'parsedData', 'versionName'],
+      where: { id: versionId, resume: { id: resumeId }, isDeleted: false },
+      select: ['id', 'file', 'fileSize', 'parsedData', 'dataUpdatedAt', 'versionName', 'keywords'],
     });
 
     if (!version) {
@@ -779,11 +788,12 @@ class ResumeVersionController {
     const newVersion = versionRepository.create({
       file: version.file,
       fileSize: version.fileSize,
-      keywords: [...version.keywords],
       parsedData: version.parsedData ? { ...version.parsedData } : null,
       versionName: 'v1',
       comment: comment,
+      keywords: [...version.keywords],
       active: true,
+      dataUpdatedAt: version.dataUpdatedAt,
       resume: newResume,
     });
 
@@ -813,10 +823,11 @@ class ResumeVersionController {
           id: newVersion.id,
           fileName: newResume.fileName,
           fileSize: newVersion.fileSize,
-          keywords: newVersion.keywords,
           active: newVersion.active,
           versionName: newVersion.versionName,
           comment: newVersion.comment,
+          keywords: newVersion.keywords || [],
+          dataUpdatedAt: newVersion.dataUpdatedAt,
           createdAt: newVersion.createdAt,
           updatedAt: newVersion.updatedAt,
         },
@@ -856,12 +867,14 @@ class ResumeVersionController {
         .select(['rv.fileSize', 'rv.comment', 'rv.updatedAt', 'rv.parsedData'])
         .where('rv.id = :versionId', { versionId: versionA })
         .andWhere('rv.resumeId = :resumeId', { resumeId })
+        .andWhere('rv.isDeleted = :isDeleted', { isDeleted: false })
         .getRawOne(),
       versionRepository
         .createQueryBuilder('rv')
         .select(['rv.fileSize', 'rv.comment', 'rv.updatedAt', 'rv.parsedData'])
         .where('rv.id = :versionId', { versionId: versionB })
         .andWhere('rv.resumeId = :resumeId', { resumeId })
+        .andWhere('rv.isDeleted = :isDeleted', { isDeleted: false })
         .getRawOne(),
     ]);
 

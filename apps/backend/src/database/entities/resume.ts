@@ -21,6 +21,9 @@ export default class Resume {
   @Column('boolean', { default: false })
   active!: boolean;
 
+  @Column('boolean', { default: false })
+  isDeleted!: boolean;
+
   @ManyToOne(() => Persona, (persona) => persona.resumes, { onDelete: 'CASCADE' })
   persona!: Persona;
 

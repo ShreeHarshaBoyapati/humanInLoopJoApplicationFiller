@@ -266,25 +266,28 @@ export const EnhancedAutocompleteDropdown = forwardRef<
               sx: autocompleteListboxStyles,
             },
           }}
-          renderInput={(params) => (
-            <StyledTextField
-              {...params}
-              placeholder={placeholder}
-              error={error}
-              disabled={disabled}
-              InputProps={{
-                ...params.InputProps,
-                endAdornment: (
-                  <>
-                    {loading ? (
-                      <CircularProgress size={16} sx={{ color: styleConstants.white700 }} />
-                    ) : null}
-                    {params.InputProps.endAdornment}
-                  </>
-                ),
-              }}
-            />
-          )}
+          renderInput={(params) => {
+            const { ref: _inputRef, ...inputPropsRest } = params.InputProps;
+            return (
+              <StyledTextField
+                {...params}
+                placeholder={placeholder}
+                error={error}
+                disabled={disabled}
+                InputProps={{
+                  ...inputPropsRest,
+                  endAdornment: (
+                    <>
+                      {loading ? (
+                        <CircularProgress size={16} sx={{ color: styleConstants.white700 }} />
+                      ) : null}
+                      {params.InputProps.endAdornment}
+                    </>
+                  ),
+                }}
+              />
+            );
+          }}
           noOptionsText={
             <Typography sx={{ color: styleConstants.white700, fontSize: '0.75rem' }}>
               {loading ? 'Loading...' : 'No options'}

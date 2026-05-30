@@ -6,10 +6,13 @@ import type {
   DeleteResumeParams,
   PaginatedResumeResponse,
   ResumeData,
+  PaginatedPersonasResponse,
+  Persona,
 } from '@repo/shared-types';
 import type { ApiResponse } from '@repo/shared-types';
+import { PERSONA_KEYS } from './use-personas.ts';
 
-const RESUME_KEYS = {
+export const RESUME_KEYS = {
   all: ['resumes'] as const,
   lists: () => [...RESUME_KEYS.all, 'list'] as const,
   byPersona: (personaId: string) => [...RESUME_KEYS.lists(), { personaId }] as const,
@@ -64,6 +67,39 @@ export const useDeleteResume = () => {
     },
     onSuccess: (_data: DeleteResumeParams, variables: DeleteResumeParams) => {
       queryClient.invalidateQueries({ queryKey: RESUME_KEYS.byPersona(variables.personaId) });
+
+      const cachedPersonaQueries = queryClient.getQueriesData({
+        queryKey: PERSONA_KEYS.lists(),
+        exact: false,
+      });
+
+      cachedPersonaQueries.forEach(([queryKey, oldData]) => {
+        if (!oldData || typeof oldData !== 'object') return;
+
+        const cacheData = oldData as {
+          pages?: PaginatedPersonasResponse[];
+          pageParams?: number[];
+        };
+
+        if (!cacheData.pages || cacheData.pages.length === 0) return;
+
+        const updatedPages = cacheData.pages.map((page) => ({
+          ...page,
+          items: page.items.map((item: Persona) =>
+            item.id === variables.personaId
+              ? {
+                  ...item,
+                  resumesCount: Math.max(0, (item.resumesCount ?? 0) - 1),
+                }
+              : item
+          ),
+        }));
+
+        queryClient.setQueryData(queryKey, {
+          pages: updatedPages,
+          pageParams: cacheData.pageParams,
+        });
+      });
     },
   });
 };
