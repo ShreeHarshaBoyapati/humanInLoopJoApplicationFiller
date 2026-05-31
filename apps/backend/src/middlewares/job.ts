@@ -7,7 +7,7 @@ import { ApiResponse } from '@repo/shared-types';
 const CreateJobSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   tags: z.array(z.string()).default([]),
-  persona: z.string().default('default'),
+  personaId: z.string().nullable().optional(),
   status: z
     .enum(['draft', 'applied', 'interview', 'offer', 'rejected', 'active', 'archived'])
     .default('draft'),
@@ -26,7 +26,7 @@ const UpdateJobSchema = z.object({
   id: z.uuidv4('Invalid job ID'),
   title: z.string().min(1, 'Title is required').optional(),
   tags: z.array(z.string()).optional(),
-  persona: z.string().optional(),
+  personaId: z.string().nullable().optional(),
   status: z
     .enum(['draft', 'applied', 'interview', 'offer', 'rejected', 'active', 'archived'])
     .optional(),

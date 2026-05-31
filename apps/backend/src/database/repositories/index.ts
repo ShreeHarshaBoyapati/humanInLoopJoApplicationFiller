@@ -5,6 +5,7 @@ import getPersonaRepository from './persona-repo.js';
 import getResumeRepository from './resume-repo.js';
 import getResumeVersionRepository from './resume-version-repo.js';
 import getVerificationCodeRepository from './verification-code-repo.js';
+import getResultRepository from './result-repo.js';
 
 export {
   getUserRepository,
@@ -14,4 +15,5 @@ export {
   getResumeRepository,
   getResumeVersionRepository,
   getVerificationCodeRepository,
+  getResultRepository,
 };

@@ -74,7 +74,7 @@ export const Step1JobDetails = ({
         salary: String(jobData.metaData?.salary || ''),
         requirements: String(jobData.requirements),
         currency: String(jobData.metaData?.currency || 'IND'),
-        persona: jobData.persona || 'default',
+        persona: jobData.personaId || '',
         acceptanceLevel: jobData.acceptanceLevel || 0,
         jobType: String(jobData.metaData?.jobType || 'Full-time'),
         description: String(jobData.description || ''),
@@ -264,6 +264,10 @@ export const Step1JobDetails = ({
   const submit = async (): Promise<{ success: boolean; jobId?: string; error?: string }> => {
     if (!validate()) {
       return { success: false, error: 'Validation failed' };
+    }
+
+    if (isEditing && !hasChanges()) {
+      return { success: true, jobId: jobData?.id };
     }
 
     setError(null);

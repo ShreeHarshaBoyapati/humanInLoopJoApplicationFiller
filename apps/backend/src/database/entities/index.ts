@@ -5,5 +5,6 @@ import Persona from './persona.js';
 import Resume from './resume.js';
 import ResumeVersion from './resume-version.js';
 import VerificationCode from './verification-code.js';
+import Result from './result.js';
 
-export default [User, Job, ApiKey, Persona, Resume, ResumeVersion, VerificationCode];
+export default [User, Job, ApiKey, Persona, Resume, ResumeVersion, VerificationCode, Result];

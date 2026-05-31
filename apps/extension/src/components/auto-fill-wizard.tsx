@@ -4,6 +4,7 @@ import { Step1JobDetails } from './step1-job-details';
 import { Step2SelectResume } from './step2-select-resume';
 import { Step3Analysis } from './step3-analysis';
 import type { Job, AnalysisResult } from '@repo/shared-types';
+import { useStore } from '../store';
 import styles from '../routes/style/job.module.css';
 import scrollStyles from '@repo/ui/scroll-bar.module.css';
 
@@ -33,6 +34,9 @@ export const AutofillWizard = ({
   // Step 3 analysis
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+
+  // Snackbar
+  const showSnackbar = useStore((state) => state.showSnackbar);
 
   const handleSaveSuccess = (jobId: string) => {
     setSavedJobId(jobId);
@@ -80,10 +84,18 @@ export const AutofillWizard = ({
           action: 'ANALYZE_RESUME',
           payload: { jobId: savedJobId, resumeVersionId: selectedVersionId },
         },
-        (response: { success: boolean; data?: AnalysisResult; error?: string }) => {
+        (response: {
+          success: boolean;
+          data?: AnalysisResult;
+          message?: string;
+          error?: string;
+        }) => {
           setIsAnalyzing(false);
           if (response?.success && response.data) {
             setAnalysisResult(response.data);
+            if (response.message) {
+              showSnackbar(response.message, { severity: 'success' });
+            }
           } else {
             setGlobalError(response?.error ?? 'Analysis failed. Please try again.');
           }

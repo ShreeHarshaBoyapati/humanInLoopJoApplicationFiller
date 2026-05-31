@@ -18,7 +18,7 @@ export function handleAiMessage(
       .then((response) => {
         const { data } = response;
         if (data.success) {
-          sendResponse({ success: true, data: data.data });
+          sendResponse({ success: true, data: data.data, message: data.message });
         } else {
           sendResponse({ success: false, error: data.message ?? 'Analysis failed' });
         }

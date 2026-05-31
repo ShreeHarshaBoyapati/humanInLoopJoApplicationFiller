@@ -26,7 +26,7 @@ class JobController {
       throw new Error('User not found');
     }
 
-    const { persona: personaId, ...jobData } = req.body;
+    const { personaId, ...jobData } = req.body;
 
     // Validate persona exists if provided
     if (personaId) {
@@ -69,11 +69,11 @@ class JobController {
 
     const userId = req.userId;
 
-    const { id, primaryVersionId, persona: personaId, ...updateData } = req.body;
+    const { id, primaryVersionId, personaId, ...updateData } = req.body;
 
     const job = await jobRepository.findOne({
       where: { id },
-      relations: ['user', 'primaryVersion'],
+      relations: ['user'],
     });
 
     if (!job) {
@@ -94,17 +94,23 @@ class JobController {
       return;
     }
 
-    // Handle primaryVersionId - convert to entity relation
+    // Handle primaryVersionId - validate and set
     if (primaryVersionId !== undefined) {
       if (primaryVersionId === null) {
-        job.primaryVersion = null;
+        job.primaryVersionId = null;
       } else {
         const resumeVersion = await resumeVersionRepository.findOne({
           where: { id: primaryVersionId },
         });
-        if (resumeVersion) {
-          job.primaryVersion = resumeVersion;
+        if (!resumeVersion) {
+          const data: ApiResponse = {
+            success: false,
+            message: 'Resume version not found',
+          };
+          res.status(400).json(data);
+          return;
         }
+        job.primaryVersionId = primaryVersionId;
       }
     }
 
@@ -132,7 +138,7 @@ class JobController {
     Object.assign(job, updateData);
 
     const nonContentFields = [
-      'persona',
+      'personaId',
       'status',
       'acceptanceLevel',
       'favorite',

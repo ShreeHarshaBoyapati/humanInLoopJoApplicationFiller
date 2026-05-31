@@ -9,7 +9,6 @@ import {
 } from 'typeorm';
 import type User from './user.js';
 import Persona from './persona.js';
-import ResumeVersion from './resume-version.js';
 
 @Entity()
 export default class Job {
@@ -65,8 +64,8 @@ export default class Job {
   @ManyToOne('User', 'jobs', { onDelete: 'CASCADE' })
   user!: User;
 
-  @ManyToOne(() => ResumeVersion, { nullable: true })
-  primaryVersion!: ResumeVersion | null;
+  @Column({ type: 'uuid', nullable: true })
+  primaryVersionId!: string | null;
 
   @CreateDateColumn()
   createdAt!: Date;
