@@ -1,0 +1,112 @@
+.wrapper {
+  align-items: stretch;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 4);
+  margin: 0 auto;
+  max-width: 1000px;
+  min-height: 0;
+  overflow: hidden auto;
+  padding-bottom: calc(var(--spacing) * 4);
+  width: 100%;
+}
+
+.header {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  gap: calc(var(--spacing) * 4);
+  justify-content: space-between;
+  margin: 0 auto;
+  max-width: 1000px;
+  width: 100%;
+}
+
+.navigation {
+  align-items: center;
+  display: flex;
+  gap: calc(var(--spacing) * 2);
+  margin: 0 auto;
+  max-width: 1000px;
+  width: 100%;
+}
+
+.buttonContainer {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin: 0 auto;
+  max-width: 1000px;
+  padding-right: 5px;
+  width: 100%;
+}
+
+.contentContainer {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 4);
+  margin: 0 auto;
+  max-width: 1000px;
+  width: 100%;
+}
+
+.jsonViewerContainer {
+  background-color: var(--grey-900);
+  border: 1px solid var(--grey-700);
+  border-radius: calc(var(--spacing) * 2);
+}
+
+.sectionLabel {
+  color: var(--white-700);
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.loadingText {
+  color: var(--white-700);
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+  padding: calc(var(--spacing) * 4);
+  text-align: center;
+}
+
+.errorText {
+  color: var(--red-600);
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+  padding: calc(var(--spacing) * 4);
+  text-align: center;
+}
+
+.noDataText {
+  color: var(--white-700);
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+  padding: calc(var(--spacing) * 4);
+  text-align: center;
+}
+
+/* Skeleton styles */
+.skeleton {
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+  background: linear-gradient(90deg, var(--grey-800) 0%, var(--grey-700) 50%, var(--grey-800) 100%);
+  background-size: 200% 100%;
+  border-radius: calc(var(--spacing) * 1);
+}
+
+@keyframes skeleton-pulse {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeletonJsonViewer {
+  height: 300px;
+  width: 100%;
+}

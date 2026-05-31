@@ -12,6 +12,7 @@ export interface PaginatedResultListItem {
   resumeName: string;
   personaName: string;
   score: number;
+  resumeId: string;
   resumeVersionId: string;
   createdAt: Date;
 }

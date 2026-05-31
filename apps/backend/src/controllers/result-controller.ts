@@ -60,6 +60,7 @@ class ResultController {
         'result.createdAt',
         'result.resumeVersionId',
         'version.versionName',
+        'resume.id',
         'resume.fileName',
         'persona.title',
       ]);
@@ -89,6 +90,7 @@ class ResultController {
       resumeName: result.resumeVersion.resume.fileName,
       personaName: result.resumeVersion.resume.persona.title,
       score: result.score,
+      resumeId: result.resumeVersion.resume.id,
       resumeVersionId: result.resumeVersionId,
       createdAt: result.createdAt,
     }));

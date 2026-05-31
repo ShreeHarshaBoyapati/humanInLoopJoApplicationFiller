@@ -8,6 +8,7 @@ import { EnhancedButton } from '@repo/ui';
 import { SearchBar } from './search-bar';
 import { ResultCard } from './result-card';
 import { ResultDetailView } from './result-detail-view';
+import { ResumeVersionView } from './resume-version-view';
 import { useResults, useResultDetail } from '../hooks/use-results';
 import type { PaginatedResultListItem } from '@repo/shared-types';
 import { PageHeader } from './page-header';
@@ -21,6 +22,13 @@ export function JobAtsTab({ jobId }: JobAtsTabProps) {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedResultId, setSelectedResultId] = useState<string | null>(null);
   const [viewingResultDetail, setViewingResultDetail] = useState(false);
+  const [viewingResumeDetail, setViewingResumeDetail] = useState(false);
+  const [selectedResumeData, setSelectedResumeData] = useState<{
+    resumeId: string;
+    versionId: string;
+    versionName: string;
+    resumeName: string;
+  } | null>(null);
 
   // Debounce search query
   useEffect(() => {
@@ -162,8 +170,13 @@ export function JobAtsTab({ jobId }: JobAtsTabProps) {
   };
 
   const handleViewResume = (result: PaginatedResultListItem) => {
-    // TODO: Navigate to resume view or open in new tab
-    console.log('View resume:', result.resumeVersionId);
+    setSelectedResumeData({
+      resumeId: result.resumeId,
+      versionId: result.resumeVersionId,
+      versionName: result.versionName,
+      resumeName: result.resumeName,
+    });
+    setViewingResumeDetail(true);
   };
 
   const handleViewResult = (result: PaginatedResultListItem) => {
@@ -175,10 +188,41 @@ export function JobAtsTab({ jobId }: JobAtsTabProps) {
     setViewingResultDetail(false);
   };
 
+  const handleBackFromResume = () => {
+    setViewingResumeDetail(false);
+    setSelectedResumeData(null);
+  };
+
   const handleAddResult = () => {
     // TODO: Open modal to add a new result
     console.log('Add result');
   };
+
+  // Show resume version view when viewing a resume
+  if (viewingResumeDetail && selectedResumeData) {
+    return (
+      <div className={`${styles.tabContainer} ${scrollbarStyles.scrollbarContainer}`}>
+        {/* Header without button */}
+        <PageHeader title="ATS Results" headerProps={{ className: styles.header }} />
+
+        {/* Navigation */}
+        <div className={styles.navigation}>
+          <span className={sectionStyles.navTextBlue} onClick={handleBackFromResume}>
+            ATS History
+          </span>
+          <span className={sectionStyles.navSeparator}>/</span>
+          <span className={sectionStyles.navCurrent}>Resume Version</span>
+        </div>
+
+        <ResumeVersionView
+          resumeId={selectedResumeData.resumeId}
+          versionId={selectedResumeData.versionId}
+          versionName={selectedResumeData.versionName}
+          resumeName={selectedResumeData.resumeName}
+        />
+      </div>
+    );
+  }
 
   // Show detail view when viewing a result
   if (viewingResultDetail && selectedResultId) {
