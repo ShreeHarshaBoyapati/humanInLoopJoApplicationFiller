@@ -32,6 +32,20 @@ export interface PaginatedResponse<T> {
 }
 
 /**
+ * Breakdown structure for ATS analysis results.
+ */
+export interface AnalysisBreakdown {
+  /** Keywords / skills present in job but absent in resume */
+  missingFields: string[];
+  /** Top keywords most strongly matched in the resume */
+  highlyMatchedKeys: string[];
+  /** Actionable improvement tips */
+  suggestions: string[];
+  /** AI-generated summary of overall fit */
+  overallVerdict: string;
+}
+
+/**
  * Result returned by the AI resume-job analysis endpoint.
  */
 export interface AnalysisResult {

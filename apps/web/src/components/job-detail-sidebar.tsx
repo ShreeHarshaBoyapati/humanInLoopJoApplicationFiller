@@ -10,17 +10,18 @@ import { useUpdateJob, useDeleteJob } from '../hooks/use-jobs';
 import { useStore } from '../store';
 import styles from './style/job-detail-sidebar.module.css';
 import { JobOverviewTab } from './job-overview-tab';
+import { JobAtsTab } from './job-ats-tab';
 
 interface JobDetailSidebarProps {
   job: Job;
   onClose: () => void;
 }
 
-type TabType = 'overview' | 'resume' | 'matching' | 'notes';
+type TabType = 'overview' | 'ats' | 'matching' | 'notes';
 
 const TABS: { id: TabType; label: string }[] = [
   { id: 'overview', label: 'Overview' },
-  { id: 'resume', label: 'Resume' },
+  { id: 'ats', label: 'ATS History' },
   { id: 'matching', label: 'Matching' },
   { id: 'notes', label: 'Notes' },
 ];
@@ -168,7 +169,7 @@ export function JobDetailSidebar({ job: initialJob, onClose }: JobDetailSidebarP
                   onJobUpdate={(updatedJob) => setLocalJob(updatedJob)}
                 />
               )}
-              {activeTab === 'resume' && <div>Resume content goes here</div>}
+              {activeTab === 'ats' && <JobAtsTab jobId={localJob.id} />}
               {activeTab === 'matching' && <div>Matching content goes here</div>}
               {activeTab === 'notes' && <div>Notes content goes here</div>}
             </div>

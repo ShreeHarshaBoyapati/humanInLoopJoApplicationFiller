@@ -1,0 +1,197 @@
+/* ─── Result Detail View ─── */
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 5);
+  height: 100%;
+  overflow-y: auto;
+  padding: calc(var(--spacing) * 2) 0;
+}
+
+/* ─── Score Card ─── */
+
+.scoreCard {
+  align-items: center;
+  background: var(--black-200);
+  border: 1px solid var(--grey-700);
+  border-radius: var(--border-radius);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 2);
+  padding: calc(var(--spacing) * 6);
+}
+
+.scoreLabel {
+  color: var(--white-700);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.scoreNumber {
+  font-family: var(--heading-font, 'Space Grotesk', sans-serif);
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.scoreHigh {
+  color: var(--green-400);
+}
+
+.scoreMid {
+  color: var(--yellow-400);
+}
+
+.scoreLow {
+  color: var(--red-600);
+}
+
+.scoreBar {
+  background: var(--grey-700);
+  border-radius: 999px;
+  height: 6px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.scoreBarFill {
+  border-radius: 999px;
+  height: 100%;
+  transition: width 0.6s ease;
+}
+
+/* ─── Verdict ─── */
+
+.verdict {
+  background: color-mix(in srgb, var(--blue-500) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--blue-500) 30%, transparent);
+  border-radius: var(--border-radius);
+  color: var(--white-900);
+  font-size: 0.875rem;
+  font-style: italic;
+  line-height: 1.5;
+  padding: calc(var(--spacing) * 4);
+}
+
+/* ─── Sections ─── */
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 3);
+}
+
+.sectionTitle {
+  color: var(--white-900);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+/* ─── Tag list ─── */
+
+.tagList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--spacing) * 2);
+}
+
+.tag {
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: calc(var(--spacing) * 1) calc(var(--spacing) * 3);
+}
+
+.tagGreen {
+  background: color-mix(in srgb, var(--green-400) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--green-400) 35%, transparent);
+  color: var(--green-400);
+}
+
+.tagRed {
+  background: color-mix(in srgb, var(--red-600) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--red-600) 35%, transparent);
+  color: var(--red-600);
+}
+
+/* ─── Suggestions ─── */
+
+.suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 3);
+}
+
+.suggestion {
+  align-items: flex-start;
+  display: flex;
+  gap: calc(var(--spacing) * 3);
+}
+
+.suggestionIndex {
+  background: color-mix(in srgb, var(--blue-500) 20%, transparent);
+  border-radius: 999px;
+  color: var(--blue-500);
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  height: 20px;
+  line-height: 20px;
+  text-align: center;
+  width: 20px;
+}
+
+.suggestionText {
+  color: var(--white-700);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+/* ─── Skeleton / Loading ─── */
+
+.skeleton {
+  animation: pulse 1.5s ease-in-out infinite;
+  background: var(--grey-300);
+  border-radius: var(--border-radius);
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.skeletonScore {
+  height: 96px;
+  width: 100%;
+}
+
+.skeletonLine {
+  height: 16px;
+  width: 100%;
+}
+
+.skeletonShort {
+  height: 16px;
+  width: 60%;
+}
+
+/* ─── Error ─── */
+
+.errorText {
+  color: var(--red-600);
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+  text-align: center;
+}

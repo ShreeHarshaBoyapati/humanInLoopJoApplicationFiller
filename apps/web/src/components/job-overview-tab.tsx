@@ -143,7 +143,7 @@ export function JobOverviewTab({ job, onJobUpdate }: JobOverviewTabProps) {
   if (!isEditing) {
     return (
       <div className={styles.container}>
-        <div className={styles.viewContainer}>
+        <div className={`${styles.viewContainer} ${scrollStyles.scrollbarVerticalContainer}`}>
           {/* Status Field */}
           <div className={styles.fieldGroup}>
             <label className={styles.fieldLabel}>Status</label>
@@ -155,7 +155,7 @@ export function JobOverviewTab({ job, onJobUpdate }: JobOverviewTabProps) {
           {/* Description Field */}
           <div className={styles.fieldGroup}>
             <label className={styles.fieldLabel}>Description</label>
-            <div className={`${styles.textContent} ${scrollStyles.scrollbarVerticalContainer}`}>
+            <div className={styles.textContent}>
               {job.description ? (
                 <div>{job.description}</div>
               ) : (
@@ -167,7 +167,7 @@ export function JobOverviewTab({ job, onJobUpdate }: JobOverviewTabProps) {
           {/* Requirements Field */}
           <div className={styles.fieldGroup}>
             <label className={styles.fieldLabel}>Requirements</label>
-            <div className={`${styles.textContent} ${scrollStyles.scrollbarVerticalContainer}`}>
+            <div className={styles.textContent}>
               {job.requirements ? (
                 <div>{job.requirements}</div>
               ) : (

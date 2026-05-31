@@ -6,6 +6,7 @@ import apiKey from './api-key.js';
 import persona from './persona.js';
 import resume from './resume.js';
 import resumeVersion from './resume-version.js';
+import result from './result.js';
 
 const router: express.Router = express.Router();
 
@@ -16,5 +17,6 @@ router.use('/api-key', apiKey);
 router.use('/persona', persona);
 router.use('/resume', resume);
 router.use('/resume', resumeVersion);
+router.use('/', result);
 
 export default router;
