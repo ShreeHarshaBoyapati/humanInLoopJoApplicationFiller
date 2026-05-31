@@ -23,10 +23,11 @@ interface ResumeVersionCardProps {
   isSelected: boolean;
   disabled?: boolean;
   onSetActive: (version: ResumeVersionMetadata) => void;
-  onEdit: (version: ResumeVersionMetadata) => void;
-  onDelete: (version: ResumeVersionMetadata) => void;
-  onBranch: (version: ResumeVersionMetadata) => void;
+  onEdit?: (version: ResumeVersionMetadata) => void;
+  onDelete?: (version: ResumeVersionMetadata) => void;
+  onBranch?: (version: ResumeVersionMetadata) => void;
   onFetchParsedData: (resumeId: string, versionId: string) => Promise<ResumeData | null>;
+  hideActions?: boolean;
 }
 
 export function ResumeVersionCard({
@@ -40,6 +41,7 @@ export function ResumeVersionCard({
   onDelete,
   onBranch,
   onFetchParsedData,
+  hideActions = false,
 }: ResumeVersionCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [parsedData, setParsedData] = useState<ResumeData | null>(null);
@@ -205,17 +207,17 @@ export function ResumeVersionCard({
 
   const handleEdit = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onEdit(version);
+    if (onEdit) onEdit(version);
   };
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onDelete(version);
+    if (onDelete) onDelete(version);
   };
 
   const handleBranch = (e: React.MouseEvent) => {
     e.stopPropagation();
-    onBranch(version);
+    if (onBranch) onBranch(version);
   };
 
   const handleToggleExpand = async (e: React.MouseEvent) => {
@@ -301,65 +303,73 @@ export function ResumeVersionCard({
       </div>
 
       {/* Section 3: Action buttons */}
-      <div className={styles.actionsSection}>
-        <EnhancedTooltipWithText description="View document" showIcon={false} placement="top">
-          <button
-            type="button"
-            className={styles.actionButton}
-            onClick={handleViewDocument}
-            disabled={isViewing && viewDocumentQuery.isFetching}
+      {!hideActions && (
+        <div className={styles.actionsSection}>
+          <EnhancedTooltipWithText description="View document" showIcon={false} placement="top">
+            <button
+              type="button"
+              className={styles.actionButton}
+              onClick={handleViewDocument}
+              disabled={isViewing && viewDocumentQuery.isFetching}
+            >
+              {isViewing && viewDocumentQuery.isFetching ? (
+                <div className={styles.loaderContainer}>
+                  <CircularProgress size={'1.25rem'} thickness={4} color="inherit" />
+                </div>
+              ) : (
+                <Visibility sx={{ fontSize: '1.25rem' }} />
+              )}
+            </button>
+          </EnhancedTooltipWithText>
+          {onEdit && (
+            <EnhancedTooltipWithText description="Edit" showIcon={false} placement="top">
+              <button type="button" className={styles.actionButton} onClick={handleEdit}>
+                <Edit sx={{ fontSize: '1.25rem' }} />
+              </button>
+            </EnhancedTooltipWithText>
+          )}
+          <EnhancedTooltipWithText
+            description={isExpanded ? 'Hide parsed data' : 'Show parsed data'}
+            showIcon={false}
+            placement="top"
           >
-            {isViewing && viewDocumentQuery.isFetching ? (
-              <div className={styles.loaderContainer}>
-                <CircularProgress size={'1.25rem'} thickness={4} color="inherit" />
-              </div>
-            ) : (
-              <Visibility sx={{ fontSize: '1.25rem' }} />
-            )}
-          </button>
-        </EnhancedTooltipWithText>
-        <EnhancedTooltipWithText description="Edit" showIcon={false} placement="top">
-          <button type="button" className={styles.actionButton} onClick={handleEdit}>
-            <Edit sx={{ fontSize: '1.25rem' }} />
-          </button>
-        </EnhancedTooltipWithText>
-        <EnhancedTooltipWithText
-          description={isExpanded ? 'Hide parsed data' : 'Show parsed data'}
-          showIcon={false}
-          placement="top"
-        >
-          <button type="button" className={styles.actionButton} onClick={handleToggleExpand}>
-            {isLoadingData ? (
-              <div className={styles.loaderContainer}>
-                <CircularProgress size={'1.25rem'} thickness={4} color="inherit" />
-              </div>
-            ) : isExpanded ? (
-              <KeyboardArrowUp sx={{ fontSize: '1.25rem' }} />
-            ) : (
-              <KeyboardArrowDown sx={{ fontSize: '1.25rem' }} />
-            )}
-          </button>
-        </EnhancedTooltipWithText>
-        <EnhancedTooltipWithText description="Delete" showIcon={false} placement="top">
-          <button
-            type="button"
-            className={`${styles.actionButton} ${styles.delete}`}
-            onClick={handleDelete}
-            disabled={version.active}
-          >
-            <Delete sx={{ fontSize: '1.25rem' }} />
-          </button>
-        </EnhancedTooltipWithText>
-        <EnhancedTooltipWithText
-          description="Create new resume from this version"
-          showIcon={false}
-          placement="top"
-        >
-          <button type="button" className={styles.actionButton} onClick={handleBranch}>
-            <ContentCopy sx={{ fontSize: '1.25rem' }} />
-          </button>
-        </EnhancedTooltipWithText>
-      </div>
+            <button type="button" className={styles.actionButton} onClick={handleToggleExpand}>
+              {isLoadingData ? (
+                <div className={styles.loaderContainer}>
+                  <CircularProgress size={'1.25rem'} thickness={4} color="inherit" />
+                </div>
+              ) : isExpanded ? (
+                <KeyboardArrowUp sx={{ fontSize: '1.25rem' }} />
+              ) : (
+                <KeyboardArrowDown sx={{ fontSize: '1.25rem' }} />
+              )}
+            </button>
+          </EnhancedTooltipWithText>
+          {onDelete && (
+            <EnhancedTooltipWithText description="Delete" showIcon={false} placement="top">
+              <button
+                type="button"
+                className={`${styles.actionButton} ${styles.delete}`}
+                onClick={handleDelete}
+                disabled={version.active}
+              >
+                <Delete sx={{ fontSize: '1.25rem' }} />
+              </button>
+            </EnhancedTooltipWithText>
+          )}
+          {onBranch && (
+            <EnhancedTooltipWithText
+              description="Create new resume from this version"
+              showIcon={false}
+              placement="top"
+            >
+              <button type="button" className={styles.actionButton} onClick={handleBranch}>
+                <ContentCopy sx={{ fontSize: '1.25rem' }} />
+              </button>
+            </EnhancedTooltipWithText>
+          )}
+        </div>
+      )}
 
       {/* Expanded parsed data view */}
       {isExpanded && (

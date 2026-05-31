@@ -7,6 +7,7 @@ interface PageHeaderProps {
   onButtonClick?: () => void;
   buttonIcon?: React.ReactNode;
   headerProps?: React.HTMLAttributes<HTMLDivElement>;
+  isButtonDisabled?: boolean;
 }
 
 export const PageHeader = ({
@@ -15,6 +16,7 @@ export const PageHeader = ({
   onButtonClick,
   buttonIcon,
   headerProps,
+  isButtonDisabled,
 }: PageHeaderProps) => {
   return (
     <div className={styles.header} {...headerProps}>
@@ -26,6 +28,7 @@ export const PageHeader = ({
           onClick={onButtonClick}
           customProps={{ props: { sx: { width: 'fit-content', maxWidth: 'fit-content' } } }}
           startIcon={buttonIcon}
+          disabled={isButtonDisabled}
         />
       )}
     </div>

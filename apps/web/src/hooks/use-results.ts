@@ -2,7 +2,7 @@ import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { axiosInstance } from '../utils/axios.ts';
 import type { PaginatedResultResponse, ResultDetail, ApiResponse } from '@repo/shared-types';
 
-const RESULT_KEYS = {
+export const RESULT_KEYS = {
   all: ['results'] as const,
   lists: () => [...RESULT_KEYS.all, 'list'] as const,
   byJob: (jobId: string) => [...RESULT_KEYS.lists(), { jobId }] as const,
