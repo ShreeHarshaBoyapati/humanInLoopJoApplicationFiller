@@ -17,6 +17,7 @@ export interface Job {
   keySkills: string[];
   notes: string;
   favorite: boolean;
+  primaryResultId: string | null;
   dataUpdatedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -124,7 +125,7 @@ export interface UpdateJobInput {
   status?: string;
   notes?: string;
   favorite?: boolean;
-  primaryVersionId?: string | null;
+  primaryResultId?: string | null;
   invalidateQueries?: boolean;
 }
 

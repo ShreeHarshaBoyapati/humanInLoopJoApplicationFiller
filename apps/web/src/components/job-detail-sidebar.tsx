@@ -11,18 +11,18 @@ import { useStore } from '../store';
 import styles from './style/job-detail-sidebar.module.css';
 import { JobOverviewTab } from './job-overview-tab';
 import { JobAtsTab } from './job-ats-tab';
+import { JobNotesTab } from './job-notes-tab';
 
 interface JobDetailSidebarProps {
   job: Job;
   onClose: () => void;
 }
 
-type TabType = 'overview' | 'ats' | 'matching' | 'notes';
+type TabType = 'overview' | 'ats' | 'notes';
 
 const TABS: { id: TabType; label: string }[] = [
   { id: 'overview', label: 'Overview' },
   { id: 'ats', label: 'ATS History' },
-  { id: 'matching', label: 'Matching' },
   { id: 'notes', label: 'Notes' },
 ];
 
@@ -169,9 +169,17 @@ export function JobDetailSidebar({ job: initialJob, onClose }: JobDetailSidebarP
                   onJobUpdate={(updatedJob) => setLocalJob(updatedJob)}
                 />
               )}
-              {activeTab === 'ats' && <JobAtsTab jobId={localJob.id} />}
-              {activeTab === 'matching' && <div>Matching content goes here</div>}
-              {activeTab === 'notes' && <div>Notes content goes here</div>}
+              {activeTab === 'ats' && (
+                <JobAtsTab
+                  jobId={localJob.id}
+                  jobDataUpdatedAt={localJob.dataUpdatedAt}
+                  primaryResultId={localJob.primaryResultId}
+                  onJobUpdate={(updatedJob) => setLocalJob(updatedJob)}
+                />
+              )}
+              {activeTab === 'notes' && (
+                <JobNotesTab job={localJob} onJobUpdate={(updatedJob) => setLocalJob(updatedJob)} />
+              )}
             </div>
           </div>
 

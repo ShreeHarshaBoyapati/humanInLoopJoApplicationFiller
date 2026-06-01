@@ -315,7 +315,7 @@ Your task:
       await resultRepository.save(result);
 
       if (isFirstResult) {
-        job.primaryVersionId = resumeVersionId;
+        job.primaryResultId = result.id;
         job.personaId = resumeVersion.resume.persona.id;
         await jobRepository.save(job);
       }

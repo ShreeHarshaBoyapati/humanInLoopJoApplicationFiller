@@ -2,8 +2,8 @@ import type { Response, AuthenticatedTypedRequest } from '../types/index.js';
 import {
   getJobRepository,
   getUserRepository,
-  getResumeVersionRepository,
   getPersonaRepository,
+  getResultRepository,
 } from '../database/repositories/index.js';
 import type {
   CreateJobInput,
@@ -64,12 +64,11 @@ class JobController {
 
   async update(req: AuthenticatedTypedRequest<UpdateJobInput>, res: Response) {
     const jobRepository = getJobRepository();
-    const resumeVersionRepository = getResumeVersionRepository();
     const personaRepository = getPersonaRepository();
 
     const userId = req.userId;
 
-    const { id, primaryVersionId, personaId, ...updateData } = req.body;
+    const { id, primaryResultId, personaId, ...updateData } = req.body;
 
     const job = await jobRepository.findOne({
       where: { id },
@@ -94,26 +93,6 @@ class JobController {
       return;
     }
 
-    // Handle primaryVersionId - validate and set
-    if (primaryVersionId !== undefined) {
-      if (primaryVersionId === null) {
-        job.primaryVersionId = null;
-      } else {
-        const resumeVersion = await resumeVersionRepository.findOne({
-          where: { id: primaryVersionId },
-        });
-        if (!resumeVersion) {
-          const data: ApiResponse = {
-            success: false,
-            message: 'Resume version not found',
-          };
-          res.status(400).json(data);
-          return;
-        }
-        job.primaryVersionId = primaryVersionId;
-      }
-    }
-
     // Handle personaId - validate and set
     if (personaId !== undefined) {
       if (personaId === null) {
@@ -135,6 +114,29 @@ class JobController {
       }
     }
 
+    // Handle primaryResultId - fetch result and update persona
+    if (primaryResultId !== undefined) {
+      if (primaryResultId === null) {
+        job.primaryResultId = null;
+      } else {
+        const resultRepository = getResultRepository();
+        const result = await resultRepository.findOne({
+          where: { id: primaryResultId },
+          relations: ['resumeVersion', 'resumeVersion.resume', 'resumeVersion.resume.persona'],
+        });
+        if (!result) {
+          const data: ApiResponse = {
+            success: false,
+            message: 'Result not found',
+          };
+          res.status(400).json(data);
+          return;
+        }
+        job.primaryResultId = primaryResultId;
+        job.personaId = result.resumeVersion.resume.persona.id;
+      }
+    }
+
     Object.assign(job, updateData);
 
     const nonContentFields = [
@@ -142,7 +144,7 @@ class JobController {
       'status',
       'acceptanceLevel',
       'favorite',
-      'primaryVersionId',
+      'primaryResultId',
     ];
     const updateKeys = Object.keys(updateData);
     const hasContentFields = updateKeys.some((key) => !nonContentFields.includes(key));
@@ -229,6 +231,8 @@ class JobController {
       'highlights',
       'keySkills',
       'favorite',
+      'notes',
+      'primaryResultId',
       'dataUpdatedAt',
       'createdAt',
       'updatedAt',

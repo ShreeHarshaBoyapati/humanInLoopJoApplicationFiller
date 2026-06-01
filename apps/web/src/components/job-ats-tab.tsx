@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, useReducer, useCallback } from 'react';
+import { useState, useRef, useEffect, useMemo, useReducer } from 'react';
 import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import styles from './style/job-ats-tab.module.css';
@@ -14,6 +14,7 @@ import { ResumeSelectSection } from './resume-select-section';
 import { VersionSelectSection } from './version-select-section';
 import { useResults, useResultDetail } from '../hooks/use-results';
 import { useAnalyzeKeywords } from '../hooks/use-analyze-keywords';
+import { useUpdateJob } from '../hooks/use-jobs';
 import type {
   PaginatedResultListItem,
   Persona,
@@ -21,6 +22,34 @@ import type {
   PaginatedResumeListItem,
   AnalysisResult,
 } from '@repo/shared-types';
+
+export type StaleType = 'job' | 'version' | 'both' | null;
+
+function computeStaleStatus(
+  resultCreatedAt: Date,
+  jobDataUpdatedAt: Date | null,
+  resumeVersionDataUpdatedAt: Date | null
+): { isStale: boolean; staleType: StaleType } {
+  const createdDate = new Date(resultCreatedAt);
+  const jobUpdatedDate = jobDataUpdatedAt ? new Date(jobDataUpdatedAt) : null;
+  const versionUpdatedDate = resumeVersionDataUpdatedAt
+    ? new Date(resumeVersionDataUpdatedAt)
+    : null;
+
+  const isJobStale = jobUpdatedDate ? createdDate < jobUpdatedDate : false;
+  const isVersionStale = versionUpdatedDate ? createdDate < versionUpdatedDate : false;
+
+  if (isJobStale && isVersionStale) {
+    return { isStale: true, staleType: 'both' };
+  }
+  if (isJobStale) {
+    return { isStale: true, staleType: 'job' };
+  }
+  if (isVersionStale) {
+    return { isStale: true, staleType: 'version' };
+  }
+  return { isStale: false, staleType: null };
+}
 import { PageHeader } from './page-header';
 import { useStore } from '../store';
 import { AnalysisSkeleton } from './analysis-skeleton';
@@ -130,14 +159,26 @@ function flowReducer(state: FlowStateData, action: FlowAction): FlowStateData {
   }
 }
 
+import type { Job } from '@repo/shared-types';
+
 interface JobAtsTabProps {
   jobId: string;
+  jobDataUpdatedAt: Date | null;
+  primaryResultId: string | null;
+  onJobUpdate: (updatedJob: Job) => void;
 }
 
-export function JobAtsTab({ jobId }: JobAtsTabProps) {
+export function JobAtsTab({
+  jobId,
+  jobDataUpdatedAt,
+  primaryResultId,
+  onJobUpdate,
+}: JobAtsTabProps) {
   // Add result flow state with useReducer
   const [flowData, dispatch] = useReducer(flowReducer, initialFlowState);
   const showSnackbar = useStore((state) => state.showSnackbar);
+
+  const updateJob = useUpdateJob();
 
   // Existing state
   const [searchQuery, setSearchQuery] = useState('');
@@ -324,6 +365,31 @@ export function JobAtsTab({ jobId }: JobAtsTabProps) {
 
   const handleAddResult = () => {
     dispatch({ type: 'START_ADD_FLOW' });
+  };
+
+  const handleSetPrimary = (result: PaginatedResultListItem) => {
+    if (primaryResultId === result.id) {
+      showSnackbar('This result is already set as primary', { severity: 'warning' });
+      return;
+    }
+
+    updateJob.mutate(
+      { id: jobId, primaryResultId: result.id },
+      {
+        onSuccess: (updatedJob) => {
+          showSnackbar('Primary result updated successfully', {
+            severity: 'success',
+          });
+          onJobUpdate(updatedJob);
+          refetch();
+        },
+        onError: (error) => {
+          const message =
+            error instanceof Error ? error.message : 'Failed to update primary result';
+          showSnackbar(message, { severity: 'error' });
+        },
+      }
+    );
   };
 
   const handleAnalyze = async () => {
@@ -637,17 +703,29 @@ export function JobAtsTab({ jobId }: JobAtsTabProps) {
           <div ref={topSentinelRef} className={styles.sentinel} />
 
           <div className={styles.itemList}>
-            {results.map((result) => (
-              <div key={result.id} data-result-id={result.id}>
-                <ResultCard
-                  result={result}
-                  isSelected={selectedResultId === result.id}
-                  onSelect={handleSelectResult}
-                  onViewResume={handleViewResume}
-                  onViewResult={handleViewResult}
-                />
-              </div>
-            ))}
+            {results.map((result) => {
+              const { isStale, staleType } = computeStaleStatus(
+                result.createdAt,
+                jobDataUpdatedAt,
+                result.resumeVersionDataUpdatedAt
+              );
+              const isPrimary = primaryResultId === result.id;
+              return (
+                <div key={result.id} data-result-id={result.id}>
+                  <ResultCard
+                    result={result}
+                    isSelected={selectedResultId === result.id}
+                    isStale={isStale}
+                    staleType={staleType}
+                    isPrimary={isPrimary}
+                    onSelect={handleSelectResult}
+                    onViewResume={handleViewResume}
+                    onViewResult={handleViewResult}
+                    onSetPrimary={handleSetPrimary}
+                  />
+                </div>
+              );
+            })}
           </div>
 
           {/* Bottom sentinel for scroll down detection */}

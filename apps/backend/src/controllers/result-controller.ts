@@ -60,6 +60,7 @@ class ResultController {
         'result.createdAt',
         'result.resumeVersionId',
         'version.versionName',
+        'version.dataUpdatedAt',
         'resume.id',
         'resume.fileName',
         'persona.title',
@@ -93,6 +94,7 @@ class ResultController {
       resumeId: result.resumeVersion.resume.id,
       resumeVersionId: result.resumeVersionId,
       createdAt: result.createdAt,
+      resumeVersionDataUpdatedAt: result.resumeVersion.dataUpdatedAt,
     }));
 
     const paginatedResponse: PaginatedResultResponse = {

@@ -65,7 +65,7 @@ export default class Job {
   user!: User;
 
   @Column({ type: 'uuid', nullable: true })
-  primaryVersionId!: string | null;
+  primaryResultId!: string | null;
 
   @CreateDateColumn()
   createdAt!: Date;

@@ -1,0 +1,277 @@
+/* Container styles */
+.container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+}
+
+.viewContainer {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 4);
+  height: 100%;
+  overflow-y: auto;
+}
+
+.editContainer {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 6);
+  height: 100%;
+}
+
+/* Empty state styles */
+.emptyState {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: calc(var(--spacing) * 12) calc(var(--spacing) * 6);
+  text-align: center;
+}
+
+.emptyStateText {
+  color: var(--white-700);
+  font-family: var(--secondary-font);
+  font-size: 1rem;
+  font-weight: 500;
+  margin-bottom: calc(var(--spacing) * 2);
+}
+
+.emptyStateSubtext {
+  color: var(--white-700);
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+  opacity: 0.7;
+}
+
+/* Loading container */
+.loadingContainer {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  padding: calc(var(--spacing) * 8);
+}
+
+.loadingSpinner {
+  color: var(--white-700);
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+}
+
+/* Button container */
+.buttonGroupContainer {
+  display: flex;
+  gap: calc(var(--spacing) * 3);
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-bottom: 5px;
+  padding-right: 5px;
+  padding-top: calc(var(--spacing) * 4);
+}
+
+/* Markdown element styles */
+.mdH1 {
+  color: var(--white-900);
+  font-family: var(--heading-font);
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: calc(var(--spacing) * 4);
+  margin-top: 0;
+}
+
+.mdH2 {
+  color: var(--white-900);
+  font-family: var(--heading-font);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: calc(var(--spacing) * 3);
+  margin-top: calc(var(--spacing) * 6);
+}
+
+.mdH3 {
+  color: var(--white-900);
+  font-family: var(--heading-font);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: calc(var(--spacing) * 2);
+  margin-top: calc(var(--spacing) * 4);
+}
+
+.mdH4 {
+  color: var(--white-900);
+  font-family: var(--heading-font);
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: calc(var(--spacing) * 2);
+  margin-top: calc(var(--spacing) * 4);
+}
+
+.mdH5 {
+  color: var(--white-900);
+  font-family: var(--heading-font);
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: calc(var(--spacing) * 2);
+  margin-top: calc(var(--spacing) * 4);
+}
+
+.mdH6 {
+  color: var(--white-900);
+  font-family: var(--heading-font);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  margin-bottom: calc(var(--spacing) * 1);
+  margin-top: calc(var(--spacing) * 3);
+}
+
+.mdParagraph {
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  margin-bottom: calc(var(--spacing) * 3);
+}
+
+/* Lists */
+.mdUl {
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  list-style-type: disc;
+  margin-bottom: calc(var(--spacing) * 3);
+  padding-left: calc(var(--spacing) * 6);
+}
+
+.mdOl {
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  list-style-type: decimal;
+  margin-bottom: calc(var(--spacing) * 3);
+  padding-left: calc(var(--spacing) * 6);
+}
+
+.mdLi {
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  margin-bottom: calc(var(--spacing) * 1);
+}
+
+/* Blockquotes */
+.mdBlockquote {
+  background-color: var(--grey-700);
+  border-left: 3px solid var(--blue-500);
+  color: var(--white-700);
+  font-family: var(--secondary-font);
+  font-size: 0.9375rem;
+  font-style: italic;
+  line-height: 1.6;
+  margin-bottom: calc(var(--spacing) * 3);
+  margin-left: 0;
+  margin-right: 0;
+  padding: calc(var(--spacing) * 3) calc(var(--spacing) * 4);
+}
+
+/* Code blocks */
+.mdPre {
+  background-color: var(--black-800);
+  border: 1px solid var(--grey-700);
+  border-radius: var(--border-radius);
+  color: var(--white-900);
+  font-family:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin-bottom: calc(var(--spacing) * 4);
+  max-height: 24rem;
+  min-height: 6rem;
+  padding: calc(var(--spacing) * 4);
+}
+
+.mdCodeBlock {
+  background-color: transparent;
+  color: var(--white-900);
+  font-family:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: 0.875rem;
+}
+
+.mdInlineCode {
+  background-color: var(--grey-700);
+  border-radius: calc(var(--spacing) * 1);
+  color: var(--blue-400);
+  font-family:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: 0.875rem;
+  padding: calc(var(--spacing) * 0.5) calc(var(--spacing) * 2);
+}
+
+/* Links */
+.mdLink {
+  color: var(--blue-400);
+  font-family: var(--secondary-font);
+  font-size: 0.9375rem;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.mdLink:hover {
+  color: var(--blue-500);
+  text-decoration: underline;
+}
+
+/* Tables */
+.mdTableWrapper {
+  margin-bottom: calc(var(--spacing) * 4);
+  overflow-x: auto;
+}
+
+.mdTable {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.mdThead {
+  background-color: var(--grey-700);
+}
+
+.mdTbody {
+  background-color: var(--black-700);
+}
+
+.mdTr {
+  border-bottom: 1px solid var(--grey-700);
+}
+
+.mdTh {
+  border: 1px solid var(--grey-700);
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: calc(var(--spacing) * 3) calc(var(--spacing) * 4);
+  text-align: left;
+}
+
+.mdTd {
+  border: 1px solid var(--grey-700);
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+  padding: calc(var(--spacing) * 3) calc(var(--spacing) * 4);
+}
+
+/* Horizontal rule */
+.mdHr {
+  background-color: var(--grey-700);
+  border: none;
+  height: 1px;
+  margin-bottom: calc(var(--spacing) * 4);
+  margin-top: calc(var(--spacing) * 4);
+}

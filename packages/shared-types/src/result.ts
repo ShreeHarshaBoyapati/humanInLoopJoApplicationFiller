@@ -15,6 +15,7 @@ export interface PaginatedResultListItem {
   resumeId: string;
   resumeVersionId: string;
   createdAt: Date;
+  resumeVersionDataUpdatedAt: Date | null;
 }
 
 // Paginated result response
