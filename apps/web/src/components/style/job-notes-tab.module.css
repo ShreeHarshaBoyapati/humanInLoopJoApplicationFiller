@@ -228,50 +228,111 @@
 
 /* Tables */
 .mdTableWrapper {
+  display: block;
   margin-bottom: calc(var(--spacing) * 4);
+  max-width: 100%;
   overflow-x: auto;
 }
 
 .mdTable {
   border-collapse: collapse;
+  display: table;
   width: 100%;
 }
 
 .mdThead {
-  background-color: var(--grey-700);
+  display: table-header-group;
 }
 
 .mdTbody {
-  background-color: var(--black-700);
+  display: table-row-group;
 }
 
 .mdTr {
-  border-bottom: 1px solid var(--grey-700);
+  display: table-row;
 }
 
 .mdTh {
   border: 1px solid var(--grey-700);
   color: var(--white-900);
+  display: table-cell;
   font-family: var(--secondary-font);
   font-size: 0.875rem;
   font-weight: 600;
   padding: calc(var(--spacing) * 3) calc(var(--spacing) * 4);
   text-align: left;
+  vertical-align: middle;
 }
 
 .mdTd {
   border: 1px solid var(--grey-700);
   color: var(--white-900);
+  display: table-cell;
   font-family: var(--secondary-font);
   font-size: 0.875rem;
   padding: calc(var(--spacing) * 3) calc(var(--spacing) * 4);
+  vertical-align: middle;
+}
+
+.mdTr:nth-child(even) .mdTd {
+  background-color: var(--black-800);
+}
+
+.mdThead .mdTh {
+  background-color: var(--grey-700);
+}
+
+/* Definition lists */
+.mdDl {
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  margin-bottom: calc(var(--spacing) * 3);
+}
+
+.mdDt {
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  margin-top: calc(var(--spacing) * 2);
+}
+
+.mdDd {
+  color: var(--white-700);
+  font-family: var(--secondary-font);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  margin-bottom: calc(var(--spacing) * 2);
+  margin-left: calc(var(--spacing) * 6);
+}
+
+/* Inline emphasis */
+.mdEm {
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  font-size: 0.9375rem;
+  font-style: italic;
+}
+
+.mdStrong {
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  font-size: 0.9375rem;
+  font-weight: 700;
 }
 
 /* Horizontal rule */
 .mdHr {
-  background-color: var(--grey-700);
+  background-color: transparent;
   border: none;
-  height: 1px;
+  border-top: 1px solid var(--white-700);
+  display: block;
+  flex-shrink: 0;
+  height: 0;
   margin-bottom: calc(var(--spacing) * 4);
   margin-top: calc(var(--spacing) * 4);
+  opacity: 0.5;
+  width: 100%;
 }

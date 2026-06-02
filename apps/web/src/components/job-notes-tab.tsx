@@ -1,6 +1,8 @@
 import { lazy, Suspense, useState, useCallback } from 'react';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
+import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
 import EditIcon from '@mui/icons-material/Edit';
 import { EnhancedButton, EnhancedTextInputArea } from '@repo/ui';
 import type { Job, UpdateJobInput } from '@repo/shared-types';
@@ -8,9 +10,42 @@ import { useUpdateJob } from '../hooks/use-jobs';
 import { useStore } from '../store';
 import styles from './style/job-notes-tab.module.css';
 import scrollStyles from '@repo/ui/scroll-bar.module.css';
-
-// Lazy load ReactMarkdown to reduce initial bundle size
 const ReactMarkdown = lazy(() => import('react-markdown'));
+
+const customSanitizeSchema = {
+  ...defaultSchema,
+  tagNames: [
+    ...(defaultSchema.tagNames || []),
+    'table',
+    'thead',
+    'tbody',
+    'tr',
+    'th',
+    'td',
+    'dl',
+    'dt',
+    'dd',
+    'em',
+    'strong',
+    'sub',
+    'sup',
+    'mark',
+    'del',
+    'ins',
+  ],
+  attributes: {
+    ...defaultSchema.attributes,
+    table: ['className'],
+    thead: ['className'],
+    tbody: ['className'],
+    tr: ['className'],
+    th: ['className', 'align', 'scope', 'colSpan', 'rowSpan'],
+    td: ['className', 'align', 'colSpan', 'rowSpan'],
+    dl: ['className'],
+    dt: ['className'],
+    dd: ['className'],
+  },
+};
 
 interface JobNotesTabProps {
   job: Job;
@@ -60,6 +95,11 @@ const markdownComponents: Components = {
   tr: ({ children }) => <tr className={styles.mdTr}>{children}</tr>,
   th: ({ children }) => <th className={styles.mdTh}>{children}</th>,
   td: ({ children }) => <td className={styles.mdTd}>{children}</td>,
+  dl: ({ children }) => <dl className={styles.mdDl}>{children}</dl>,
+  dt: ({ children }) => <dt className={styles.mdDt}>{children}</dt>,
+  dd: ({ children }) => <dd className={styles.mdDd}>{children}</dd>,
+  em: ({ children }) => <em className={styles.mdEm}>{children}</em>,
+  strong: ({ children }) => <strong className={styles.mdStrong}>{children}</strong>,
   hr: () => <hr className={styles.mdHr} />,
 };
 
@@ -124,7 +164,11 @@ export function JobNotesTab({ job, onJobUpdate }: JobNotesTabProps) {
         <div className={`${styles.viewContainer} ${scrollStyles.scrollbarVerticalContainer}`}>
           {job.notes && job.notes.trim() ? (
             <Suspense fallback={<MarkdownLoading />}>
-              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                rehypePlugins={[rehypeRaw, [rehypeSanitize, customSanitizeSchema]]}
+                components={markdownComponents}
+              >
                 {job.notes}
               </ReactMarkdown>
             </Suspense>
