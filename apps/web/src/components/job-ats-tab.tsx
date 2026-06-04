@@ -179,6 +179,7 @@ export function JobAtsTab({
   const showSnackbar = useStore((state) => state.showSnackbar);
 
   const updateJob = useUpdateJob();
+  const isSettingPrimary = updateJob.isPending;
 
   // Existing state
   const [searchQuery, setSearchQuery] = useState('');
@@ -419,6 +420,10 @@ export function JobAtsTab({
 
       // Navigate to result with the data
       dispatch({ type: 'ANALYSIS_COMPLETE', result: response.data });
+
+      if (response.job) {
+        onJobUpdate(response.job);
+      }
     } catch (error) {
       // Clear abort controller ref
       abortControllerRef.current = null;
@@ -676,7 +681,7 @@ export function JobAtsTab({
       {/* Header with title and add button */}
       <PageHeader
         title="ATS History"
-        buttonLabel="Add Result"
+        buttonLabel="Add For ATS"
         onButtonClick={handleAddResult}
         buttonIcon={<AddIcon fontSize="small" />}
         headerProps={{ className: styles.header }}
@@ -724,6 +729,7 @@ export function JobAtsTab({
                     isStale={isStale}
                     staleType={staleType}
                     isPrimary={isPrimary}
+                    isSettingPrimary={isSettingPrimary}
                     onSelect={handleSelectResult}
                     onViewResume={handleViewResume}
                     onViewResult={handleViewResult}

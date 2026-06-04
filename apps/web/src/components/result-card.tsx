@@ -12,6 +12,7 @@ interface ResultCardProps {
   isStale: boolean;
   staleType: StaleType;
   isPrimary: boolean;
+  isSettingPrimary?: boolean;
   onSelect: (result: PaginatedResultListItem) => void;
   onViewResume: (result: PaginatedResultListItem) => void;
   onViewResult: (result: PaginatedResultListItem) => void;
@@ -43,6 +44,7 @@ export const ResultCard = ({
   isStale,
   staleType,
   isPrimary,
+  isSettingPrimary = false,
   onSelect,
   onViewResume,
   onViewResult,
@@ -57,10 +59,13 @@ export const ResultCard = ({
 
   const handleRadioClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isSettingPrimary) return;
     onSetPrimary(result);
   };
 
-  const radioTooltip = isPrimary ? 'Primary' : 'Click to set as Primary';
+  const radioTooltip = isPrimary
+    ? 'Primary'
+    : 'Click to set as Primary, so that you can search the job with this persona.';
 
   return (
     <div
@@ -72,11 +77,17 @@ export const ResultCard = ({
         <EnhancedTooltipWithText description={radioTooltip} showIcon={false} placement="top">
           <Radio
             checked={isPrimary}
+            disabled={isSettingPrimary}
             onClick={handleRadioClick}
             sx={{
               color: 'var(--grey-500)',
+              '&.Mui-disabled': {
+                color: 'var(--grey-500)',
+                pointerEvents: 'none',
+                opacity: 0.5,
+              },
               '&.Mui-checked': {
-                color: 'var(--blue-500)',
+                color: 'var(--blue-400)',
               },
             }}
           />

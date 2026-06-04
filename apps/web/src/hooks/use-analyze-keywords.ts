@@ -1,7 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { axiosInstance } from '../utils/axios';
-import type { ApiResponse, AnalysisResult } from '@repo/shared-types';
+import type {
+  AnalyzeKeywordsApiResponse,
+  AnalysisResult,
+  ApiResponse,
+  Job,
+} from '@repo/shared-types';
 import { RESULT_KEYS } from './use-results';
+import { JOB_KEYS } from './use-jobs';
 
 export interface AnalyzeKeywordsParams {
   jobId: string;
@@ -12,6 +18,7 @@ export interface AnalyzeKeywordsParams {
 export interface AnalyzeKeywordsResult {
   data: AnalysisResult;
   message?: string;
+  job?: Job;
 }
 
 export const useAnalyzeKeywords = () => {
@@ -21,7 +28,7 @@ export const useAnalyzeKeywords = () => {
     mutationFn: async (params: AnalyzeKeywordsParams) => {
       const { signal, ...data } = params;
       try {
-        const response = await axiosInstance.post<ApiResponse<AnalysisResult>>(
+        const response = await axiosInstance.post<AnalyzeKeywordsApiResponse>(
           '/ai/analyze-keywords',
           {
             jobId: data.jobId,
@@ -37,6 +44,7 @@ export const useAnalyzeKeywords = () => {
         return {
           data: response.data.data,
           message: response.data.message,
+          job: response.data.job,
         } as AnalyzeKeywordsResult;
       } catch (err) {
         // Handle abort errors
@@ -55,10 +63,27 @@ export const useAnalyzeKeywords = () => {
         throw err;
       }
     },
-    onSuccess: (_result: AnalyzeKeywordsResult, variables: AnalyzeKeywordsParams) => {
+    onSuccess: (result: AnalyzeKeywordsResult, variables: AnalyzeKeywordsParams) => {
       queryClient.invalidateQueries({
         queryKey: RESULT_KEYS.byJob(variables.jobId),
       });
+
+      if (result.job) {
+        const updatedJob = result.job;
+        queryClient.setQueriesData(
+          { queryKey: JOB_KEYS.lists() },
+          (oldData: { pages: Array<{ items: Job[] }>; pageParams?: number[] } | undefined) => {
+            if (!oldData?.pages) return oldData;
+            return {
+              ...oldData,
+              pages: oldData.pages.map((page) => ({
+                ...page,
+                items: page.items.map((job) => (job.id === updatedJob.id ? updatedJob : job)),
+              })),
+            };
+          }
+        );
+      }
     },
   });
 };

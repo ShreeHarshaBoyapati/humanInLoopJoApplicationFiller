@@ -11,7 +11,7 @@ import type {
   DeleteJobInput,
 } from '@repo/shared-types';
 
-const JOB_KEYS = {
+export const JOB_KEYS = {
   all: ['jobs'] as const,
   lists: () => [...JOB_KEYS.all, 'list'] as const,
 };

@@ -3,7 +3,8 @@
  * Used in API responses for result operations.
  */
 
-import type { AnalysisBreakdown } from './api.js';
+import type { AnalysisBreakdown, ApiResponse, AnalysisResult } from './api.js';
+import type { Job } from './job.js';
 
 // Paginated result list item (lightweight, no breakdown)
 export interface PaginatedResultListItem {
@@ -52,3 +53,7 @@ export interface GetResultsByJobParams {
 export interface GetResultDetailParams {
   resultId: string;
 }
+
+export type AnalyzeKeywordsApiResponse = ApiResponse<AnalysisResult> & {
+  job?: Job;
+};

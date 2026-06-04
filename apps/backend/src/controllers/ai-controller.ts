@@ -10,7 +10,7 @@ import { decryptText } from '../utils/encryption.js';
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import { transitDecrypt } from '@repo/utils';
-import type { ApiResponse, AnalysisResult, ResumeData } from '@repo/shared-types';
+import type { ApiResponse, AnalyzeKeywordsApiResponse, ResumeData } from '@repo/shared-types';
 
 const TRANSIT_SECRET = process.env.TRANSIT_SECRET ?? 'jfp-default-transit-secret-change-in-prod';
 
@@ -320,13 +320,16 @@ Your task:
         await jobRepository.save(job);
       }
 
-      const data: ApiResponse<AnalysisResult> = {
+      const data: AnalyzeKeywordsApiResponse = {
         success: true,
         data: output,
         message: isFirstResult
           ? 'This resume version is now set as primary for this job. You can change that in website.'
           : undefined,
       };
+      if (isFirstResult) {
+        data.job = job;
+      }
       res.status(200).json(data);
     } catch (error: unknown) {
       console.error('Error analyzing keywords:', error);
