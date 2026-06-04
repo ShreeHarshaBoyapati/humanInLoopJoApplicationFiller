@@ -201,6 +201,15 @@ export function JobAtsTab({
   // Abort controller for canceling the analysis
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+    };
+  }, []);
+
   // Debounce search query
   useEffect(() => {
     const timer = setTimeout(() => {
