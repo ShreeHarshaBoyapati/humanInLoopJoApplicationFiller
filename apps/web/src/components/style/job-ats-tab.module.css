@@ -21,6 +21,10 @@
   width: 100%;
 }
 
+.headerButtonContainer {
+  padding-right: 5px;
+}
+
 .title {
   color: var(--white-900);
   font-family: var(--heading-font);

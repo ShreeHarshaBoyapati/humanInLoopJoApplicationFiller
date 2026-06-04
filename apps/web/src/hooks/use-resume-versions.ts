@@ -7,10 +7,12 @@ import type {
   ResumeData,
   ViewDocumentResponse,
   PaginatedResumeResponse,
+  PaginatedResultResponse,
 } from '@repo/shared-types';
 import type { ApiResponse } from '@repo/shared-types';
 import { RESUME_KEYS } from './use-resumes.ts';
 import { PERSONA_KEYS } from './use-personas.ts';
+import { RESULT_KEYS } from './use-results.ts';
 
 const VERSION_KEYS = {
   all: ['versions'] as const,
@@ -496,7 +498,6 @@ export const useUpdateVersion = () => {
         const cacheData = oldData as { pages?: PaginatedVersionResponse[]; pageParams?: number[] };
 
         if (!cacheData.pages || cacheData.pages.length === 0) return;
-        console.log('=======the pages are----------->>>>>', cacheData.pages);
 
         const updatedVersion = _result.version;
         const updatedPages = cacheData.pages.map((page) => ({
@@ -516,6 +517,47 @@ export const useUpdateVersion = () => {
         queryClient.setQueryData(queryKey, {
           pages: updatedPages,
           pageParams: cacheData.pageParams || updatedPages.map((_, index) => index + 1),
+        });
+      });
+
+      // Update result list caches for the affected resume version
+      const cachedResultQueries = queryClient.getQueriesData({
+        queryKey: RESULT_KEYS.lists(),
+        exact: false,
+      });
+
+      cachedResultQueries.forEach(([resultQueryKey, resultOldData]) => {
+        if (!resultOldData || typeof resultOldData !== 'object') return;
+
+        const resultCacheData = resultOldData as {
+          pages?: PaginatedResultResponse[];
+          pageParams?: number[];
+        };
+
+        if (!resultCacheData.pages || resultCacheData.pages.length === 0) return;
+
+        const updatedVersion = _result.version;
+        let didUpdate = false;
+
+        const updatedResultPages = resultCacheData.pages.map((page) => ({
+          ...page,
+          items: page.items.map((item) => {
+            if (item.resumeVersionId === updatedVersion.id) {
+              didUpdate = true;
+              return {
+                ...item,
+                resumeVersionDataUpdatedAt: updatedVersion.dataUpdatedAt,
+              };
+            }
+            return item;
+          }),
+        }));
+
+        if (!didUpdate) return;
+
+        queryClient.setQueryData(resultQueryKey, {
+          pages: updatedResultPages,
+          pageParams: resultCacheData.pageParams || updatedResultPages.map((_, index) => index + 1),
         });
       });
     },

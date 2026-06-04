@@ -507,6 +507,9 @@ export function JobAtsTab({
           buttonIcon={<AddIcon fontSize="small" />}
           headerProps={{ className: styles.header }}
           isButtonDisabled={!flowData.selectedVersion || isAnalyzing}
+          buttonContainerProps={{
+            className: styles.headerButtonContainer,
+          }}
         />
         <div className={styles.navigation}>
           <span className={sectionStyles.navTextBlue} onClick={() => dispatch({ type: 'DONE' })}>
@@ -677,6 +680,9 @@ export function JobAtsTab({
         onButtonClick={handleAddResult}
         buttonIcon={<AddIcon fontSize="small" />}
         headerProps={{ className: styles.header }}
+        buttonContainerProps={{
+          className: styles.headerButtonContainer,
+        }}
       />
 
       {/* Navigation */}

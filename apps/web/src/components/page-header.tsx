@@ -8,6 +8,7 @@ interface PageHeaderProps {
   buttonIcon?: React.ReactNode;
   headerProps?: React.HTMLAttributes<HTMLDivElement>;
   isButtonDisabled?: boolean;
+  buttonContainerProps?: React.HTMLAttributes<HTMLDivElement>;
 }
 
 export const PageHeader = ({
@@ -16,20 +17,23 @@ export const PageHeader = ({
   onButtonClick,
   buttonIcon,
   headerProps,
+  buttonContainerProps,
   isButtonDisabled,
 }: PageHeaderProps) => {
   return (
     <div className={styles.header} {...headerProps}>
       <h1 className={styles.title}>{title}</h1>
       {onButtonClick && (
-        <EnhancedButton
-          label={buttonLabel}
-          colorTheme="secondary"
-          onClick={onButtonClick}
-          customProps={{ props: { sx: { width: 'fit-content', maxWidth: 'fit-content' } } }}
-          startIcon={buttonIcon}
-          disabled={isButtonDisabled}
-        />
+        <div {...buttonContainerProps}>
+          <EnhancedButton
+            label={buttonLabel}
+            colorTheme="secondary"
+            onClick={onButtonClick}
+            customProps={{ props: { sx: { width: 'fit-content', maxWidth: 'fit-content' } } }}
+            startIcon={buttonIcon}
+            disabled={isButtonDisabled}
+          />
+        </div>
       )}
     </div>
   );
