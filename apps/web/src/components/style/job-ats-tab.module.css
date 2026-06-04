@@ -95,10 +95,19 @@
 
 .errorContainer {
   align-items: center;
+  background-color: var(--black-700);
+  border: 1px solid var(--red-600);
+  border-radius: var(--border-radius);
+  box-sizing: border-box;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   gap: calc(var(--spacing) * 4);
+  justify-content: center;
+  margin: 0 auto;
+  max-width: 1000px;
+  min-height: 80px;
   padding: calc(var(--spacing) * 4);
+  width: 100%;
 }
 
 .errorText {

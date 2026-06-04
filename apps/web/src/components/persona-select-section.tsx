@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import styles from './style/job-ats-tab.module.css';
 import scrollbarStyles from '@repo/ui/scroll-bar.module.css';
+import { EnhancedButton } from '@repo/ui';
 import { SearchBar } from './search-bar';
 import { PersonaCard } from './persona-card';
 import { usePersonas } from '../hooks/use-personas';
@@ -33,6 +35,7 @@ export function PersonaSelectSection({ onSelect, selectedPersonaId }: PersonaSel
     hasPreviousPage,
     isFetchingNextPage,
     isFetchingPreviousPage,
+    refetch,
   } = usePersonas(10, debouncedSearch);
 
   const personas = useMemo(() => data?.pages.flatMap((page) => page.items) || [], [data]);
@@ -179,6 +182,13 @@ export function PersonaSelectSection({ onSelect, selectedPersonaId }: PersonaSel
       {isError && (
         <div className={styles.errorContainer}>
           <p className={styles.errorText}>Failed to load personas. Please try again.</p>
+          <EnhancedButton
+            label="Retry"
+            colorTheme="secondary"
+            size="small"
+            onClick={() => refetch()}
+            startIcon={<RefreshIcon fontSize="small" />}
+          />
         </div>
       )}
     </>

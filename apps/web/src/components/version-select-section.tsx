@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import styles from './style/job-ats-tab.module.css';
 import scrollbarStyles from '@repo/ui/scroll-bar.module.css';
+import { EnhancedButton } from '@repo/ui';
 import { SearchBar } from './search-bar';
 import { ResumeVersionCard } from './resume-version-card';
 import { useResumeVersions, useViewParsedData } from '../hooks/use-resume-versions';
@@ -40,6 +42,7 @@ export function VersionSelectSection({
     hasPreviousPage,
     isFetchingNextPage,
     isFetchingPreviousPage,
+    refetch,
   } = useResumeVersions(resumeId, personaId, 10, debouncedSearch);
 
   const versions = useMemo(() => data?.pages.flatMap((page) => page.items) || [], [data]);
@@ -205,6 +208,13 @@ export function VersionSelectSection({
       {isError && (
         <div className={styles.errorContainer}>
           <p className={styles.errorText}>Failed to load versions. Please try again.</p>
+          <EnhancedButton
+            label="Retry"
+            colorTheme="secondary"
+            size="small"
+            onClick={() => refetch()}
+            startIcon={<RefreshIcon fontSize="small" />}
+          />
         </div>
       )}
     </>
