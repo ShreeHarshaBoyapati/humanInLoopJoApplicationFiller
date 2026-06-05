@@ -158,7 +158,9 @@ export const ResumeVersionView = ({
 
       {/* Content */}
       {isLoadingData ? (
-        <div className={styles.skeletonJsonViewer} />
+        <div className={styles.loaderContainer}>
+          <CircularProgress size={'2rem'} thickness={4} />
+        </div>
       ) : viewError ? (
         <p className={styles.errorText}>{viewError}</p>
       ) : parsedData ? (

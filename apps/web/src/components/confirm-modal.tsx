@@ -8,6 +8,7 @@ interface ConfirmModalProps {
   confirmLabel?: string;
   cancelLabel?: string;
   isLoading?: boolean;
+  cancellation?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -19,6 +20,7 @@ export function ConfirmModal({
   confirmLabel = 'Yes',
   cancelLabel = 'No',
   isLoading = false,
+  cancellation = false,
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
@@ -28,7 +30,7 @@ export function ConfirmModal({
         label={cancelLabel}
         colorTheme="secondary"
         onClick={onCancel}
-        disabled={isLoading}
+        disabled={!cancellation && isLoading}
       />
       <EnhancedButton
         label={confirmLabel}

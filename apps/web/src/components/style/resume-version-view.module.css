@@ -88,25 +88,10 @@
   text-align: center;
 }
 
-/* Skeleton styles */
-.skeleton {
-  animation: skeleton-pulse 1.5s ease-in-out infinite;
-  background: linear-gradient(90deg, var(--grey-800) 0%, var(--grey-700) 50%, var(--grey-800) 100%);
-  background-size: 200% 100%;
-  border-radius: calc(var(--spacing) * 1);
-}
-
-@keyframes skeleton-pulse {
-  0% {
-    background-position: 200% 0;
-  }
-
-  100% {
-    background-position: -200% 0;
-  }
-}
-
-.skeletonJsonViewer {
+.loaderContainer {
+  align-items: center;
+  display: flex;
   height: 300px;
+  justify-content: center;
   width: 100%;
 }
