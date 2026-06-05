@@ -6,10 +6,10 @@ import styles from './style/home-page-banner.module.css';
 import { Typography } from '@mui/material';
 
 const TABS: Array<{ id: string; label: string; route?: string }> = [
-  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'dashboard', label: 'Dashboard', route: '/' },
   { id: 'job-tracker', label: 'Job tracker', route: '/job-tracker' },
   { id: 'persona-resumes', label: 'Persona and Resumes', route: '/persona-resumes' },
-  { id: 'settings', label: 'Settings' },
+  { id: 'settings', label: 'Settings', route: '/settings' },
 ];
 
 interface HomePageBannerProps {

@@ -49,12 +49,27 @@
 
 .tab:hover {
   background-color: var(--grey-300);
+  border-color: transparent;
   color: var(--white-900);
+}
+
+.tab:focus,
+.tab:focus-visible {
+  outline: none;
 }
 
 .tabActive {
   background-color: var(--grey-700);
   color: var(--white-900);
+}
+
+.tabActive:hover {
+  border-color: transparent;
+}
+
+.tabActive:focus,
+.tabActive:focus-visible {
+  outline: none;
 }
 
 .rightSection {
