@@ -5,6 +5,7 @@ import {
   getPersonaRepository,
   getResultRepository,
 } from '../database/repositories/index.js';
+import { logger } from '../utils/index.js';
 import type {
   CreateJobInput,
   UpdateJobInput,
@@ -189,6 +190,11 @@ class JobController {
         message: 'You are not authorized to delete this job',
       };
       res.status(403).json(data);
+      return;
+    }
+
+    if (req.destroyed || res.closed) {
+      logger.info({ id: job.id }, 'Delete job aborted by client; skipping DB write');
       return;
     }
 

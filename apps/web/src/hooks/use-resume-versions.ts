@@ -1,4 +1,6 @@
+import { useCallback, useRef } from 'react';
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import axios from 'axios';
 import { axiosInstance } from '../utils/axios.ts';
 import type {
   ResumeVersionMetadata,
@@ -64,19 +66,27 @@ export interface DeleteVersionParams {
 
 export const useDeleteVersion = () => {
   const queryClient = useQueryClient();
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  return useMutation({
+  const mutation = useMutation({
     mutationFn: async (data: DeleteVersionParams) => {
+      abortControllerRef.current?.abort();
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
       try {
         const response = await axiosInstance.delete(
           `/resume/${data.resumeId}/versions/${data.versionId}`,
-          { data: { id: data.resumeId, versionId: data.versionId } }
+          { data: { id: data.resumeId, versionId: data.versionId }, signal: controller.signal }
         );
         if (!response.data.success) {
           throw new Error(response.data.message || 'Failed to delete version');
         }
         return data;
       } catch (err) {
+        if (axios.isCancel(err)) {
+          throw new Error('Delete request was cancelled');
+        }
         if (err && typeof err === 'object' && 'response' in err) {
           const error = err as { response: { data: ApiResponse<never> } };
           if (!error.response.data.success) {
@@ -84,6 +94,10 @@ export const useDeleteVersion = () => {
           }
         }
         throw err;
+      } finally {
+        if (abortControllerRef.current === controller) {
+          abortControllerRef.current = null;
+        }
       }
     },
     onSuccess: (_data: DeleteVersionParams, variables: DeleteVersionParams) => {
@@ -132,6 +146,13 @@ export const useDeleteVersion = () => {
       });
     },
   });
+
+  const cancel = useCallback(() => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+  }, []);
+
+  return { ...mutation, cancel };
 };
 
 export interface SetActiveVersionParams {

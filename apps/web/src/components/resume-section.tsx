@@ -146,9 +146,10 @@ export function ResumeSection({ persona, onBack, onSelectResume }: ResumeSection
     setDeleteResumeId(resumeId);
   };
 
-  const handleDeleteConfirm = () => {
-    if (deleteResumeId) {
-      deleteResume.mutate(
+  const handleDeleteConfirm = async () => {
+    if (!deleteResumeId) return;
+    try {
+      await deleteResume.mutateAsync(
         { id: deleteResumeId, personaId: persona.id },
         {
           onSuccess: () => {
@@ -163,10 +164,22 @@ export function ResumeSection({ persona, onBack, onSelectResume }: ResumeSection
           },
         }
       );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to delete resume';
+      if (message === 'Delete request was cancelled') {
+        // Intentional cancel; no error snackbar
+        return;
+      }
+      showSnackbar(message, { severity: 'error' });
     }
   };
 
   const handleDeleteCancel = () => {
+    if (deleteResume.isPending) {
+      deleteResume.cancel();
+      setDeleteResumeId(null);
+      return;
+    }
     setDeleteResumeId(null);
   };
 
@@ -243,12 +256,17 @@ export function ResumeSection({ persona, onBack, onSelectResume }: ResumeSection
       <ConfirmModal
         isOpen={!!deleteResumeId}
         title="Delete Resume"
-        message="Are you sure you want to delete this resume? This action cannot be undone."
+        message={
+          deleteResume.isPending
+            ? 'Cancelling will abort the in-flight delete request.'
+            : 'Are you sure you want to delete this resume? This action cannot be undone.'
+        }
         confirmLabel="Delete"
         cancelLabel="Cancel"
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
         isLoading={deleteResume.isPending}
+        cancellation={true}
       />
 
       <CreateResumeModal

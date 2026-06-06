@@ -12,6 +12,7 @@ import type {
 } from '../middlewares/resume.js';
 import { ILike } from 'typeorm';
 import { ApiResponse } from '@repo/shared-types';
+import { logger } from '../utils/index.js';
 import type {
   ResumeMetadata,
   ResumeWithVersions,
@@ -201,6 +202,11 @@ class ResumeController {
         message: 'Resume not found or not authorized',
       };
       res.status(403).json(data);
+      return;
+    }
+
+    if (req.destroyed || res.closed) {
+      logger.info({ id: resume.id }, 'Delete resume aborted by client; skipping DB write');
       return;
     }
 

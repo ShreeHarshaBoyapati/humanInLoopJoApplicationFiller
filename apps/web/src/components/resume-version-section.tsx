@@ -205,8 +205,11 @@ export function ResumeVersionSection({
       setIsDeleteModalOpen(false);
       setSelectedVersionForDelete(null);
     } catch (error) {
-      console.error('Failed to delete version:', error);
       const message = error instanceof Error ? error.message : 'Failed to delete version';
+      if (message === 'Delete request was cancelled') {
+        // Intentional cancel; no error snackbar
+        return;
+      }
       showSnackbar(message, { severity: 'error' });
     }
   }, [resume.id, deleteVersion, selectedVersionForDelete, showSnackbar]);
@@ -258,6 +261,12 @@ export function ResumeVersionSection({
   };
 
   const handleCloseDeleteModal = () => {
+    if (deleteVersion.isPending) {
+      deleteVersion.cancel();
+      setIsDeleteModalOpen(false);
+      setSelectedVersionForDelete(null);
+      return;
+    }
     setIsDeleteModalOpen(false);
     setSelectedVersionForDelete(null);
   };
@@ -553,12 +562,17 @@ export function ResumeVersionSection({
       <ConfirmModal
         isOpen={isDeleteModalOpen}
         title="Delete Version"
-        message={`Are you sure you want to delete version "${selectedVersionForDelete?.versionName || ''}"? This action cannot be undone.`}
+        message={
+          deleteVersion.isPending
+            ? 'Cancelling will abort the in-flight delete request.'
+            : `Are you sure you want to delete version "${selectedVersionForDelete?.versionName || ''}"? This action cannot be undone.`
+        }
         confirmLabel="Delete"
         cancelLabel="Cancel"
         onConfirm={handleDeleteConfirm}
         onCancel={handleCloseDeleteModal}
         isLoading={deleteVersion.isPending}
+        cancellation={true}
       />
     </div>
   );

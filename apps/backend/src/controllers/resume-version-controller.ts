@@ -23,6 +23,7 @@ import type {
 } from '@repo/shared-types';
 import { parseFile } from '../utils/file-parser.js';
 import { parseResume as parseResumeWithAI } from '../services/resume-parser.js';
+import { logger } from '../utils/index.js';
 
 interface VersionParamsRequest extends Request {
   validatedParams: GetResumeVersionByIdInput;
@@ -590,6 +591,14 @@ class ResumeVersionController {
         message: 'Cannot delete active version',
       };
       res.status(400).json(data);
+      return;
+    }
+
+    if (req.destroyed || res.closed) {
+      logger.info(
+        { resumeId, versionId: version.id },
+        'Delete resume version aborted by client; skipping DB write'
+      );
       return;
     }
 

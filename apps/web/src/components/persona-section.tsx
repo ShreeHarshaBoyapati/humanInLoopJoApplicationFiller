@@ -140,9 +140,10 @@ export function PersonaSection({ onSelectPersona }: PersonaSectionProps) {
     setDeletePersonaId(personaId);
   };
 
-  const handleDeleteConfirm = () => {
-    if (deletePersonaId) {
-      deletePersona.mutate(
+  const handleDeleteConfirm = async () => {
+    if (!deletePersonaId) return;
+    try {
+      await deletePersona.mutateAsync(
         { id: deletePersonaId },
         {
           onSuccess: () => {
@@ -158,10 +159,22 @@ export function PersonaSection({ onSelectPersona }: PersonaSectionProps) {
           },
         }
       );
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to delete persona';
+      if (message === 'Delete request was cancelled') {
+        // Intentional cancel; no error snackbar
+        return;
+      }
+      showSnackbar(message, { severity: 'error' });
     }
   };
 
   const handleDeleteCancel = () => {
+    if (deletePersona.isPending) {
+      deletePersona.cancel();
+      setDeletePersonaId(null);
+      return;
+    }
     setDeletePersonaId(null);
   };
 
@@ -245,10 +258,15 @@ export function PersonaSection({ onSelectPersona }: PersonaSectionProps) {
       <ConfirmModal
         isOpen={!!deletePersonaId}
         title="Delete Persona"
-        message="Are you sure you want to delete this persona? This action cannot be undone."
+        message={
+          deletePersona.isPending
+            ? 'Cancelling will abort the in-flight delete request.'
+            : 'Are you sure you want to delete this persona? This action cannot be undone.'
+        }
         confirmLabel="Delete"
         cancelLabel="Cancel"
         isLoading={deletePersona.isPending}
+        cancellation={true}
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
       />

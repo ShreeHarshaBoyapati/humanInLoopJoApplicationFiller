@@ -16,6 +16,7 @@ import type {
   PaginationParams,
   PaginatedPersonasResponse,
 } from '@repo/shared-types';
+import { logger } from '../utils/index.js';
 
 class PersonaController {
   async create(req: AuthenticatedTypedRequest<CreatePersonaInput>, res: Response) {
@@ -155,6 +156,11 @@ class PersonaController {
         message: 'You are not authorized to delete this persona',
       };
       res.status(403).json(data);
+      return;
+    }
+
+    if (req.destroyed || res.closed) {
+      logger.info({ id: persona.id }, 'Delete persona aborted by client; skipping DB write');
       return;
     }
 
