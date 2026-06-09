@@ -4,6 +4,7 @@ import 'reflect-metadata';
 import dotenv from 'dotenv';
 dotenv.config({ path: '../../.env' });
 import express from 'express';
+import { createServer } from 'http';
 import type { Request, Response, NextFunction } from './types/index.js';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
@@ -16,8 +17,8 @@ import initializeDataSource from './database/data-source.js';
 import routes from './routes/index.js';
 import { getVerificationCodeRepository } from './database/repositories/index.js';
 import { logger, httpLogger, staticConfig } from './utils/index.js';
+import { attachWebSocketServer } from './realtime/ws-server.js';
 
-let app: express.Application | null = null;
 const PORT = parseInt(process.env.NODE_PORT || '8000');
 const isProduction = process.env.NODE_ENV === 'production';
 
@@ -37,16 +38,13 @@ function startVerificationCodeCleanupTimer() {
     }
   };
 
-  // Run cleanup immediately on startup
   cleanupExpiredCodes();
-
-  // Then run periodically
   setInterval(cleanupExpiredCodes, cleanupIntervalMs);
   logger.info({ intervalMs: cleanupIntervalMs }, 'Verification code cleanup timer started');
 }
 
 async function initializeApp() {
-  app = express();
+  const app = express();
 
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);
@@ -78,7 +76,6 @@ async function initializeApp() {
   });
 
   app.use(helmet());
-  // CORS middleware for preflight and actual requests
   app.use(
     cors({
       origin: FRONTEND_ORIGIN,
@@ -90,9 +87,6 @@ async function initializeApp() {
   app.use(httpLogger);
   app.use(express.json({ limit: '10mb' }));
 
-  // ===== API Routes =====
-
-  // Health check endpoint
   app.get('/health', (_req: Request, res: Response) => {
     res.json({
       status: 'ok',
@@ -101,21 +95,14 @@ async function initializeApp() {
     });
   });
 
-  // Mount all API routes
   app.use('/api', routes);
 
-  // ===== Production: Serve Frontend =====
   if (isProduction) {
-    // Path to the built frontend files
     const frontendPath = path.join(__dirname, '../../web/dist');
-
-    // Serve static files from the frontend build
     app.use(express.static(frontendPath));
-    // TODO: all remain apart from /api.
     app.get('{*splat}', (_req: Request, res: Response) => {
       res.sendFile(path.join(frontendPath, 'index.html'));
     });
-
     logger.info({ path: frontendPath }, 'Serving frontend');
   }
 
@@ -126,14 +113,17 @@ async function initializeApp() {
       error: isProduction ? 'Internal Server Error' : err.message,
     });
   });
+
+  const httpServer = createServer(app);
+  attachWebSocketServer(httpServer);
+
+  return { app, httpServer };
 }
 
 initializeApp()
-  .then(() => {
-    // Start the verification code cleanup timer
+  .then(({ httpServer }) => {
     startVerificationCodeCleanupTimer();
-
-    app?.listen(PORT, '0.0.0.0', () => {
+    httpServer.listen(PORT, '0.0.0.0', () => {
       logger.info({ port: PORT }, 'Server started');
     });
   })
