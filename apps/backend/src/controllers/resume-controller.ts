@@ -13,6 +13,8 @@ import type {
 import { ILike } from 'typeorm';
 import { ApiResponse } from '@repo/shared-types';
 import { logger } from '../utils/index.js';
+import * as wsHub from '../realtime/ws-hub.js';
+import { resumeToMetadata } from '../realtime/payload-mappers.js';
 import type {
   ResumeMetadata,
   ResumeWithVersions,
@@ -98,6 +100,9 @@ class ResumeController {
 
     await versionRepository.save(version);
 
+    wsHub.emit(userId, 'resume', 'create', resume.id);
+    wsHub.emit(userId, 'resume-version', 'create', version.id);
+
     const data: ApiResponse<ResumeMetadata & { fileSize: number }> = {
       success: true,
       message: 'Resume created successfully',
@@ -160,6 +165,8 @@ class ResumeController {
     }
 
     await resumeRepository.save(resume);
+
+    wsHub.emit(userId, 'resume', 'update', resume.id, resumeToMetadata(resume));
 
     const data: ApiResponse<ResumeMetadata> = {
       success: true,
@@ -224,6 +231,8 @@ class ResumeController {
         return versionRepository.save(version);
       })
     );
+
+    wsHub.emit(userId, 'resume', 'delete', resume.id);
 
     const data: ApiResponse = {
       success: true,

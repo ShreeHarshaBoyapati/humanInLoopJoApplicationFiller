@@ -24,6 +24,12 @@ import type {
 import { parseFile } from '../utils/file-parser.js';
 import { parseResume as parseResumeWithAI } from '../services/resume-parser.js';
 import { logger } from '../utils/index.js';
+import * as wsHub from '../realtime/ws-hub.js';
+import {
+  personaToMetadata,
+  resumeToMetadata,
+  versionToMetadata,
+} from '../realtime/payload-mappers.js';
 
 interface VersionParamsRequest extends Request {
   validatedParams: GetResumeVersionByIdInput;
@@ -447,6 +453,8 @@ class ResumeVersionController {
 
     await versionRepository.save(version);
 
+    wsHub.emit(userId, 'resume-version', 'create', version.id);
+
     const data: ApiResponse<ResumeVersionMetadata> = {
       success: true,
       message: 'Resume version created successfully',
@@ -527,6 +535,14 @@ class ResumeVersionController {
 
     await versionRepository.save(version);
 
+    wsHub.emit(
+      userId,
+      'resume-version',
+      'update',
+      version.id,
+      versionToMetadata(version, resume.fileName)
+    );
+
     const data: ApiResponse<ResumeVersionMetadata> = {
       success: true,
       message: 'Resume version updated successfully',
@@ -604,6 +620,8 @@ class ResumeVersionController {
 
     version.isDeleted = true;
     await versionRepository.save(version);
+
+    wsHub.emit(userId, 'resume-version', 'delete', version.id);
 
     const data: ApiResponse = {
       success: true,
@@ -712,6 +730,22 @@ class ResumeVersionController {
     version.active = true;
     await versionRepository.save(version);
 
+    wsHub.emit(
+      userId,
+      'resume-version',
+      'setActive',
+      version.id,
+      versionToMetadata(version, resume.fileName)
+    );
+    wsHub.emit(userId, 'resume', 'setActive', resume.id, resumeToMetadata(resume));
+    wsHub.emit(
+      userId,
+      'persona',
+      'setActive',
+      resume.persona.id,
+      personaToMetadata(resume.persona)
+    );
+
     const data: ApiResponse<
       ResumeVersionMetadata & {
         previousPersonaId: string | null;
@@ -807,6 +841,9 @@ class ResumeVersionController {
     });
 
     await versionRepository.save(newVersion);
+
+    wsHub.emit(userId, 'resume', 'create', newResume.id);
+    wsHub.emit(userId, 'resume-version', 'create', newVersion.id);
 
     const data: ApiResponse<{
       resume: {

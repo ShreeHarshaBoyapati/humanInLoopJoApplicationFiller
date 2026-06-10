@@ -75,6 +75,8 @@ The envelope is unchanged:
 
 Fallback rule: if a client sees a `data` field it doesn't know how to apply, it ignores `data` and invalidates. If it sees no `data` field on an `update`/`setActive` event (older server), it invalidates. The protocol stays additive in both directions.
 
+**Cascade invariant (for clients):** a `delete` event for resource `X` implicitly invalidates the cache for every resource that is a descendant of `X` in the schema (`persona` → `resume` → `resume-version`). Clients never receive per-descendant `delete` events from a cascade — the parent `delete` is the only signal, and the client refetches the descendants on the next read. This keeps the wire small (one event per user action) and pushes the cascade knowledge into the cache layer where it belongs.
+
 This rule simplifies Checkpoints 2, 3, and 4 (deltas noted inline in those sections below).
 
 ---
@@ -108,7 +110,12 @@ Each checkpoint is a **stop-and-verify point**. We finish a checkpoint, you test
 
 - Add a `ws` server attached to the existing HTTP server at path `/ws`.
 - Use the `noServer: true` pattern from the `ws` docs and hook into the existing HTTP server's `upgrade` event, so we can reject unauthenticated upgrades with `HTTP/1.1 401 Unauthorized\r\n\r\n` _before_ the socket is created. Same posture as the REST auth middleware.
-- Auth: read JWT from the `Sec-WebSocket-Protocol` header, as a single subprotocol token (the only header the browser's `WebSocket` constructor lets the client set; works for both web and extension clients). The header value is the JWT itself — base64url characters only, which are all legal subprotocol-token characters per RFC 6455. A legacy `Bearer ` prefix is also accepted for backward-compat.
+- Auth: The JWT is passed as the 2nd constructor arg (`protocols`) — not via the
+  `headers` option — because the `ws` client only registers the value in its
+  internal `protocolSet` when it's passed this way. Without that registration,
+  the client fails the response with "Server sent a subprotocol but none was
+  requested" even though the same header value was sent. This matches what a
+  real browser does: `new WebSocket(url, [jwt])`.
 - Maintain `Map<userId, Set<WebSocket>>` in a `wsHub` module. On connect: verify token, put into room, send `hello` with `{ userId, peerCount }`. On close: remove from room. The `broadcast(userId, event)` is a placeholder that logs the event and does nothing yet.
 - **No automated tests.** You test by hand.
 - **Stop and verify (manual):** start the backend, then in a terminal run the snippet below (substitute a real JWT and the backend port from `.env`). You should see `OPEN` followed by `MSG {"type":"hello","userId":"<id>","peerCount":1}`. Open a second terminal with the same snippet — its `peerCount` should be 2. `Ctrl+C` one of them, the other stays `OPEN`. Run the snippet a third time without a JWT, expect the connection to be rejected.
@@ -116,13 +123,7 @@ Each checkpoint is a **stop-and-verify point**. We finish a checkpoint, you test
 ```bash
 # Run from inside apps/backend so node finds the workspace's `ws` symlink.
 # (Bare `node -e` from the repo root won't resolve `require('ws')`.)
-#
-# The JWT is passed as the 2nd constructor arg (`protocols`) — not via the
-# `headers` option — because the `ws` client only registers the value in its
-# internal `protocolSet` when it's passed this way. Without that registration,
-# the client fails the response with "Server sent a subprotocol but none was
-# requested" even though the same header value was sent. This matches what a
-# real browser does: `new WebSocket(url, [jwt])`.
+
 cd apps/backend && node -e 'const W=require("ws");const ws=new W("ws://localhost:8000/ws",["<token>"]);ws.on("open",()=>console.log("OPEN"));ws.on("message",m=>console.log("MSG",m.toString()));ws.on("close",(c,r)=>console.log("CLOSE",c,r&&r.toString()));ws.on("error",e=>console.log("ERR",e.message));'
 ```
 
@@ -266,3 +267,14 @@ These notes explain the _why_ of non-obvious decisions in the WS layer. The impl
 - **Why `handleProtocols` echoes the client's string back unchanged:** the `ws` library passes us the exact `Set<string>` of subprotocol strings the client offered in the `Sec-WebSocket-Protocol` header. To complete the handshake it must echo **the same string** back in the `Sec-WebSocket-Protocol` response header — byte-for-byte, no trimming, no reconstruction. Re-deriving the value (e.g. from the parsed token) doesn't work in practice: small differences (a stray space, a re-encoded character) cause the client's compare to fail and the upgrade ends with `400 Bad Request`. We just `return protocols.values().next().value` and the JWT parsing is done separately in `authenticateUpgrade`. The auth code never depends on `handleProtocols` having _understood_ the value.
 - **Why path check is `path === '/ws'` and not `url.startsWith('/ws')`:** the previous `startsWith` matched `/wsfoo` and `/websocket` and was a footgun. A small `parsePath` strips the query string first so `/ws?foo=bar` still works.
 - **Why `wss.handleUpgrade` is called inside a `Promise.then`, not synchronously in the upgrade handler:** the HTTP `upgrade` event fires _before_ the handshake is complete, and `handleUpgrade` writes the 101 response. The `authenticateUpgrade` step is async (it does a DB lookup), so we wait for the promise; if it rejects we write a `401` and destroy the socket before the WS handshake ever starts. That's the whole point of the `noServer: true` pattern from §13.
+
+### Checkpoint 2 — implementation notes (added when Checkpoint 2 landed)
+
+- **Why `wsHub.emit` is a separate helper from `wsHub.broadcast`:** the controllers don't need to know the event envelope shape. `emit(userId, resource, action, id, data?)` builds the `ResourceChangedEvent` and calls `broadcast(userId, event)`. `broadcast(userId, event)` stays as the lower-level "send this exact envelope to the user's room" primitive (used by tests and by the `node -e` smoke snippet). One helper for call sites, one for plumbing.
+- **Why the `emit` body wraps `broadcast` in `try/catch`:** a sync bug (e.g. cyclic object in `data`, future DB column shape change that breaks JSON.stringify) must not break a real DB write that already succeeded. The try/catch is the §7 "Hardening" rule, applied early because it costs one line. Per-socket `send` is also wrapped in `try/catch` so a single broken client doesn't kill the broadcast for everyone else.
+- **Why the `data` field carries the entity-to-public mapper output and not the raw TypeORM entity:** the entity has DB-only fields (`@ManyToOne` user relation, internal columns not in the public shape, TypeORM lazy relations) that would (a) be larger than what the client already gets on a refetch and (b) risk serializing things like a circular `User → Persona → User` reference. The mappers in `apps/backend/src/realtime/payload-mappers.ts` mirror the shape the controllers already return in HTTP response bodies, so the `data` a client receives over WS is byte-identical to the `data` it would have received on a REST refetch. This means the client's "patch the cached row from `data`" code path on `update`/`setActive` is exactly the same code path as a normal list refetch — no shape translation.
+- **Why the cascade delete emits one event (the parent's) and not N+1 events for every cascaded row:** the §3.1 cascade invariant pushes cascade knowledge to the client. Emitting one `persona,delete` event is enough for the client to invalidate the persona list AND any resume/version lists filtered by that `personaId`. Emitting N+1 events would (a) bloat the message count on a delete-cascade (e.g. persona with 50 resumes × 5 versions = 251 events), (b) make the wire size dependent on a number the server happens to have at the moment of deletion, and (c) add a "should I also emit for cascade?" decision at every new delete call site. The parent event is the _cause_; the children are the _consequence_. One event.
+- **Why `setActive` emits 3 events (one per affected resource) and not 1 event with all 3 resources in a `data`:** the three resources (version, resume, persona) change _content_ (their `active` flag) — they aren't deleted, they aren't added. A `setActive` of a version is, from each of the three resources' point of view, an `update` on that resource's `active` field. Each event carries the new row in `data`, so a client that holds any one of the three rows in cache can patch it in place. One composite event would force every client to know about all three resources and switch on shape. Three events let each client filter on `resource` like any other event.
+- **Why controllers are the call site and not a TypeORM `@AfterInsert`/`@AfterUpdate` subscriber:** the controller is the only place that cleanly knows the `userId` and the _human_ `action` (`create` vs `update` vs `setActive`). A subscriber sees `entity + change` and would have to reverse-engineer the action (was this `setActive` because `active` flipped to `true` after being `false`? or was this a normal `update` of a different field?). It would also fire for _every_ save (e.g. cascade child saves), producing duplicate events. The controller boundary is the right one: one HTTP intent = one event batch.
+- **Why no comments on the emit call sites:** the call `wsHub.emit(userId, 'persona', 'update', persona.id, personaToMetadata(persona))` is self-describing. The _why_ (the 3-event setActive, the cascade-as-one-event policy, the `data` shape from mappers) lives here, not at every call site. Per §11.
+- **Why the `req.destroyed || res.closed` early-return in the persona/resume/version delete handlers still skips the emit:** no DB write happened, so no event. Emitting would tell clients to refetch rows that are still there.

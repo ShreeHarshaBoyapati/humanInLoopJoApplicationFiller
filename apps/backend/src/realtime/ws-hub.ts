@@ -1,5 +1,10 @@
 import type { WebSocket } from 'ws';
-import type { ServerEvent } from '@repo/shared-types';
+import type {
+  RealtimeResource,
+  RealtimeAction,
+  ResourceChangedEvent,
+  ServerEvent,
+} from '@repo/shared-types';
 import logger from '../utils/logger.js';
 
 const rooms = new Map<string, Set<WebSocket>>();
@@ -48,8 +53,35 @@ export function broadcast(userId: string, event: ServerEvent): void {
   const payload = JSON.stringify(event);
 
   for (const client of room) {
-    if (client.readyState === client.OPEN) {
+    if (client.readyState !== client.OPEN) continue;
+    try {
       client.send(payload);
+    } catch (err) {
+      logger.error(
+        { err, userId },
+        '[ws] send failed during broadcast; dropping message for this socket'
+      );
     }
+  }
+}
+
+export function emit<T = unknown>(
+  userId: string,
+  resource: RealtimeResource,
+  action: RealtimeAction,
+  id: string,
+  data?: T
+): void {
+  const event: ResourceChangedEvent<T> = {
+    type: 'resource.changed',
+    resource,
+    action,
+    id,
+    data,
+  };
+  try {
+    broadcast(userId, event);
+  } catch (err) {
+    logger.error({ err, userId, resource, action, id }, '[ws] emit failed; swallowed');
   }
 }

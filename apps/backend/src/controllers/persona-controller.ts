@@ -17,6 +17,8 @@ import type {
   PaginatedPersonasResponse,
 } from '@repo/shared-types';
 import { logger } from '../utils/index.js';
+import * as wsHub from '../realtime/ws-hub.js';
+import { personaToMetadata } from '../realtime/payload-mappers.js';
 
 class PersonaController {
   async create(req: AuthenticatedTypedRequest<CreatePersonaInput>, res: Response) {
@@ -51,6 +53,8 @@ class PersonaController {
     });
 
     await personaRepository.save(persona);
+
+    wsHub.emit(userId, 'persona', 'create', persona.id);
 
     const data: ApiResponse<Persona> = {
       success: true,
@@ -114,6 +118,8 @@ class PersonaController {
     Object.assign(persona, updateData);
 
     await personaRepository.save(persona);
+
+    wsHub.emit(userId, 'persona', 'update', persona.id, personaToMetadata(persona));
 
     const data: ApiResponse<Persona> = {
       success: true,
@@ -193,6 +199,8 @@ class PersonaController {
         return resumeRepository.save(resume);
       })
     );
+
+    wsHub.emit(userId, 'persona', 'delete', persona.id);
 
     const data: ApiResponse = {
       success: true,
