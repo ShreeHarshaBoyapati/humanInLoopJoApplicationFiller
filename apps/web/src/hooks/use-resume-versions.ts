@@ -16,7 +16,7 @@ import { RESUME_KEYS } from './use-resumes.ts';
 import { PERSONA_KEYS } from './use-personas.ts';
 import { RESULT_KEYS } from './use-results.ts';
 
-const VERSION_KEYS = {
+export const VERSION_KEYS = {
   all: ['versions'] as const,
   lists: () => [...VERSION_KEYS.all, 'list'] as const,
   byResume: (resumeId: string) => [...VERSION_KEYS.lists(), { resumeId }] as const,

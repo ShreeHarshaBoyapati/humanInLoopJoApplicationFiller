@@ -217,6 +217,10 @@ class ResumeController {
       return;
     }
 
+    const remainingResumesCount = await resumeRepository.count({
+      where: { persona: { id: resume.persona.id }, isDeleted: false },
+    });
+
     resume.isDeleted = true;
     await resumeRepository.save(resume);
 
@@ -232,7 +236,9 @@ class ResumeController {
       })
     );
 
-    wsHub.emit(userId, 'resume', 'delete', resume.id);
+    wsHub.emit(userId, 'resume', 'delete', resume.id, undefined, [
+      { id: resume.persona.id, resumesCount: Math.max(0, remainingResumesCount - 1) },
+    ]);
 
     const data: ApiResponse = {
       success: true,

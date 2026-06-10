@@ -70,7 +70,8 @@ export function emit<T = unknown>(
   resource: RealtimeResource,
   action: RealtimeAction,
   id: string,
-  data?: T
+  data?: T,
+  related?: T[]
 ): void {
   const event: ResourceChangedEvent<T> = {
     type: 'resource.changed',
@@ -78,6 +79,7 @@ export function emit<T = unknown>(
     action,
     id,
     data,
+    related,
   };
   try {
     broadcast(userId, event);

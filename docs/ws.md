@@ -52,14 +52,14 @@ The two design choices that buy us all three:
 
 The `resource.changed` event comes in two flavors, decided by whether the event changes the _set of rows_ or just the _content of existing rows_:
 
-| Action              | Row set changes?  | Event includes `data`? | Client behavior                                       |
-| ------------------- | ----------------- | ---------------------- | ----------------------------------------------------- |
-| `update`            | No                | **Yes** (full row)     | Replace the row by `id` in every cache that holds it. |
-| `setActive`         | No                | **Yes** (full row)     | Same: replace. Emitted once per affected resource.    |
-| `create` / `branch` | **Yes** (added)   | No                     | Invalidate the affected list(s), refetch.             |
-| `delete`            | **Yes** (removed) | No                     | Invalidate the affected list(s), refetch.             |
+| Action              | Row set changes?  | Event includes `data`? | Event includes `related`?               | Client behavior                                                                                                           |
+| ------------------- | ----------------- | ---------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `update`            | No                | **Yes** (full row)     | Maybe (e.g. `setActive`)                | Patch the row by `id` from `data`; apply `related` patches.                                                               |
+| `setActive`         | No                | **Yes** (full row)     | **Yes** (the de-activated row)          | Same: patch `data` and `related` rows by `id`.                                                                            |
+| `create` / `branch` | **Yes** (added)   | No                     | No                                      | Invalidate the affected list(s), refetch.                                                                                 |
+| `delete`            | **Yes** (removed) | No                     | **Yes** (the parent with its new count) | Invalidate list(s), drop descendant caches, and patch parent lists from `related` so denormalized counts update in place. |
 
-The envelope is unchanged:
+The envelope:
 
 ```jsonc
 {
@@ -67,15 +67,18 @@ The envelope is unchanged:
   "resource": "persona" | "resume" | "resume-version",
   "action": "update" | "setActive" | "create" | "branch" | "delete",
   "id": "<id>",
-  "data": { /* full row — present only for update / setActive */ }
+  "data": { /* full row — present only for update / setActive */ },
+  "related": [ /* additional rows to patch by id (e.g. the previously-active row on setActive, the parent with a new count on delete) */ ]
 }
 ```
 
-`setActive` still emits one event per affected resource (e.g. for version, resume, and persona), each with its own `data`. The client patches all three.
+`setActive` still emits one event per affected resource (e.g. for version, resume, and persona), each with its own `data` and `related`. The client patches all of them.
 
-Fallback rule: if a client sees a `data` field it doesn't know how to apply, it ignores `data` and invalidates. If it sees no `data` field on an `update`/`setActive` event (older server), it invalidates. The protocol stays additive in both directions.
+Fallback rule: if a client sees a `data` field it doesn't know how to apply, it ignores `data` and invalidates. If it sees no `data` field on an `update`/`setActive` event (older server), it invalidates. If it sees `related` entries it doesn't understand, it ignores them. The protocol stays additive in both directions.
 
-**Cascade invariant (for clients):** a `delete` event for resource `X` implicitly invalidates the cache for every resource that is a descendant of `X` in the schema (`persona` → `resume` → `resume-version`). Clients never receive per-descendant `delete` events from a cascade — the parent `delete` is the only signal, and the client refetches the descendants on the next read. This keeps the wire small (one event per user action) and pushes the cascade knowledge into the cache layer where it belongs.
+**Cascade invariant (for clients):** a `delete` event for resource `X` implicitly invalidates the cache for every resource that is a descendant of `X` in the schema (`persona` → `resume` → `resume-version`). Clients never receive per-descendant `delete` events from a cascade — the parent `delete` is the only signal, and the client drops the descendant caches and refetches them on the next read. This keeps the wire small (one event per user action) and pushes the cascade knowledge into the cache layer where it belongs.
+
+**Why `related` and not just `data` + N events:** a `setActive` toggles the `active` flag on **two** rows per resource (the newly-active one and the previously-active one). A `delete` of a child changes a denormalized count on **one** parent row. Packing both into a single event via `related` keeps the wire shape uniform (always one event per user intent) and lets the client use a single `applyPatchesToMatchingQueries(prefix, rows)` helper for every "patch" code path. The alternative (N+1 events, one per affected row) would also work and is what the doc originally said; we moved to `related` because the count updates on delete and the previously-active row on setActive are conceptually the same kind of "additional patches" and it's easier to read one event than a flurry.
 
 This rule simplifies Checkpoints 2, 3, and 4 (deltas noted inline in those sections below).
 
@@ -138,11 +141,12 @@ cd apps/backend && node -e 'const W=require("ws");const ws=new W("ws://localhost
 ### Checkpoint 3 — Web: WS client + `RealtimeSyncProvider`
 
 - Add `apps/web/src/realtime/` with:
-  - `realtime-client.ts` — opens one WS connection, exponential backoff reconnect, sends JWT in `Sec-WebSocket-Protocol`.
-  - `realtime-provider.tsx` — React provider mounted in `main.tsx` near `<QueryClientProvider>`. Subscribes once.
-  - A `resource-to-query-key` map: `persona → PERSONA_KEYS.lists()`, `resume → RESUME_KEYS.lists()`, `resume-version → invalidate whole RESUME_KEYS for safety (versions are tied to a resume)`.
-- On event: `queryClient.invalidateQueries({ queryKey: ... })`. Existing `onSuccess` mutations keep working — they just become redundant.
-- **Stop and verify:** open two web tabs as the same user, create a persona in tab A, see it appear in tab B without refresh. Then close the backend (`Ctrl+C`) and reopen it; tabs reconnect and resync.
+  - `realtime-client.ts` — opens one WS connection, exponential backoff reconnect (1s → 30s), sends JWT in `Sec-WebSocket-Protocol`.
+  - `realtime-handler.ts` — pure function `applyRealtimeEvent(qc, event)`. Dispatches by `resource` + `action` (see handler table in §13 Checkpoint 3 notes).
+  - `realtime-provider.tsx` — React provider mounted in `main.tsx` inside `<QueryClientProvider>`. Reacts to `useStore((s) => s.id)` for login/logout, tears down the socket on logout and rebuilds on login.
+- **Patch in place by id** for `update` and `setActive` (using `data` and `related`). **Invalidate the matching list** for `create` / `branch`. **Invalidate + drop descendant caches** for `delete` on a parent (and **patch parent lists** from `related` so denormalized counts update without a refetch).
+- Existing `onSuccess` mutations keep working — they just become redundant in the no-jump case.
+- **Stop and verify:** open two web tabs as the same user, create a persona in tab A, see it appear in tab B without refresh. Edit a persona's title in tab A — tab B's row updates in place with no spinner. Set a version as active in tab A — tab B's three affected rows all flip `active` in place. Delete a resume in tab A — tab B's resume list refetches and the parent persona's `resumesCount` decrements in place. Close the backend (`Ctrl+C`) and reopen it; tabs reconnect and resync.
 
 ### Checkpoint 4 — Extension: background WS owner + cache invalidation
 
@@ -278,3 +282,35 @@ These notes explain the _why_ of non-obvious decisions in the WS layer. The impl
 - **Why controllers are the call site and not a TypeORM `@AfterInsert`/`@AfterUpdate` subscriber:** the controller is the only place that cleanly knows the `userId` and the _human_ `action` (`create` vs `update` vs `setActive`). A subscriber sees `entity + change` and would have to reverse-engineer the action (was this `setActive` because `active` flipped to `true` after being `false`? or was this a normal `update` of a different field?). It would also fire for _every_ save (e.g. cascade child saves), producing duplicate events. The controller boundary is the right one: one HTTP intent = one event batch.
 - **Why no comments on the emit call sites:** the call `wsHub.emit(userId, 'persona', 'update', persona.id, personaToMetadata(persona))` is self-describing. The _why_ (the 3-event setActive, the cascade-as-one-event policy, the `data` shape from mappers) lives here, not at every call site. Per §11.
 - **Why the `req.destroyed || res.closed` early-return in the persona/resume/version delete handlers still skips the emit:** no DB write happened, so no event. Emitting would tell clients to refetch rows that are still there.
+
+### Checkpoint 3 — implementation notes (added when Checkpoint 3 landed)
+
+- **Handler decision table (the contract).** The web-side `applyRealtimeEvent` dispatches on `event.resource` and `event.action` as follows:
+
+  | `resource`       | `action`               | Behavior                                                                                                                                                                                     |
+  | ---------------- | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `persona`        | `update` / `setActive` | Patch `data` and `related` rows by id into every `PERSONA_KEYS.lists()` query.                                                                                                               |
+  | `persona`        | `create` / `branch`    | Invalidate `PERSONA_KEYS.lists()`.                                                                                                                                                           |
+  | `persona`        | `delete`               | Invalidate `PERSONA_KEYS.lists()`. **Drop** every `RESUME_KEYS.byPersona(id)` query. **Drop** every `VERSION_KEYS` query whose `personaId` segment matches the deleted id.                   |
+  | `resume`         | `update` / `setActive` | Patch `data` and `related` rows by id into every `RESUME_KEYS.lists()` query.                                                                                                                |
+  | `resume`         | `create` / `branch`    | Invalidate `RESUME_KEYS.lists()`.                                                                                                                                                            |
+  | `resume`         | `delete`               | Invalidate `RESUME_KEYS.lists()`. **Drop** every `VERSION_KEYS` query whose `resumeId` segment matches the deleted id. Apply count updates from `related` to persona lists (`resumesCount`). |
+  | `resume-version` | `update` / `setActive` | Patch `data` and `related` rows by id into every `VERSION_KEYS.lists()` query.                                                                                                               |
+  | `resume-version` | `create` / `branch`    | Invalidate `VERSION_KEYS.lists()`.                                                                                                                                                           |
+  | `resume-version` | `delete`               | Invalidate `VERSION_KEYS.lists()`. Apply count updates from `related` to resume lists (`versionsCount`).                                                                                     |
+
+- **Why patching is preferred over invalidation for `update` and `setActive`:** an `update` or `setActive` doesn't add or remove rows from any list — the row set is identical, only the row content changes. A list invalidation on `update` would trigger a refetch + render flash, exactly the symptom we're trying to remove. Patching in place is byte-identical to a refetch result (same `data` shape) and renders with no spinner. The originator tab already patches from its own `onSuccess`; the WS path patches the other tabs.
+
+- **Why `related` is reused for both `setActive` (previously-active row) and `delete` (parent with new count):** both are "this event also has a side effect on these other rows in the parent list." Folding them into a single `related: T[]` array keeps the wire shape uniform and lets the client run the same `applyPatchesToMatchingQueries(prefix, rows)` helper in every patch path. The alternative — a discriminated `previous?` for setActive and a separate `parentCountUpdate?` for delete — would force the client to switch on shape; the unified `related` is just an array of `{id, ...partial}` records the client already knows how to patch by id.
+
+- **Why the client filters `related` for `CountUpdate` instead of trusting the full shape:** the server's `related` for a `delete` is a plain `{ id, resumesCount }` (or `{ id, versionsCount }`) object — it is _not_ the full parent row. We pass only `{id, newCount}` because (a) the list endpoint computes counts on the fly (`resumes.length` from a relation join, `versionRepository.count()` for versions), so there's no canonical full row to send, and (b) the client only needs to update the count field, not the whole row. The handler's `applyCountUpdates` walks `related`, picks the entries that look like count updates (presence of `resumesCount` or `versionsCount`), and patches only those fields. Entries that look like full rows (e.g. the `setActive` previously-active row) are still handled by the same `applyPatchesToMatchingQueries` call earlier in the dispatch.
+
+- **Why we `removeQueries` for descendants on `delete` instead of `invalidateQueries`:** a deleted parent's descendants (resumes under a deleted persona, versions under a deleted resume) have no rows to refetch — the next read will get an empty list anyway. Removing the cached query saves the round-trip. The lists that _do_ need a refetch (the deleted resource's own list, e.g. the persona list when a persona is deleted) still get `invalidateQueries`.
+
+- **Why the provider subscribes to `useStore((s) => s.id)` instead of polling the token cookie:** the user id is the authoritative "am I logged in?" signal. Login flows (login.tsx, google-callback.tsx) call `useStore.getState().setUser({id, email})`; the `__root.tsx` logout flow calls `clearUser()`. Subscribing to `id` means the socket connects on login and disconnects on logout with no extra plumbing. A cookie-polling loop would race with the actual auth flows and re-open the socket after a logout if the cookie was still in the browser.
+
+- **Why the WS client opens with a 1s → 30s exponential backoff:** Checkpoint 1 is the skeleton, the server can be killed and restarted during dev. A flat 1s reconnect would hammer the server in a tight loop if it's down for a while; exponential backoff with a 30s cap is the standard pattern for "I want to recover quickly when the server comes back, but I don't want to DOS it when it doesn't." Capped at 30s so a long outage doesn't permanently stretch the reconnect interval to infinity.
+
+- **Why the WS client doesn't read partial frames / handle ping-pong / check `bufferedAmount`:** those are Checkpoint 7 concerns (hardening). Checkpoint 3 is "the basic flow works for two tabs." Per the §5 stop-and-verify model, we layer the resilience work in a later checkpoint so each one is testable in isolation.
+
+- **Why the handler is a pure function over `QueryClient` (not a React hook):** the handler is the part that turns events into cache mutations. Keeping it free of React means (a) it can be unit-tested with a real `QueryClient` in isolation, (b) it can be reused verbatim by the extension (Checkpoint 4) and by any future owner of a socket, and (c) the provider stays a thin glue layer that does the socket lifecycle and delegates every event to `applyRealtimeEvent(qc, event)`.

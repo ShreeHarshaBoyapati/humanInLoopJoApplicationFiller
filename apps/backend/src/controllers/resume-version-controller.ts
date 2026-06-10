@@ -618,10 +618,16 @@ class ResumeVersionController {
       return;
     }
 
+    const remainingVersionsCount = await versionRepository.count({
+      where: { resume: { id: resumeId }, isDeleted: false },
+    });
+
     version.isDeleted = true;
     await versionRepository.save(version);
 
-    wsHub.emit(userId, 'resume-version', 'delete', version.id);
+    wsHub.emit(userId, 'resume-version', 'delete', version.id, undefined, [
+      { id: resumeId, versionsCount: Math.max(0, remainingVersionsCount - 1) },
+    ]);
 
     const data: ApiResponse = {
       success: true,
@@ -735,15 +741,35 @@ class ResumeVersionController {
       'resume-version',
       'setActive',
       version.id,
-      versionToMetadata(version, resume.fileName)
+      versionToMetadata(version, resume.fileName),
+      previousActiveVersion && previousActiveVersion.id !== version.id
+        ? [
+            versionToMetadata(
+              previousActiveVersion,
+              previousActiveResume?.fileName ?? resume.fileName
+            ),
+          ]
+        : undefined
     );
-    wsHub.emit(userId, 'resume', 'setActive', resume.id, resumeToMetadata(resume));
+    wsHub.emit(
+      userId,
+      'resume',
+      'setActive',
+      resume.id,
+      resumeToMetadata(resume),
+      previousActiveResume && previousActiveResume.id !== resume.id
+        ? [resumeToMetadata(previousActiveResume)]
+        : undefined
+    );
     wsHub.emit(
       userId,
       'persona',
       'setActive',
       resume.persona.id,
-      personaToMetadata(resume.persona)
+      personaToMetadata(resume.persona),
+      previousActivePersona && previousActivePersona.id !== resume.persona.id
+        ? [personaToMetadata(previousActivePersona)]
+        : undefined
     );
 
     const data: ApiResponse<

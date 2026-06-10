@@ -11,6 +11,7 @@ export interface ResourceChangedEvent<T = unknown> {
   action: RealtimeAction;
   id: string;
   data?: T;
+  related?: T[];
 }
 
 export type PersonaChangedEvent = ResourceChangedEvent<Persona>;

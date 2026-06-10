@@ -6,6 +6,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { theme, ThemeProvider, CssBaseline } from '@repo/ui/theme.tsx';
 import { routeTree } from './routeTree.gen';
 import { queryClient } from './utils/query-client.ts';
+import { RealtimeSyncProvider } from './realtime/realtime-provider';
 import './index.css';
 import '@repo/ui/constants/css-constants.css';
 
@@ -26,7 +27,9 @@ createRoot(document.getElementById('root')!).render(
     <QueryClientProvider client={queryClient}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <RouterProvider router={router} />
+        <RealtimeSyncProvider>
+          <RouterProvider router={router} />
+        </RealtimeSyncProvider>
       </ThemeProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
