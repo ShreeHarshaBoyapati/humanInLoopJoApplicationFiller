@@ -172,5 +172,60 @@ export async function invalidateResumesForPersona(personaId: string): Promise<vo
   }
 }
 
+export async function patchResumeInPages(
+  patch: { id: string } & Partial<import('@repo/shared-types').ResumeMetadata>
+): Promise<void> {
+  try {
+    const db = await getDB();
+    const tx = db.transaction('resumes', 'readwrite');
+    const store = tx.objectStore('resumes');
+    let cursor = await store.openCursor();
+    while (cursor) {
+      const value = cursor.value as CachedResumePage;
+      let mutated = false;
+      const nextItems = value.items.map((item) => {
+        if (item.id !== patch.id) return item;
+        mutated = true;
+        return { ...item, ...patch };
+      });
+      if (mutated) {
+        await cursor.update({ ...value, items: nextItems });
+        break;
+      }
+      cursor = await cursor.continue();
+    }
+    await tx.done;
+  } catch (error) {
+    console.error('[ResumesCache] Error patching resume in pages:', error);
+  }
+}
+
+export async function patchResumeCountInPages(id: string, versionsCount: number): Promise<void> {
+  try {
+    const db = await getDB();
+    const tx = db.transaction('resumes', 'readwrite');
+    const store = tx.objectStore('resumes');
+    let cursor = await store.openCursor();
+    while (cursor) {
+      const value = cursor.value as CachedResumePage;
+      let mutated = false;
+      const nextItems = value.items.map((item) => {
+        if (item.id !== id) return item;
+        if (item.versionsCount === versionsCount) return item;
+        mutated = true;
+        return { ...item, versionsCount };
+      });
+      if (mutated) {
+        await cursor.update({ ...value, items: nextItems });
+        break;
+      }
+      cursor = await cursor.continue();
+    }
+    await tx.done;
+  } catch (error) {
+    console.error('[ResumesCache] Error patching resume count in pages:', error);
+  }
+}
+
 // Re-export types for convenience
 export type { CachedResumePage } from './common-cache';

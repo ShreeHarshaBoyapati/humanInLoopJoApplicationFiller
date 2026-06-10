@@ -8,8 +8,12 @@ import { handleApiKeyMessage } from './handlers/api-key-handler.js';
 import { handlePersonaMessage } from './handlers/persona-handler.js';
 import { handleResumeMessage } from './handlers/resume-handler.js';
 import { handleAiMessage } from './handlers/ai-handler.js';
+import { RealtimeOwner } from '../realtime/realtime-owner.js';
 
 console.log('Background service worker started');
+
+const realtimeOwner = new RealtimeOwner();
+realtimeOwner.start();
 
 // Listen for installation
 chrome.runtime.onInstalled.addListener(() => {
@@ -17,6 +21,10 @@ chrome.runtime.onInstalled.addListener(() => {
   chrome.sidePanel
     .setPanelBehavior({ openPanelOnActionClick: true })
     .catch((error) => console.error(error));
+});
+
+chrome.runtime.onSuspend?.addListener(() => {
+  realtimeOwner.stop();
 });
 
 const API_URL = import.meta.env.VITE_EXT_BACKENDAPI || '';

@@ -167,5 +167,58 @@ export async function invalidateVersionsForResume(resumeId: string): Promise<voi
   }
 }
 
+export async function patchVersionInPages(
+  patch: { id: string } & Partial<import('@repo/shared-types').ResumeVersionMetadata>
+): Promise<void> {
+  try {
+    const db = await getDB();
+    const tx = db.transaction('versions', 'readwrite');
+    const store = tx.objectStore('versions');
+    let cursor = await store.openCursor();
+    while (cursor) {
+      const value = cursor.value as CachedVersionPage;
+      let mutated = false;
+      const nextItems = value.items.map((item) => {
+        if (item.id !== patch.id) return item;
+        mutated = true;
+        return { ...item, ...patch };
+      });
+      if (mutated) {
+        await cursor.update({ ...value, items: nextItems });
+        break;
+      }
+      cursor = await cursor.continue();
+    }
+    await tx.done;
+  } catch (error) {
+    console.error('[VersionsCache] Error patching version in pages:', error);
+  }
+}
+
+export async function clearVersionsForPersona(personaId: string): Promise<void> {
+  try {
+    const db = await getDB();
+    const resumesTx = db.transaction('resumes', 'readonly');
+    const resumesStore = resumesTx.objectStore('resumes');
+    const resumeIds: string[] = [];
+    let resumeCursor = await resumesStore.openCursor();
+    while (resumeCursor) {
+      const key = resumeCursor.key as string;
+      const parts = key.split(':');
+      if (parts.length >= 4 && parts[1] === personaId) {
+        const page = resumeCursor.value as { items: { id: string }[] };
+        for (const r of page.items) resumeIds.push(r.id);
+      }
+      resumeCursor = await resumeCursor.continue();
+    }
+    await resumesTx.done;
+    for (const resumeId of resumeIds) {
+      await invalidateVersionsForResume(resumeId);
+    }
+  } catch (error) {
+    console.error('[VersionsCache] Error in clearVersionsForPersona:', error);
+  }
+}
+
 // Re-export types for convenience
 export type { CachedVersionPage } from './common-cache';

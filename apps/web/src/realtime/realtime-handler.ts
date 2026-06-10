@@ -32,23 +32,6 @@ function patchInInfinitePages<T extends { id: string }>(
   });
 }
 
-function removeFromInfinitePages<T extends { id: string }>(
-  qc: QueryClient,
-  queryKey: readonly unknown[],
-  id: string
-): void {
-  qc.setQueryData(queryKey, (old: unknown) => {
-    if (!isInfinitePages<T>(old)) return old;
-    return {
-      pages: old.pages.map((page) => ({
-        ...page,
-        items: page.items.filter((item) => item.id !== id),
-      })),
-      pageParams: old.pageParams ?? old.pages.map((_, index) => index + 1),
-    };
-  });
-}
-
 function applyPatchesToMatchingQueries<T extends { id: string }>(
   qc: QueryClient,
   prefix: readonly unknown[],

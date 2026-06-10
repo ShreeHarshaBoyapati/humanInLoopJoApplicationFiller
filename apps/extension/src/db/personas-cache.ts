@@ -105,5 +105,60 @@ export async function clearAllPersonasCache(): Promise<void> {
   }
 }
 
+export async function patchPersonaInPages(
+  patch: { id: string } & Partial<import('@repo/shared-types').Persona>
+): Promise<void> {
+  try {
+    const db = await getDB();
+    const tx = db.transaction('personas', 'readwrite');
+    const store = tx.objectStore('personas');
+    let cursor = await store.openCursor();
+    while (cursor) {
+      const value = cursor.value as CachedPage;
+      let mutated = false;
+      const nextItems = value.items.map((item) => {
+        if (item.id !== patch.id) return item;
+        mutated = true;
+        return { ...item, ...patch };
+      });
+      if (mutated) {
+        await cursor.update({ ...value, items: nextItems });
+        break;
+      }
+      cursor = await cursor.continue();
+    }
+    await tx.done;
+  } catch (error) {
+    console.error('[PersonasCache] Error patching persona in pages:', error);
+  }
+}
+
+export async function patchPersonaCountInPages(id: string, resumesCount: number): Promise<void> {
+  try {
+    const db = await getDB();
+    const tx = db.transaction('personas', 'readwrite');
+    const store = tx.objectStore('personas');
+    let cursor = await store.openCursor();
+    while (cursor) {
+      const value = cursor.value as CachedPage;
+      let mutated = false;
+      const nextItems = value.items.map((item) => {
+        if (item.id !== id) return item;
+        if (item.resumesCount === resumesCount) return item;
+        mutated = true;
+        return { ...item, resumesCount };
+      });
+      if (mutated) {
+        await cursor.update({ ...value, items: nextItems });
+        break;
+      }
+      cursor = await cursor.continue();
+    }
+    await tx.done;
+  } catch (error) {
+    console.error('[PersonasCache] Error patching persona count in pages:', error);
+  }
+}
+
 // Re-export types for convenience
 export type { CachedPage } from './common-cache';

@@ -311,6 +311,27 @@ export function PersonasSection({ onSelectPersona, isFromAutofill = false }: Per
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchQuery]);
 
+  useEffect(() => {
+    if (typeof chrome === 'undefined' || !chrome.runtime?.onMessage) return;
+    const handle = (message: {
+      action?: string;
+      payload?: { resource?: string; action?: string };
+    }) => {
+      if (message.action !== 'RESOURCE_CHANGED') return;
+      const payload = message.payload;
+      if (!payload || payload.resource !== 'persona') return;
+      if (payload.action === 'update' || payload.action === 'setActive') return;
+      dispatch({ type: 'RESET' });
+      fetchPersonas(1, searchQuery);
+      if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = 0;
+    };
+    chrome.runtime.onMessage.addListener(handle);
+    return () => {
+      chrome.runtime.onMessage.removeListener(handle);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
+
   // Intersection Observer for infinite scroll
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current;

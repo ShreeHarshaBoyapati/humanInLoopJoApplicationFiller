@@ -6,6 +6,7 @@ import {
   GetVersionParsedDataParams,
 } from './resume-version';
 import type { StoredAuth } from './auth-types';
+import type { ResourceChangedEvent } from './realtime';
 
 /**
  * Chrome extension message contracts.
@@ -63,4 +64,5 @@ export type ExtensionMessage =
   | { action: 'AUTH_STATE_CHANGED'; payload: StoredAuth | null }
   | { action: 'AUTH_STORAGE_SET'; payload: StoredAuth }
   | { action: 'AUTH_STORAGE_GET' }
-  | { action: 'AUTH_STORAGE_REMOVE' };
+  | { action: 'AUTH_STORAGE_REMOVE' }
+  | { action: 'RESOURCE_CHANGED'; payload: ResourceChangedEvent };
