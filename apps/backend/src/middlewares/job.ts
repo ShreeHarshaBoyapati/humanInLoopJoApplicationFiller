@@ -65,6 +65,7 @@ const validJobFields = [
   'favorite',
   'primaryResultId',
   'dataUpdatedAt',
+  'statusUpdatedAt',
   'createdAt',
   'updatedAt',
 ] as const;

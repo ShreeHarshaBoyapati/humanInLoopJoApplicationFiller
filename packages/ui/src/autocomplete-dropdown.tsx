@@ -1,16 +1,9 @@
-import {
-  Box,
-  type BoxProps,
-  Typography,
-  type TypographyOwnProps,
-  Autocomplete,
-  TextField,
-  styled,
-  CircularProgress,
-} from '@mui/material';
+import { Box, Typography, Autocomplete, TextField, styled, CircularProgress } from '@mui/material';
+import type { BoxProps, TypographyOwnProps } from '@mui/material';
 import type { SyntheticEvent } from 'react';
 import { forwardRef } from 'react';
 import styleConstants from './constants/style-constants.js';
+import scrollbarStyles from './scroll-bar.module.css';
 import { EnhancedFieldLabel, type EnhancedFieldLabelProps } from './field-label.js';
 import ArrowDownIcon from './icons/arrow-down.js';
 import ClearIcon from './icons/clear.js';
@@ -27,9 +20,10 @@ const RootContainer = styled(Box)({
 interface HelperTextProps {
   error?: boolean;
 }
+// prettier-ignore
 const HelperText = styled(Typography, {
   shouldForwardProp: (prop) => prop !== 'error',
-})<HelperTextProps>(({ error = false }) => ({
+}) < HelperTextProps > (({ error = false }) => ({
   fontStyle: 'normal',
   marginTop: '0.37em',
   fontWeight: 400,
@@ -149,8 +143,11 @@ export interface EnhancedAutocompleteDropdownProps {
   value: AutocompleteOption | null;
   onChange: (value: AutocompleteOption | null) => void;
   onInputChange?: (value: string) => void;
+  onOpen?: () => void;
+  onClose?: () => void;
   loading?: boolean;
   placeholder?: string;
+  loadingText?: string;
   disabled?: boolean;
   width?: string | number | null;
   customProps?: {
@@ -182,7 +179,10 @@ export const EnhancedAutocompleteDropdown = forwardRef<
     value = null,
     onChange,
     onInputChange,
+    onOpen,
+    onClose,
     loading = false,
+    loadingText = 'Loading...',
     placeholder = 'Search...',
     disabled = false,
     error = false,
@@ -227,7 +227,6 @@ export const EnhancedAutocompleteDropdown = forwardRef<
           id={id}
           data-testid={testId}
           options={options}
-          value={value}
           onChange={(_: SyntheticEvent, newValue: AutocompleteOption | null) => {
             onChange(newValue);
           }}
@@ -236,6 +235,12 @@ export const EnhancedAutocompleteDropdown = forwardRef<
               onInputChange(newInputValue);
             }
           }}
+          onOpen={() => {
+            onOpen?.();
+          }}
+          onClose={() => {
+            onClose?.();
+          }}
           disabled={disabled}
           loading={loading}
           disableClearable={false}
@@ -243,9 +248,58 @@ export const EnhancedAutocompleteDropdown = forwardRef<
           clearOnEscape
           openOnFocus
           getOptionLabel={(option: AutocompleteOption) => option.label}
-          isOptionEqualToValue={(option: AutocompleteOption, optionValue: AutocompleteOption) =>
-            option.value === optionValue.value
-          }
+          isOptionEqualToValue={(
+            option: AutocompleteOption,
+            optionValue: AutocompleteOption | null | undefined
+          ) => {
+            if (optionValue === null || optionValue === undefined) return false;
+            return option.value === optionValue.value;
+          }}
+          getOptionKey={(option) => option.value}
+          renderOption={(props, option, state) => {
+            const { key, ...rest } = props;
+            return (
+              <Box
+                component="li"
+                key={option.value}
+                {...rest}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: `calc(${styleConstants.spacing} * 3)`,
+                  borderRadius: styleConstants.borderRadius,
+                  fontSize: '0.75rem',
+                  minHeight: 'fit-content',
+                  color: state.selected ? styleConstants.white900 : styleConstants.white700,
+                  cursor: 'pointer',
+                  backgroundColor: state.selected ? styleConstants.blue500 : 'transparent',
+                  '&:hover': {
+                    backgroundColor: state.selected
+                      ? styleConstants.blue500
+                      : styleConstants.grey300,
+                  },
+                  '&.Mui-focused': {
+                    backgroundColor: state.selected ? styleConstants.blue500 : 'transparent',
+                  },
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: '0.75rem',
+                    lineHeight: 1.2,
+                    fontWeight: 500,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    minWidth: '0px',
+                  }}
+                >
+                  {option.label}
+                </Typography>
+              </Box>
+            );
+          }}
+          value={value ?? undefined}
           popupIcon={<ArrowDownIcon />}
           clearIcon={<ClearIcon />}
           slotProps={{
@@ -263,35 +317,60 @@ export const EnhancedAutocompleteDropdown = forwardRef<
               sx: autocompletePaperStyles,
             },
             listbox: {
+              className: scrollbarStyles.scrollbarVerticalContainer,
               sx: autocompleteListboxStyles,
             },
           }}
           renderInput={(params) => {
-            const { ref: _inputRef, ...inputPropsRest } = params.InputProps;
             return (
               <StyledTextField
                 {...params}
                 placeholder={placeholder}
                 error={error}
                 disabled={disabled}
-                InputProps={{
-                  ...inputPropsRest,
-                  endAdornment: (
-                    <>
-                      {loading ? (
-                        <CircularProgress size={16} sx={{ color: styleConstants.white700 }} />
-                      ) : null}
-                      {params.InputProps.endAdornment}
-                    </>
-                  ),
+                slotProps={{
+                  input: {
+                    ...params.InputProps,
+                    endAdornment: (
+                      <>
+                        {loading ? (
+                          <CircularProgress size={16} sx={{ color: styleConstants.white700 }} />
+                        ) : null}
+                        {params.InputProps.endAdornment}
+                      </>
+                    ),
+                  },
+                  htmlInput: params.inputProps,
                 }}
               />
             );
           }}
           noOptionsText={
-            <Typography sx={{ color: styleConstants.white700, fontSize: '0.75rem' }}>
-              {loading ? 'Loading...' : 'No options'}
-            </Typography>
+            <Box
+              sx={{
+                alignItems: 'center',
+                color: styleConstants.white700,
+                display: 'flex',
+                flexDirection: 'column',
+                fontSize: '0.75rem',
+                gap: `calc(${styleConstants.spacing} * 2)`,
+                justifyContent: 'center',
+                padding: `calc(${styleConstants.spacing} * 2)`,
+              }}
+            >
+              {loading ? (
+                <>
+                  <CircularProgress size={20} sx={{ color: styleConstants.white700 }} />
+                  <Typography sx={{ color: styleConstants.white700, fontSize: '0.75rem' }}>
+                    {loadingText}
+                  </Typography>
+                </>
+              ) : (
+                <Typography sx={{ color: styleConstants.white700, fontSize: '0.75rem' }}>
+                  No options
+                </Typography>
+              )}
+            </Box>
           }
         />
         {showSupportingText && (

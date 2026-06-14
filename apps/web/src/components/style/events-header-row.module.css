@@ -1,0 +1,13 @@
+.container {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  padding: calc(var(--spacing) * 2) 0;
+}
+
+.title {
+  color: var(--white-900);
+  font-family: var(--heading-font);
+  font-size: 1rem;
+  font-weight: 600;
+}

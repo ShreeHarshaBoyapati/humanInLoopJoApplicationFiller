@@ -1,3 +1,30 @@
+.splitLayout {
+  align-items: stretch;
+  display: flex;
+  flex: 1;
+  flex-direction: row;
+  gap: calc(var(--spacing) * 6);
+  margin: 0 auto;
+  max-width: 1400px;
+  min-height: 0;
+  width: 100%;
+}
+
+.leftPane {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rightPane {
+  display: flex;
+  flex: 0 0 380px;
+  flex-direction: column;
+  max-width: 380px;
+  min-height: 0;
+}
+
 .tabsContainer {
   border-bottom: 1px solid rgb(255 255 255 / 20%);
   border-radius: 0;
@@ -57,12 +84,20 @@
   outline: 0;
 }
 
-.filtersRow {
-  align-items: flex-end;
+.filtersContainer {
   display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 1);
+  max-width: 1000px;
+  width: 100%;
+}
+
+.filtersRow {
+  display: flex;
+  flex-direction: row;
   gap: calc(var(--spacing) * 4);
   max-width: 1000px;
-  width: 80%;
+  width: 100%;
 }
 
 .filterGroup {

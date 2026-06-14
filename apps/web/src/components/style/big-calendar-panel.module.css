@@ -1,0 +1,178 @@
+/* stylelint-disable selector-class-pattern, no-descending-specificity --
+ * This file overrides the third-party react-calendar library, whose class
+ * names (e.g. `.react-calendar__navigation`, `.react-calendar__tile--now`)
+ * are defined by the library and cannot be renamed. The camelCase and
+ * no-descending-specificity rules therefore do not apply here.
+ */
+@import url('react-calendar/dist/Calendar.css');
+
+.container {
+  background-color: var(--black-700);
+  border: 1px solid var(--grey-700);
+  border-radius: var(--border-radius);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 2);
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  padding: calc(var(--spacing) * 2);
+}
+
+.calendarWrapper {
+  flex: 0 0 auto;
+}
+
+.eventsSection {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 2);
+  min-height: 0;
+}
+
+.calendarWrapper :global(.react-calendar) {
+  background: transparent;
+  border: none;
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  line-height: 1.2;
+  width: 100%;
+}
+
+.calendarWrapper :global(.react-calendar__navigation) {
+  display: flex;
+  gap: calc(var(--spacing) * 2);
+  margin-bottom: calc(var(--spacing) * 2);
+}
+
+.calendarWrapper :global(.react-calendar__navigation button) {
+  background: transparent;
+  border: 1px solid var(--grey-700);
+  border-radius: var(--border-radius);
+  color: var(--white-700);
+  cursor: pointer;
+  font-family: var(--secondary-font);
+  height: 32px;
+  min-width: 32px;
+  padding: 0 calc(var(--spacing) * 2);
+}
+
+.calendarWrapper :global(.react-calendar__navigation button:hover),
+.calendarWrapper :global(.react-calendar__navigation button:focus) {
+  background: var(--grey-700);
+  color: var(--white-900);
+}
+
+.calendarWrapper :global(.react-calendar__navigation__label) {
+  color: var(--white-900);
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.calendarWrapper :global(.react-calendar__month-view__weekdays) {
+  color: var(--white-700);
+  font-size: 0.7rem;
+  font-weight: 500;
+  padding-bottom: calc(var(--spacing) * 1);
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.calendarWrapper :global(.react-calendar__month-view__weekdays__weekday) {
+  padding: calc(var(--spacing) * 1) 0;
+}
+
+.calendarWrapper :global(.react-calendar__month-view__weekdays__weekday abbr) {
+  text-decoration: none;
+}
+
+.calendarWrapper :global(.react-calendar__month-view__days__day) {
+  color: var(--white-900);
+}
+
+.calendarWrapper :global(.react-calendar__month-view__days__day--weekend) {
+  color: var(--white-700);
+}
+
+.calendarWrapper :global(.react-calendar__month-view__days__day--neighboringMonth) {
+  color: var(--grey-500);
+  opacity: 0.5;
+}
+
+.calendarWrapper :global(.react-calendar__tile) {
+  align-items: stretch;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--border-radius);
+  color: var(--white-900);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--secondary-font);
+  justify-content: flex-start;
+  min-height: 36px;
+  padding: 4px 6px;
+  position: relative;
+}
+
+.calendarWrapper :global(.react-calendar__tile:hover) {
+  background: var(--grey-700);
+}
+
+.calendarWrapper :global(.react-calendar__tile--now) {
+  background: transparent;
+  border: 1px solid var(--blue-500);
+  color: var(--blue-500);
+  font-weight: 600;
+}
+
+.calendarWrapper :global(.react-calendar__tile--now:hover) {
+  background: var(--grey-700);
+  color: var(--white-900);
+}
+
+.calendarWrapper :global(.react-calendar__tile--active),
+.calendarWrapper :global(.react-calendar__tile--hasActive) {
+  background: var(--blue-500);
+  color: var(--white-900);
+}
+
+.calendarWrapper :global(.react-calendar__tile--active:hover),
+.calendarWrapper :global(.react-calendar__tile--hasActive:hover) {
+  background: var(--blue-500);
+  color: var(--white-900);
+}
+
+.calendarWrapper :global(.react-calendar__tile--hasActive) {
+  border: 1px solid var(--blue-500);
+}
+
+.calendarWrapper :global(.react-calendar__tile--hasEvents) {
+  border-left: 3px solid var(--dot-color, var(--blue-500));
+}
+
+.dotRow {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  justify-content: center;
+  margin-top: 2px;
+  min-height: 10px;
+}
+
+.dot {
+  border: 1px solid rgb(0 0 0 / 25%);
+  border-radius: 50%;
+  height: 8px;
+  width: 8px;
+}
+
+.dotOverflow {
+  color: var(--white-700);
+  font-family: var(--secondary-font);
+  font-size: 0.65rem;
+  font-weight: 600;
+}

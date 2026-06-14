@@ -12,7 +12,45 @@ import type {
   DeleteJobInput,
   GetJobsInfer,
 } from '../middlewares/job.js';
-import { ApiResponse, JobList, Job } from '@repo/shared-types';
+import { ApiResponse, JobList, Job, type JobStatus } from '@repo/shared-types';
+import type { StatusUpdatedAtMap, StatusUpdatedAtKey } from '../database/entities/job.js';
+
+const STATUS_ORDER: StatusUpdatedAtKey[] = [
+  'draft',
+  'applied',
+  'interview',
+  'offer',
+  'rejected',
+  'archived',
+];
+
+function emptyStatusUpdatedAt(): StatusUpdatedAtMap {
+  return {
+    draft: null,
+    applied: null,
+    interview: null,
+    offer: null,
+    rejected: null,
+    archived: null,
+  };
+}
+
+function recomputeStatusUpdatedAt(
+  current: StatusUpdatedAtMap,
+  newStatus: JobStatus
+): StatusUpdatedAtMap {
+  if (newStatus === 'active') {
+    return current;
+  }
+  const next: StatusUpdatedAtMap = { ...current };
+  next[newStatus] = new Date();
+  const newIdx = STATUS_ORDER.indexOf(newStatus as StatusUpdatedAtKey);
+  for (let i = newIdx + 1; i < STATUS_ORDER.length; i++) {
+    const key = STATUS_ORDER[i] as StatusUpdatedAtKey;
+    next[key] = null;
+  }
+  return next;
+}
 
 class JobController {
   async create(req: AuthenticatedTypedRequest<CreateJobInput>, res: Response) {
@@ -50,7 +88,9 @@ class JobController {
       personaId: personaId || null,
       user,
       dataUpdatedAt: new Date(),
+      statusUpdatedAt: emptyStatusUpdatedAt(),
     });
+    job.statusUpdatedAt.draft = job.dataUpdatedAt;
 
     await jobRepository.save(job);
     const data: ApiResponse<{ id: string }> = {
@@ -139,6 +179,11 @@ class JobController {
     }
 
     Object.assign(job, updateData);
+
+    if (updateData.status !== undefined && updateData.status !== job.status) {
+      const current = (job.statusUpdatedAt as StatusUpdatedAtMap) || emptyStatusUpdatedAt();
+      job.statusUpdatedAt = recomputeStatusUpdatedAt(current, updateData.status);
+    }
 
     const nonContentFields = [
       'personaId',
@@ -240,6 +285,7 @@ class JobController {
       'notes',
       'primaryResultId',
       'dataUpdatedAt',
+      'statusUpdatedAt',
       'createdAt',
       'updatedAt',
     ];

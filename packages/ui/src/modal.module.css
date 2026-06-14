@@ -27,6 +27,12 @@
   padding: calc(var(--spacing) * 4);
 }
 
+.headerLeft {
+  align-items: center;
+  display: flex;
+  gap: calc(var(--spacing) * 2);
+}
+
 .title {
   color: var(--white-900);
   font-family: var(--heading-font);
@@ -48,6 +54,11 @@
 
 .closeButton:hover {
   color: var(--white-900);
+}
+
+.closeButton:focus-visible,
+.closeButton:focus {
+  outline: none;
 }
 
 .body {

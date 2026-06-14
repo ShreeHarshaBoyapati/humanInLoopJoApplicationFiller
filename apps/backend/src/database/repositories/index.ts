@@ -6,6 +6,8 @@ import getResumeRepository from './resume-repo.js';
 import getResumeVersionRepository from './resume-version-repo.js';
 import getVerificationCodeRepository from './verification-code-repo.js';
 import getResultRepository from './result-repo.js';
+import getTagRepository from './tag-repo.js';
+import getEventRepository from './event-repo.js';
 
 export {
   getUserRepository,
@@ -16,4 +18,6 @@ export {
   getResumeVersionRepository,
   getVerificationCodeRepository,
   getResultRepository,
+  getTagRepository,
+  getEventRepository,
 };

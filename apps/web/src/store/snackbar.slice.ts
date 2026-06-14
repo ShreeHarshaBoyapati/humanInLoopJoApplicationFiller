@@ -32,7 +32,7 @@ export const createSnackbarSlice: StateCreator<SnackbarSlice, [], [], SnackbarSl
     message: '',
     header: undefined,
     severity: 'success',
-    autoHideDuration: 400000,
+    autoHideDuration: 10000,
   },
   showSnackbar: (message, options = {}) => {
     set({

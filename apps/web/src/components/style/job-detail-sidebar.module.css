@@ -197,9 +197,11 @@
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
-  max-width: 300px;
-  min-width: 250px;
-  overflow-y: auto;
+  height: 100%;
+  max-width: 380px;
+  min-width: 380px;
+  overflow: hidden;
+  width: 380px;
 }
 
 .calendarHeader {

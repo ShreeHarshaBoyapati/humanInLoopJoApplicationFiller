@@ -9,6 +9,8 @@ import {
 import Job from './job.js';
 import ApiKey from './api-key.js';
 import Persona from './persona.js';
+import Tag from './tag.js';
+import Event from './event.js';
 
 @Entity()
 export default class User {
@@ -35,6 +37,12 @@ export default class User {
 
   @OneToMany(() => Persona, (persona) => persona.user)
   personas!: Persona[];
+
+  @OneToMany(() => Tag, (tag) => tag.user)
+  tags!: Tag[];
+
+  @OneToMany(() => Event, (event) => event.user)
+  events!: Event[];
 
   @CreateDateColumn()
   createdAt!: Date;

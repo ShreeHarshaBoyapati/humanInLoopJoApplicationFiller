@@ -13,3 +13,5 @@ export * from './resume-version.js';
 export * from './auth-types.js';
 export * from './result.js';
 export * from './realtime.js';
+export * from './tag.js';
+export * from './event.js';

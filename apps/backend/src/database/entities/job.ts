@@ -5,10 +5,17 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import type User from './user.js';
+import Event from './event.js';
 import Persona from './persona.js';
+import type { JobStatus } from '@repo/shared-types';
+
+export type StatusUpdatedAtKey = Exclude<JobStatus, 'active'>;
+
+export type StatusUpdatedAtMap = Record<StatusUpdatedAtKey, Date | null>;
 
 @Entity()
 export default class Job {
@@ -61,11 +68,17 @@ export default class Job {
   @Column('timestamp', { nullable: true })
   dataUpdatedAt!: Date | null;
 
+  @Column('simple-json', { default: () => `'{}'::jsonb` })
+  statusUpdatedAt!: StatusUpdatedAtMap;
+
   @ManyToOne('User', 'jobs', { onDelete: 'CASCADE' })
   user!: User;
 
   @Column({ type: 'uuid', nullable: true })
   primaryResultId!: string | null;
+
+  @OneToMany(() => Event, (event) => event.job)
+  events!: Event[];
 
   @CreateDateColumn()
   createdAt!: Date;

@@ -7,7 +7,7 @@ import styleConstants from './constants/style-constants';
 
 type TextFieldVariant = 'default' | 'disabled' | 'error';
 type TextFieldSize = 'small' | 'medium';
-type TextFieldType = 'text' | 'password' | 'email' | 'number' | 'tel' | 'url';
+type TextFieldType = 'text' | 'password' | 'email' | 'number' | 'tel' | 'url' | 'date' | 'time';
 
 interface StyledTextFieldProps {
   hasStartIcon?: boolean;

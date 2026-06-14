@@ -12,6 +12,7 @@ import styles from './style/job-detail-sidebar.module.css';
 import { JobOverviewTab } from './job-overview-tab';
 import { JobAtsTab } from './job-ats-tab';
 import { JobNotesTab } from './job-notes-tab';
+import { SmallCalendarPanel } from './small-calendar-panel';
 import { ConfirmModal } from './confirm-modal';
 
 interface JobDetailSidebarProps {
@@ -214,12 +215,7 @@ export function JobDetailSidebar({ job: initialJob, onClose }: JobDetailSidebarP
 
             {/* Right Section - Calendar */}
             <div className={styles.rightSection}>
-              <div className={styles.calendarContent}>
-                <div className={styles.calendarPlaceholder}>
-                  <span>Calendar section</span>
-                  <span>Date picker and events</span>
-                </div>
-              </div>
+              <SmallCalendarPanel job={localJob} />
             </div>
           </div>
         </div>

@@ -30,9 +30,18 @@ interface ModalProps {
   children: ReactNode;
   footer?: ReactNode;
   customProps?: CustomProps;
+  headerLeftElement?: ReactNode;
 }
 
-export function Modal({ isOpen, onClose, headerTitle, children, footer, customProps }: ModalProps) {
+export function Modal({
+  isOpen,
+  onClose,
+  headerTitle,
+  children,
+  footer,
+  customProps,
+  headerLeftElement,
+}: ModalProps) {
   if (!isOpen) return null;
 
   const { props = {}, childProps = {} } = customProps || {};
@@ -47,8 +56,11 @@ export function Modal({ isOpen, onClose, headerTitle, children, footer, customPr
         {...modal}
       >
         <Box component="div" className={styles.header} {...header}>
-          <Box component="h2" className={styles.title} {...childProps.title?.props}>
-            {headerTitle}
+          <Box component="div" className={styles.headerLeft}>
+            {headerLeftElement}
+            <Box component="h2" className={styles.title} {...childProps.title?.props}>
+              {headerTitle}
+            </Box>
           </Box>
           <button
             type="button"
