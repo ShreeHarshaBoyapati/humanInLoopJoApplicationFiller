@@ -1,7 +1,7 @@
 import { Box, Typography, Autocomplete, TextField, styled, CircularProgress } from '@mui/material';
 import type { BoxProps, TypographyOwnProps } from '@mui/material';
 import type { SyntheticEvent } from 'react';
-import { forwardRef } from 'react';
+import { forwardRef, type ReactNode, type HTMLAttributes } from 'react';
 import styleConstants from './constants/style-constants.js';
 import scrollbarStyles from './scroll-bar.module.css';
 import { EnhancedFieldLabel, type EnhancedFieldLabelProps } from './field-label.js';
@@ -123,6 +123,36 @@ const autocompleteListboxStyles = {
   },
 };
 
+interface ListboxFooterWrapperProps extends HTMLAttributes<HTMLUListElement> {
+  footer?: ReactNode;
+}
+
+const ListboxFooterWrapper = forwardRef<HTMLUListElement, ListboxFooterWrapperProps>(
+  ({ children, footer, ...rest }, ref) => {
+    return (
+      <Box component="ul" ref={ref} {...rest}>
+        {children}
+        {footer && (
+          <Box
+            component="li"
+            role="presentation"
+            aria-hidden="true"
+            sx={{
+              padding: `calc(${styleConstants.spacing} * 3)`,
+              textAlign: 'center',
+              cursor: 'default',
+            }}
+          >
+            {footer}
+          </Box>
+        )}
+      </Box>
+    );
+  }
+);
+
+ListboxFooterWrapper.displayName = 'ListboxFooterWrapper';
+
 export type AutocompleteOption = {
   value: string | number;
   label: string;
@@ -150,6 +180,7 @@ export interface EnhancedAutocompleteDropdownProps {
   loadingText?: string;
   disabled?: boolean;
   width?: string | number | null;
+  listboxFooter?: ReactNode;
   customProps?: {
     childProps?: {
       containerProps?: Partial<BoxProps>;
@@ -189,6 +220,7 @@ export const EnhancedAutocompleteDropdown = forwardRef<
     showErrorMsg = false,
     errorText = 'Missing or invalid value.',
     width = '100%',
+    listboxFooter,
     customProps = {
       childProps: {
         containerProps: {},
@@ -317,9 +349,11 @@ export const EnhancedAutocompleteDropdown = forwardRef<
               sx: autocompletePaperStyles,
             },
             listbox: {
+              component: ListboxFooterWrapper,
               className: scrollbarStyles.scrollbarVerticalContainer,
               sx: autocompleteListboxStyles,
-            },
+              footer: listboxFooter,
+            } as HTMLAttributes<HTMLUListElement> & { footer?: ReactNode },
           }}
           renderInput={(params) => {
             return (

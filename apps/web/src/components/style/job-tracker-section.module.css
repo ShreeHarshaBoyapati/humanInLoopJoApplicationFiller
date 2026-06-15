@@ -156,6 +156,12 @@
   outline: none;
 }
 
+.personaFilterFooter {
+  color: var(--white-700);
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
 .mobileCalendarWrapper {
   display: flex;
   flex: 1;

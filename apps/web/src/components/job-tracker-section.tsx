@@ -36,6 +36,7 @@ const SORT_ORDER_OPTIONS = [
 ];
 
 const MOBILE_BREAKPOINT = 1024;
+const PERSONA_FILTER_LIMIT = 50;
 
 export function JobTrackerSection() {
   const [activeTab, setActiveTab] = useState<TabType>('active');
@@ -76,7 +77,15 @@ export function JobTrackerSection() {
   }, [isMobile, activeTab]);
 
   // Fetch personas for the dropdown with search
-  const { data: personasData } = usePersonas(50, debouncedPersonaSearch);
+  const { data: personasData, isFetching: isFetchingPersonas } = usePersonas(
+    PERSONA_FILTER_LIMIT,
+    debouncedPersonaSearch
+  );
+
+  const isPersonaListLoading =
+    isFetchingPersonas || (debouncedPersonaSearch === '' && !personasData);
+  const personaTotal = personasData?.pages[0]?.total ?? 0;
+  const isPersonaListTruncated = personaTotal > PERSONA_FILTER_LIMIT;
 
   // Debounce job search query
   useEffect(() => {
@@ -125,7 +134,10 @@ export function JobTrackerSection() {
 
   // Build persona options from fetched personas
   const personaOptions = useMemo(() => {
-    const options = [{ value: '', label: 'All Personas' }];
+    const options: AutocompleteOption[] = [];
+    if (personaSearchQuery === '') {
+      options.push({ value: '', label: 'All Personas' });
+    }
     if (personasData?.pages) {
       const allPersonas = personasData.pages.flatMap((page) => page.items) as Persona[];
       allPersonas.forEach((persona) => {
@@ -133,7 +145,7 @@ export function JobTrackerSection() {
       });
     }
     return options;
-  }, [personasData]);
+  }, [personasData, personaSearchQuery]);
 
   // Scroll position restoration for infinite scroll
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -356,6 +368,8 @@ export function JobTrackerSection() {
                       placeholder="Search personas..."
                       options={personaOptions as AutocompleteOption[]}
                       value={selectedPersonaOption}
+                      loading={isPersonaListLoading}
+                      loadingText="Loading personas..."
                       onChange={(newValue) => {
                         setSelectedPersonaOption(newValue);
                         setSelectedPersona((newValue?.value as string) || '');
@@ -363,6 +377,13 @@ export function JobTrackerSection() {
                       onInputChange={(inputValue) => {
                         setPersonaSearchQuery(inputValue);
                       }}
+                      listboxFooter={
+                        isPersonaListTruncated ? (
+                          <span className={styles.personaFilterFooter}>
+                            Showing first {PERSONA_FILTER_LIMIT} personas. Type to search for more.
+                          </span>
+                        ) : undefined
+                      }
                     />
                   </div>
                 </div>
