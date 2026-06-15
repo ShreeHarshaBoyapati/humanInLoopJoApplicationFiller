@@ -77,8 +77,9 @@
   width: 100%;
 }
 
-.loadingText {
+.directionalLoader {
   color: var(--white-700);
+  flex-shrink: 0;
   font-family: var(--secondary-font);
   font-size: 0.875rem;
   padding: calc(var(--spacing) * 4);

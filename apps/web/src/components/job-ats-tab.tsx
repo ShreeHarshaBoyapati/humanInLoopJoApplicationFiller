@@ -711,7 +711,7 @@ export function JobAtsTab({
 
       {/* Results list */}
       {isLoading ? (
-        <p className={styles.loadingText}>Loading results...</p>
+        <p className={styles.directionalLoader}>Loading results...</p>
       ) : results.length === 0 ? (
         <p className={styles.emptyText}>No results found</p>
       ) : (
@@ -721,7 +721,10 @@ export function JobAtsTab({
         >
           {/* Top sentinel for scroll up detection */}
           <div ref={topSentinelRef} className={styles.sentinel} />
-
+          {((hasPreviousPage && !isError) ||
+            (hasPreviousPage && isError && isFetchingPreviousPage)) && (
+            <p className={styles.directionalLoader}>Loading...</p>
+          )}
           <div className={styles.itemList}>
             {results.map((result) => {
               const { isStale, staleType } = computeStaleStatus(
@@ -748,12 +751,10 @@ export function JobAtsTab({
               );
             })}
           </div>
-
           {/* Bottom sentinel for scroll down detection */}
           <div ref={bottomSentinelRef} className={styles.sentinel} />
-
-          {(isFetchingNextPage || isFetchingPreviousPage) && (
-            <p className={styles.loadingText}>Loading...</p>
+          {((hasNextPage && !isError) || (hasNextPage && isError && isFetchingNextPage)) && (
+            <p className={styles.directionalLoader}>Loading...</p>
           )}
         </div>
       )}

@@ -16,7 +16,7 @@ export const useResults = (jobId: string, limit: number = 10, searchQuery: strin
   return useInfiniteQuery({
     queryKey: [...RESULT_KEYS.byJob(jobId), { search: searchQuery }],
     initialPageParam: 1,
-    maxPages: 2,
+    maxPages: 5,
     queryFn: async ({ pageParam }: { pageParam: number }) => {
       const response = await axiosInstance.get<ApiResponse<PaginatedResultResponse>>(
         `/job/${jobId}/results`,
@@ -38,7 +38,6 @@ export const useResults = (jobId: string, limit: number = 10, searchQuery: strin
       return firstPage.page - 1;
     },
     enabled: !!jobId,
-    staleTime: STALE_TIME,
   });
 };
 
