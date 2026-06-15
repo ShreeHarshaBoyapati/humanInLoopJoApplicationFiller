@@ -10,7 +10,7 @@ import {
   EnhancedAccordion,
 } from '@repo/ui';
 import type { Job, UpdateJobInput } from '@repo/shared-types';
-import { useUpdateJob } from '../hooks/use-jobs';
+import { useUpdateJob, getStatusTransitionMessage } from '../hooks/use-jobs';
 import { useStore } from '../store';
 import styles from './style/job-overview-tab.module.css';
 import scrollStyles from '@repo/ui/scroll-bar.module.css';
@@ -99,6 +99,7 @@ export function JobOverviewTab({ job, onJobUpdate }: JobOverviewTabProps) {
       title: formData.title,
       companyName: formData.companyName,
       status: formData.status,
+      previousStatus: formData.status !== job.status ? job.status : undefined,
       description: formData.description || undefined,
       requirements: formData.requirements || undefined,
       keySkills: formData.keySkills.length > 0 ? formData.keySkills : undefined,
@@ -107,7 +108,12 @@ export function JobOverviewTab({ job, onJobUpdate }: JobOverviewTabProps) {
 
     updateJob.mutate(payload, {
       onSuccess: (updatedJob) => {
-        showSnackbar('Job updated successfully!', { severity: 'success' });
+        const transitionMessage = getStatusTransitionMessage(job.status, formData.status);
+        if (transitionMessage) {
+          showSnackbar(transitionMessage, { severity: 'info' });
+        } else {
+          showSnackbar('Job updated successfully!', { severity: 'success' });
+        }
         setIsEditing(false);
         setSkillInput('');
         setTagInput('');

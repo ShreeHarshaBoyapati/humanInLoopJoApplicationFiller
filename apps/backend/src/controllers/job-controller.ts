@@ -15,14 +15,9 @@ import type {
 import { ApiResponse, JobList, Job, type JobStatus } from '@repo/shared-types';
 import type { StatusUpdatedAtMap, StatusUpdatedAtKey } from '../database/entities/job.js';
 
-const STATUS_ORDER: StatusUpdatedAtKey[] = [
-  'draft',
-  'applied',
-  'interview',
-  'offer',
-  'rejected',
-  'archived',
-];
+const ARCHIVED_STATUSES: JobStatus[] = ['offer', 'rejected'];
+
+const STATUS_ORDER: StatusUpdatedAtKey[] = ['draft', 'applied', 'interview', 'offer', 'rejected'];
 
 function emptyStatusUpdatedAt(): StatusUpdatedAtMap {
   return {
@@ -31,7 +26,6 @@ function emptyStatusUpdatedAt(): StatusUpdatedAtMap {
     interview: null,
     offer: null,
     rejected: null,
-    archived: null,
   };
 }
 
@@ -39,12 +33,9 @@ function recomputeStatusUpdatedAt(
   current: StatusUpdatedAtMap,
   newStatus: JobStatus
 ): StatusUpdatedAtMap {
-  if (newStatus === 'active') {
-    return current;
-  }
   const next: StatusUpdatedAtMap = { ...current };
   next[newStatus] = new Date();
-  const newIdx = STATUS_ORDER.indexOf(newStatus as StatusUpdatedAtKey);
+  const newIdx = STATUS_ORDER.indexOf(newStatus);
   for (let i = newIdx + 1; i < STATUS_ORDER.length; i++) {
     const key = STATUS_ORDER[i] as StatusUpdatedAtKey;
     next[key] = null;
@@ -303,10 +294,14 @@ class JobController {
     }
 
     if (status) {
-      if (status === 'active') {
-        queryBuilder.andWhere('job.status != :archivedStatus', { archivedStatus: 'archived' });
-      } else if (status === 'archived') {
-        queryBuilder.andWhere('job.status = :status', { status: 'archived' });
+      if (status === ('active' as JobStatus)) {
+        queryBuilder.andWhere('job.status NOT IN (:...archivedStatuses)', {
+          archivedStatuses: ARCHIVED_STATUSES,
+        });
+      } else if (status === ('archived' as JobStatus)) {
+        queryBuilder.andWhere('job.status IN (:...archivedStatuses)', {
+          archivedStatuses: ARCHIVED_STATUSES,
+        });
       } else {
         queryBuilder.andWhere('job.status = :status', { status });
       }
@@ -317,9 +312,10 @@ class JobController {
     }
 
     if (search) {
+      const searchLower = search.toLowerCase();
       queryBuilder.andWhere(
-        '(job.title LIKE :search OR job.companyName LIKE :search OR job.keySkills LIKE :search OR job.tags LIKE :search)',
-        { search: `%${search}%` }
+        '(LOWER(job.title) LIKE :search OR LOWER(job.companyName) LIKE :search OR LOWER(job.keySkills) LIKE :search OR LOWER(job.tags) LIKE :search)',
+        { search: `%${searchLower}%` }
       );
     }
 

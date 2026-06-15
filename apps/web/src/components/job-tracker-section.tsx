@@ -11,8 +11,8 @@ import { BigCalendarPanel } from './big-calendar-panel';
 import { useEnsureTaskTag } from '../hooks/use-tags';
 import { EnhancedSelectDropdown, EnhancedAutocompleteDropdown, EnhancedButton } from '@repo/ui';
 import type { AutocompleteOption } from '@repo/ui';
-import type { Job, PaginatedJobsResponse, Persona } from '@repo/shared-types';
-import { useJobs, useUpdateJob } from '../hooks/use-jobs';
+import type { Job, JobFilterStatus, PaginatedJobsResponse, Persona } from '@repo/shared-types';
+import { useJobs, useUpdateJob, getStatusTransitionMessage } from '../hooks/use-jobs';
 import { usePersonas } from '../hooks/use-personas';
 import { useStore } from '../store';
 import { AddApplicationModal } from './add-application-modal';
@@ -21,6 +21,9 @@ import sectionStyles from '../routes/style/section.module.css';
 import scrollbarStyles from '@repo/ui/scroll-bar.module.css';
 
 type TabType = 'active' | 'archived' | 'calendar';
+
+const statusFilterForTab = (tab: TabType): JobFilterStatus =>
+  tab === 'archived' ? 'archived' : 'active';
 
 const STATUS_STEPS = ['Draft', 'Applied', 'Interview', 'Offer', 'Rejected'];
 
@@ -104,7 +107,7 @@ export function JobTrackerSection() {
   }, [personaSearchQuery]);
 
   // Determine status filter based on tab
-  const statusFilter = activeTab === 'archived' ? 'archived' : 'active';
+  const statusFilter = activeTab === 'calendar' ? undefined : statusFilterForTab(activeTab);
 
   const {
     data,
@@ -266,8 +269,14 @@ export function JobTrackerSection() {
   const handleStatusChange = useCallback(
     (job: Job, newStatus: string) => {
       updateJob.mutate(
-        { id: job.id, status: newStatus },
+        { id: job.id, status: newStatus, previousStatus: job.status },
         {
+          onSuccess: () => {
+            const transitionMessage = getStatusTransitionMessage(job.status, newStatus);
+            if (transitionMessage) {
+              showSnackbar(transitionMessage, { severity: 'info' });
+            }
+          },
           onError: (error) => {
             showSnackbar(error instanceof Error ? error.message : 'Failed to update status', {
               severity: 'error',
@@ -432,6 +441,11 @@ export function JobTrackerSection() {
                 >
                   <div ref={topSentinelRef} className={sectionStyles.sentinel} />
 
+                  {((hasPreviousPage && !isError) ||
+                    (hasPreviousPage && isError && isFetchingPreviousPage)) && (
+                    <p className={styles.directionalLoader}>Loading...</p>
+                  )}
+
                   <div className={sectionStyles.itemList}>
                     {jobs.map((job: Job) => (
                       <JobTrackerCard
@@ -448,15 +462,16 @@ export function JobTrackerSection() {
 
                   <div ref={bottomSentinelRef} className={sectionStyles.sentinel} />
 
-                  {(isFetchingNextPage || isFetchingPreviousPage) && (
-                    <p className={sectionStyles.loadingText}>Loading...</p>
+                  {((hasNextPage && !isError) ||
+                    (hasNextPage && isError && isFetchingNextPage)) && (
+                    <p className={styles.directionalLoader}>Loading...</p>
                   )}
                 </div>
               )}
 
               {/* Error state with retry button */}
               {isError && (
-                <div className={sectionStyles.errorContainer}>
+                <div className={sectionStyles.errorContainer} style={{ width: '100%' }}>
                   <p className={sectionStyles.errorText}>Failed to load jobs. Please try again.</p>
                   <EnhancedButton
                     label="Retry"

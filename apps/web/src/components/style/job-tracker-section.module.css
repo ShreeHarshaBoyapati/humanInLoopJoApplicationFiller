@@ -162,6 +162,15 @@
   line-height: 1.2;
 }
 
+.directionalLoader {
+  color: var(--white-700);
+  flex-shrink: 0;
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+  padding: calc(var(--spacing) * 4);
+  text-align: center;
+}
+
 .mobileCalendarWrapper {
   display: flex;
   flex: 1;

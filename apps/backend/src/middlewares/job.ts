@@ -8,9 +8,7 @@ const CreateJobSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   tags: z.array(z.string()).default([]),
   personaId: z.string().nullable().optional(),
-  status: z
-    .enum(['draft', 'applied', 'interview', 'offer', 'rejected', 'active', 'archived'])
-    .default('draft'),
+  status: z.enum(['draft', 'applied', 'interview', 'offer', 'rejected']).default('draft'),
   acceptanceLevel: z.number().int().min(0).max(100).default(0),
   companyName: z.string().default(''),
   notes: z.string().default(''),
@@ -27,9 +25,7 @@ const UpdateJobSchema = z.object({
   title: z.string().min(1, 'Title is required').optional(),
   tags: z.array(z.string()).optional(),
   personaId: z.string().nullable().optional(),
-  status: z
-    .enum(['draft', 'applied', 'interview', 'offer', 'rejected', 'active', 'archived'])
-    .optional(),
+  status: z.enum(['draft', 'applied', 'interview', 'offer', 'rejected']).optional(),
   acceptanceLevel: z.number().int().min(0).max(100).optional(),
   companyName: z.string().optional(),
   notes: z.string().optional(),

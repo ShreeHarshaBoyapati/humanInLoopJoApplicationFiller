@@ -18,6 +18,35 @@ export const JOB_KEYS = {
   lists: () => [...JOB_KEYS.all, 'list'] as const,
 };
 
+const ACTIVE_STATUSES = ['draft', 'applied', 'interview'];
+
+const requiresListInvalidation = (previousStatus?: string, newStatus?: string): boolean => {
+  if (!previousStatus || !newStatus || previousStatus === newStatus) return false;
+
+  const previousIsActive = ACTIVE_STATUSES.includes(previousStatus);
+  const newIsActive = ACTIVE_STATUSES.includes(newStatus);
+
+  return previousIsActive !== newIsActive;
+};
+
+export const getStatusTransitionMessage = (
+  previousStatus?: string,
+  newStatus?: string
+): string | null => {
+  if (!previousStatus || !newStatus || previousStatus === newStatus) return null;
+
+  const previousIsActive = ACTIVE_STATUSES.includes(previousStatus);
+  const newIsActive = ACTIVE_STATUSES.includes(newStatus);
+
+  if (previousIsActive && !newIsActive) {
+    return 'Job moved to Archived';
+  }
+  if (!previousIsActive && newIsActive) {
+    return 'Job moved to Active';
+  }
+  return null;
+};
+
 export const useJobs = (params: UseJobsParams = {}) => {
   const { limit = 10, searchQuery = '', status, persona, favorite, sortBy, sortOrder } = params;
 
@@ -99,7 +128,7 @@ export const useUpdateJob = () => {
 
   return useMutation({
     mutationFn: async (data: UpdateJobInput) => {
-      const { invalidateQueries: _invalidate, ...apiData } = data;
+      const { invalidateQueries: _invalidate, previousStatus: _previousStatus, ...apiData } = data;
       try {
         const response = await axiosInstance.put<ApiResponse<Job>>('/job', apiData);
         if (!response.data.success || !response.data.data) {
@@ -117,7 +146,11 @@ export const useUpdateJob = () => {
       }
     },
     onSuccess: (updatedJob: Job, variables: UpdateJobInput) => {
-      if (variables.invalidateQueries) {
+      const shouldInvalidate =
+        variables.invalidateQueries ||
+        requiresListInvalidation(variables.previousStatus, variables.status);
+
+      if (shouldInvalidate) {
         queryClient.invalidateQueries({ queryKey: JOB_KEYS.lists() });
       } else {
         queryClient.setQueriesData(

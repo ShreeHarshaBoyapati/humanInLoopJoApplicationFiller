@@ -13,7 +13,7 @@ import Event from './event.js';
 import Persona from './persona.js';
 import type { JobStatus } from '@repo/shared-types';
 
-export type StatusUpdatedAtKey = Exclude<JobStatus, 'active'>;
+export type StatusUpdatedAtKey = JobStatus;
 
 export type StatusUpdatedAtMap = Record<StatusUpdatedAtKey, Date | null>;
 

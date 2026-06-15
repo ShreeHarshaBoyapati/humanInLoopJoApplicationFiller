@@ -42,8 +42,6 @@ export const JobTrackerCard = ({
     e.stopPropagation();
   };
 
-  const isArchived = ['archived', 'rejected'].includes(job.status.toLowerCase());
-
   const handleCardClick = () => {
     if (onClick) {
       onClick(job);
@@ -96,28 +94,27 @@ export const JobTrackerCard = ({
       </div>
 
       {/* Section 3: Status Stepper */}
-      {!isArchived && (
-        <div className={styles.statusSection} onClick={handleStatusSectionClick}>
-          <div className={styles.stepperWrapper}>
-            <EnhancedStepper
-              steps={statusSteps}
-              activeStep={activeStep}
-              disabled={isLoading}
-              onStepClick={handleStepClick}
-              customProps={{
-                childProps: {
-                  stepConnector: {
-                    sx: {
-                      left: `calc(-50% + 4px)`,
-                      right: `calc(50% + 4px)`,
-                    },
+
+      <div className={styles.statusSection} onClick={handleStatusSectionClick}>
+        <div className={styles.stepperWrapper}>
+          <EnhancedStepper
+            steps={statusSteps}
+            activeStep={activeStep}
+            disabled={isLoading}
+            onStepClick={handleStepClick}
+            customProps={{
+              childProps: {
+                stepConnector: {
+                  sx: {
+                    left: `calc(-50% + 4px)`,
+                    right: `calc(50% + 4px)`,
                   },
                 },
-              }}
-            />
-          </div>
+              },
+            }}
+          />
         </div>
-      )}
+      </div>
     </div>
   );
 };

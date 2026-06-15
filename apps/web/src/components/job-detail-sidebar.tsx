@@ -2,7 +2,6 @@ import { useState } from 'react';
 import CloseIcon from '@mui/icons-material/Close';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
-import ArchiveIcon from '@mui/icons-material/Archive';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { EnhancedButton } from '@repo/ui';
 import type { Job } from '@repo/shared-types';
@@ -60,24 +59,6 @@ export function JobDetailSidebar({ job: initialJob, onClose }: JobDetailSidebarP
         },
         onError: (error) => {
           showSnackbar(error instanceof Error ? error.message : 'Failed to update favorite', {
-            severity: 'error',
-          });
-        },
-      }
-    );
-  };
-
-  const handleArchiveClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    updateJob.mutate(
-      { id: localJob.id, status: 'archived', invalidateQueries: true },
-      {
-        onSuccess: () => {
-          showSnackbar('Job archived successfully', { severity: 'success' });
-          onClose();
-        },
-        onError: (error) => {
-          showSnackbar(error instanceof Error ? error.message : 'Failed to archive job', {
             severity: 'error',
           });
         },
@@ -152,13 +133,6 @@ export function JobDetailSidebar({ job: initialJob, onClose }: JobDetailSidebarP
                     <FavoriteBorderIcon sx={{ fontSize: '1rem' }} />
                   )
                 }
-              />
-              <EnhancedButton
-                label="Archive"
-                colorTheme="secondary"
-                onClick={handleArchiveClick}
-                disabled={updateJob.isPending}
-                startIcon={<ArchiveIcon sx={{ fontSize: '1rem' }} />}
               />
               <EnhancedButton
                 label="Delete"

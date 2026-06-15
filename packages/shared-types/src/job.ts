@@ -55,19 +55,14 @@ export interface JobList {
   };
 }
 
-export type JobStatus =
-  | 'draft'
-  | 'applied'
-  | 'interview'
-  | 'offer'
-  | 'rejected'
-  | 'active'
-  | 'archived';
+export type JobStatus = 'draft' | 'applied' | 'interview' | 'offer' | 'rejected';
+
+export type JobFilterStatus = JobStatus | 'active' | 'archived';
 
 export interface GetJobParams {
   page?: number;
   limit?: number;
-  status?: JobStatus;
+  status?: JobFilterStatus;
   persona?: string;
   search?: string;
   sortBy?: 'createdAt' | 'updatedAt' | 'acceptanceLevel';
@@ -123,6 +118,7 @@ export interface UpdateJobInput {
   keySkills?: string[];
   persona?: string;
   status?: string;
+  previousStatus?: string;
   notes?: string;
   favorite?: boolean;
   primaryResultId?: string | null;
