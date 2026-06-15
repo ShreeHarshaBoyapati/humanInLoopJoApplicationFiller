@@ -88,6 +88,7 @@
   display: flex;
   flex-direction: column;
   gap: calc(var(--spacing) * 1);
+  margin-bottom: calc(var(--spacing) * 4);
   max-width: 1000px;
   width: 100%;
 }
@@ -105,12 +106,20 @@
   flex: 1;
   flex-direction: column;
   gap: calc(var(--spacing) * 2);
-  max-width: 200px;
+  max-width: none;
+  min-width: 0;
 }
 
 .searchWrapper {
-  flex: 1;
-  max-width: 400px;
+  flex: 2;
+  max-width: none;
+  min-width: 0;
+}
+
+.searchWrapperFullWidth [class*='searchBox'],
+.searchWrapperFullWidth [class*='searchContainer'] {
+  max-width: none;
+  width: 100%;
 }
 
 .favoriteToggleButton {
@@ -121,6 +130,7 @@
   color: var(--white-700);
   cursor: pointer;
   display: flex;
+  flex-shrink: 0;
   height: 38px;
   justify-content: center;
   transition: all 0.2s ease;
@@ -146,26 +156,41 @@
   outline: none;
 }
 
-/* Tablet and smaller screens - full width */
+.mobileCalendarWrapper {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden auto;
+  width: 100%;
+}
+
+/* Tablet and smaller screens - calendar shown via tab, single full-width pane */
 @media (width <=1024px) {
-  .filtersRow {
-    flex-wrap: wrap;
+  .splitLayout {
+    flex-direction: column;
+    gap: 0;
+    max-width: none;
+  }
+
+  .leftPane {
+    flex: 1 1 auto;
+    max-width: none;
+    min-height: 0;
+    overflow: hidden;
     width: 100%;
   }
 
-  .filterGroup {
+  .tabsContainer {
     max-width: none;
   }
 
-  .searchWrapper {
+  .filtersContainer {
     max-width: none;
   }
-}
 
-/* Mobile responsive styles */
-@media (width <=768px) {
   .filtersRow {
-    align-items: stretch;
-    flex-direction: column;
+    max-width: none;
   }
 }

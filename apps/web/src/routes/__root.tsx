@@ -114,7 +114,9 @@ function RootComponent() {
 
   return (
     <div className={styles.layoutWrapper}>
-      {isAuthenticated && !isPublicRoute && <HomePageBanner onLogout={handleLogout} />}
+      {isAuthenticated && !isPublicRoute && (
+        <HomePageBanner onLogout={handleLogout} pathname={pathname} />
+      )}
       <main className={styles.mainContent}>
         <Outlet />
       </main>

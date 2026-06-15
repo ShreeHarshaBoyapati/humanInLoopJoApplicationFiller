@@ -144,7 +144,7 @@
 }
 
 /* Mobile responsive styles */
-@media (width <=768px) {
+@media (width <=1024px) {
   .jobCard {
     align-items: flex-start;
     flex-direction: column;

@@ -14,11 +14,12 @@ const TABS: Array<{ id: string; label: string; route?: string }> = [
 
 interface HomePageBannerProps {
   onLogout: () => void;
+  pathname: string;
 }
 
-export function HomePageBanner({ onLogout }: HomePageBannerProps) {
+export function HomePageBanner({ onLogout, pathname }: HomePageBannerProps) {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<string>('persona-resumes');
+  const activeTab = TABS.find((tab) => tab.route === pathname)?.id ?? '';
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
@@ -49,7 +50,6 @@ export function HomePageBanner({ onLogout }: HomePageBannerProps) {
             key={tab.id}
             className={activeTab === tab.id ? styles.tabActive : styles.tab}
             onClick={() => {
-              setActiveTab(tab.id);
               if (tab.route) {
                 navigate({ to: tab.route });
               }

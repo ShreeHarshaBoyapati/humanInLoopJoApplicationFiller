@@ -4,7 +4,7 @@
   border-bottom: 1px solid var(--grey-700);
   display: flex;
   justify-content: space-between;
-  padding: calc(var(--spacing) * 4) calc(var(--spacing) * 6);
+  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 4);
   width: 100%;
 }
 

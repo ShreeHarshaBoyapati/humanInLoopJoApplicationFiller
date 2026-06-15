@@ -174,7 +174,7 @@ export function AddApplicationModal({ isOpen, onClose, onSuccess }: AddApplicati
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      headerTitle="Add Application"
+      headerTitle="Add Job"
       customProps={{
         childProps: {
           body: {

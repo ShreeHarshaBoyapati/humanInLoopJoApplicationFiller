@@ -20,7 +20,7 @@ import styles from './style/job-tracker-section.module.css';
 import sectionStyles from '../routes/style/section.module.css';
 import scrollbarStyles from '@repo/ui/scroll-bar.module.css';
 
-type TabType = 'active' | 'archived';
+type TabType = 'active' | 'archived' | 'calendar';
 
 const STATUS_STEPS = ['Draft', 'Applied', 'Interview', 'Offer', 'Rejected'];
 
@@ -35,8 +35,14 @@ const SORT_ORDER_OPTIONS = [
   { value: 'ASC', label: 'Ascending' },
 ];
 
+const MOBILE_BREAKPOINT = 1024;
+
 export function JobTrackerSection() {
   const [activeTab, setActiveTab] = useState<TabType>('active');
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth <= MOBILE_BREAKPOINT;
+  });
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedPersona, setSelectedPersona] = useState('');
@@ -54,6 +60,20 @@ export function JobTrackerSection() {
   const updateJob = useUpdateJob();
   const showSnackbar = useStore((state) => state.showSnackbar);
   useEnsureTaskTag();
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= MOBILE_BREAKPOINT);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobile && activeTab === 'calendar') {
+      setActiveTab('active');
+    }
+  }, [isMobile, activeTab]);
 
   // Fetch personas for the dropdown with search
   const { data: personasData } = usePersonas(50, debouncedPersonaSearch);
@@ -75,7 +95,7 @@ export function JobTrackerSection() {
   }, [personaSearchQuery]);
 
   // Determine status filter based on tab
-  const statusFilter = activeTab === 'active' ? 'active' : 'archived';
+  const statusFilter = activeTab === 'archived' ? 'archived' : 'active';
 
   const {
     data,
@@ -267,6 +287,17 @@ export function JobTrackerSection() {
     setSelectedJob(null);
   }, []);
 
+  const handleTabClick = (tab: TabType) => {
+    setActiveTab(tab);
+    if (tab !== 'calendar') {
+      setSearchQuery('');
+      setDebouncedSearch('');
+    }
+  };
+
+  const showJobList = !isMobile || activeTab !== 'calendar';
+  const showCalendarInMain = isMobile && activeTab === 'calendar';
+
   return (
     <div className={`${sectionStyles.sectionContainer} ${scrollbarStyles.scrollbarContainer}`}>
       <div className={styles.splitLayout}>
@@ -274,7 +305,7 @@ export function JobTrackerSection() {
           {/* Header */}
           <PageHeader
             title="Job Tracker"
-            buttonLabel="Add Application"
+            buttonLabel="Add Job"
             onButtonClick={handleAddApplication}
             buttonIcon={<AddIcon fontSize="small" />}
             headerProps={{ style: { width: '100%' } }}
@@ -284,139 +315,154 @@ export function JobTrackerSection() {
             <button
               type="button"
               className={`${styles.tab} ${activeTab === 'active' ? styles.active : ''}`}
-              onClick={() => {
-                setActiveTab('active');
-                setSearchQuery('');
-                setDebouncedSearch('');
-              }}
+              onClick={() => handleTabClick('active')}
             >
               Active
             </button>
             <button
               type="button"
               className={`${styles.tab} ${activeTab === 'archived' ? styles.active : ''}`}
-              onClick={() => {
-                setActiveTab('archived');
-                setSearchQuery('');
-                setDebouncedSearch('');
-              }}
+              onClick={() => handleTabClick('archived')}
             >
               Archived
             </button>
-          </div>
-
-          {/* Filters Row */}
-          <div className={styles.filtersContainer}>
-            <div className={styles.filtersRow}>
-              <div className={styles.searchWrapper}>
-                <SearchBar
-                  placeholder="Search jobs..."
-                  value={searchQuery}
-                  onChange={setSearchQuery}
-                />
-              </div>
-              <div className={styles.filterGroup}>
-                <EnhancedAutocompleteDropdown
-                  id="persona-filter"
-                  testId="persona-filter"
-                  placeholder="Search personas..."
-                  options={personaOptions as AutocompleteOption[]}
-                  value={selectedPersonaOption}
-                  onChange={(newValue) => {
-                    setSelectedPersonaOption(newValue);
-                    setSelectedPersona((newValue?.value as string) || '');
-                  }}
-                  onInputChange={(inputValue) => {
-                    setPersonaSearchQuery(inputValue);
-                  }}
-                />
-              </div>
-            </div>
-            <div className={styles.filtersRow}>
-              <div className={styles.filterGroup}>
-                <EnhancedSelectDropdown
-                  id="sort-by"
-                  testId="sort-by"
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as string)}
-                  options={SORT_OPTIONS}
-                />
-              </div>
-              <div className={styles.filterGroup}>
-                <EnhancedSelectDropdown
-                  id="sort-order"
-                  testId="sort-order"
-                  value={sortOrder}
-                  onChange={(e) => setSortOrder(e.target.value as string)}
-                  options={SORT_ORDER_OPTIONS}
-                />
-              </div>
+            {isMobile && (
               <button
                 type="button"
-                className={`${styles.favoriteToggleButton} ${showFavoritesOnly ? styles.active : ''}`}
-                onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                className={`${styles.tab} ${activeTab === 'calendar' ? styles.active : ''}`}
+                onClick={() => handleTabClick('calendar')}
               >
-                {showFavoritesOnly ? (
-                  <FavoriteIcon sx={{ fontSize: '1.25rem' }} />
-                ) : (
-                  <FavoriteBorderIcon sx={{ fontSize: '1.25rem' }} />
-                )}
+                Calendar
               </button>
-            </div>
+            )}
           </div>
 
-          {/* Job Cards List */}
-          {isLoading ? (
-            <p className={sectionStyles.loadingText}>Loading jobs...</p>
-          ) : jobs.length === 0 ? (
-            <p className={sectionStyles.emptyText}>No jobs found</p>
-          ) : (
-            <div
-              className={`${sectionStyles.scrollContainer} ${scrollbarStyles.scrollbarVerticalContainer}`}
-              ref={scrollContainerRef}
-            >
-              <div ref={topSentinelRef} className={sectionStyles.sentinel} />
-
-              <div className={sectionStyles.itemList}>
-                {jobs.map((job: Job) => (
-                  <JobTrackerCard
-                    key={job.id}
-                    job={job}
-                    statusSteps={STATUS_STEPS}
-                    isLoading={updateJob.isPending && updateJob.variables?.id === job.id}
-                    onFavoriteToggle={handleFavoriteToggle}
-                    onStatusChange={handleStatusChange}
-                    onClick={handleJobClick}
-                  />
-                ))}
+          {showJobList && (
+            <>
+              {/* Filters Row */}
+              <div className={styles.filtersContainer}>
+                <div className={styles.filtersRow}>
+                  <div className={`${styles.searchWrapper} ${styles.searchWrapperFullWidth}`}>
+                    <SearchBar
+                      placeholder="Search jobs..."
+                      value={searchQuery}
+                      onChange={setSearchQuery}
+                    />
+                  </div>
+                  <div className={styles.filterGroup}>
+                    <EnhancedAutocompleteDropdown
+                      id="persona-filter"
+                      testId="persona-filter"
+                      placeholder="Search personas..."
+                      options={personaOptions as AutocompleteOption[]}
+                      value={selectedPersonaOption}
+                      onChange={(newValue) => {
+                        setSelectedPersonaOption(newValue);
+                        setSelectedPersona((newValue?.value as string) || '');
+                      }}
+                      onInputChange={(inputValue) => {
+                        setPersonaSearchQuery(inputValue);
+                      }}
+                    />
+                  </div>
+                </div>
+                <div className={styles.filtersRow}>
+                  <div className={styles.filterGroup}>
+                    <EnhancedSelectDropdown
+                      id="sort-by"
+                      testId="sort-by"
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value as string)}
+                      options={SORT_OPTIONS}
+                    />
+                  </div>
+                  <div className={styles.filterGroup}>
+                    <EnhancedSelectDropdown
+                      id="sort-order"
+                      testId="sort-order"
+                      value={sortOrder}
+                      onChange={(e) => setSortOrder(e.target.value as string)}
+                      options={SORT_ORDER_OPTIONS}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className={`${styles.favoriteToggleButton} ${showFavoritesOnly ? styles.active : ''}`}
+                    onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
+                  >
+                    {showFavoritesOnly ? (
+                      <FavoriteIcon sx={{ fontSize: '1.25rem' }} />
+                    ) : (
+                      <FavoriteBorderIcon sx={{ fontSize: '1.25rem' }} />
+                    )}
+                  </button>
+                </div>
               </div>
 
-              <div ref={bottomSentinelRef} className={sectionStyles.sentinel} />
+              {/* Job Cards List */}
+              {isLoading ? (
+                <p className={sectionStyles.loadingText}>Loading jobs...</p>
+              ) : jobs.length === 0 ? (
+                <p className={sectionStyles.emptyText}>No jobs found</p>
+              ) : (
+                <div
+                  className={`${sectionStyles.scrollContainer} ${scrollbarStyles.scrollbarVerticalContainer}`}
+                  ref={scrollContainerRef}
+                >
+                  <div ref={topSentinelRef} className={sectionStyles.sentinel} />
 
-              {(isFetchingNextPage || isFetchingPreviousPage) && (
-                <p className={sectionStyles.loadingText}>Loading...</p>
+                  <div className={sectionStyles.itemList}>
+                    {jobs.map((job: Job) => (
+                      <JobTrackerCard
+                        key={job.id}
+                        job={job}
+                        statusSteps={STATUS_STEPS}
+                        isLoading={updateJob.isPending && updateJob.variables?.id === job.id}
+                        onFavoriteToggle={handleFavoriteToggle}
+                        onStatusChange={handleStatusChange}
+                        onClick={handleJobClick}
+                      />
+                    ))}
+                  </div>
+
+                  <div ref={bottomSentinelRef} className={sectionStyles.sentinel} />
+
+                  {(isFetchingNextPage || isFetchingPreviousPage) && (
+                    <p className={sectionStyles.loadingText}>Loading...</p>
+                  )}
+                </div>
               )}
-            </div>
+
+              {/* Error state with retry button */}
+              {isError && (
+                <div className={sectionStyles.errorContainer}>
+                  <p className={sectionStyles.errorText}>Failed to load jobs. Please try again.</p>
+                  <EnhancedButton
+                    label="Retry"
+                    colorTheme="secondary"
+                    size="small"
+                    onClick={() => refetch()}
+                    startIcon={<RefreshIcon fontSize="small" />}
+                  />
+                </div>
+              )}
+            </>
           )}
 
-          {/* Error state with retry button */}
-          {isError && (
-            <div className={sectionStyles.errorContainer}>
-              <p className={sectionStyles.errorText}>Failed to load jobs. Please try again.</p>
-              <EnhancedButton
-                label="Retry"
-                colorTheme="secondary"
-                size="small"
-                onClick={() => refetch()}
-                startIcon={<RefreshIcon fontSize="small" />}
-              />
+          {showCalendarInMain && (
+            <div
+              className={`${styles.mobileCalendarWrapper} ${scrollbarStyles.scrollbarVerticalContainer}`}
+            >
+              <BigCalendarPanel />
             </div>
           )}
         </div>
 
-        <div className={styles.rightPane}>
-          <BigCalendarPanel />
-        </div>
+        {!isMobile && (
+          <div className={`${styles.rightPane} ${scrollbarStyles.scrollbarVerticalContainer}`}>
+            <BigCalendarPanel />
+          </div>
+        )}
       </div>
 
       {/* Add Application Modal */}
