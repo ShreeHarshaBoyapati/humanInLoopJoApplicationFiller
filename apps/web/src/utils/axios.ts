@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { clearTokenAuth } from './auth-sync';
+import { getRealtimeClientId } from '../realtime/realtime-client';
 
 const API_URL = import.meta.env.VITE_WEB_BACKENDAPI || '';
 
@@ -11,9 +12,13 @@ export const axiosInstance = axios.create({
   withCredentials: true,
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add realtime client id
 axiosInstance.interceptors.request.use(
   (config) => {
+    const clientId = getRealtimeClientId();
+    if (clientId) {
+      config.headers['X-Realtime-Client-Id'] = clientId;
+    }
     return config;
   },
   (error) => {

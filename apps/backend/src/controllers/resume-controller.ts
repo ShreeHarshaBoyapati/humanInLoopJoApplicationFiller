@@ -14,7 +14,7 @@ import { ILike } from 'typeorm';
 import { ApiResponse } from '@repo/shared-types';
 import { logger } from '../utils/index.js';
 import * as wsHub from '../realtime/ws-hub.js';
-import { resumeToMetadata } from '../realtime/payload-mappers.js';
+import { resumeToMetadata, versionToMetadata } from '../realtime/payload-mappers.js';
 import type {
   ResumeMetadata,
   ResumeWithVersions,
@@ -71,12 +71,15 @@ class ResumeController {
       return;
     }
 
-    const existingResumesCount = await resumeRepository.count({
-      where: { persona: { id: personaId }, isDeleted: false },
+    const activeResumesCount = await resumeRepository.count({
+      where: {
+        persona: { user: { id: userId } },
+        active: true,
+        isDeleted: false,
+      },
     });
 
-    // If no resumes exist for this persona, this resume will be active
-    const isActive = existingResumesCount === 0;
+    const isActive = activeResumesCount === 0;
 
     const resume = resumeRepository.create({
       fileName,
@@ -91,7 +94,7 @@ class ResumeController {
       file: Buffer.from(file.base64, 'base64'),
       fileSize: file.size,
       keywords: keywords || [],
-      active: true,
+      active: isActive,
       versionName: 'v1',
       parsedData: parsedData || null,
       comment: comment || null,
@@ -100,8 +103,28 @@ class ResumeController {
 
     await versionRepository.save(version);
 
-    wsHub.emit(userId, 'resume', 'create', resume.id);
-    wsHub.emit(userId, 'resume-version', 'create', version.id);
+    const personaResumesCount = await resumeRepository.count({
+      where: { persona: { id: personaId }, isDeleted: false },
+    });
+
+    wsHub.emit(
+      userId,
+      'resume',
+      'create',
+      resume.id,
+      undefined,
+      [{ personaId }, { id: personaId, resumesCount: personaResumesCount }],
+      req.realtimeClientId
+    );
+    wsHub.emit(
+      userId,
+      'resume-version',
+      'create',
+      version.id,
+      versionToMetadata(version, resume.fileName, resume.id, personaId),
+      undefined,
+      req.realtimeClientId
+    );
 
     const data: ApiResponse<ResumeMetadata & { fileSize: number }> = {
       success: true,
@@ -166,7 +189,15 @@ class ResumeController {
 
     await resumeRepository.save(resume);
 
-    wsHub.emit(userId, 'resume', 'update', resume.id, resumeToMetadata(resume));
+    wsHub.emit(
+      userId,
+      'resume',
+      'update',
+      resume.id,
+      resumeToMetadata(resume),
+      undefined,
+      req.realtimeClientId
+    );
 
     const data: ApiResponse<ResumeMetadata> = {
       success: true,
@@ -212,7 +243,7 @@ class ResumeController {
       return;
     }
 
-    if (req.destroyed || res.closed) {
+    if (req.clientAborted) {
       logger.info({ id: resume.id }, 'Delete resume aborted by client; skipping DB write');
       return;
     }
@@ -236,9 +267,18 @@ class ResumeController {
       })
     );
 
-    wsHub.emit(userId, 'resume', 'delete', resume.id, undefined, [
-      { id: resume.persona.id, resumesCount: Math.max(0, remainingResumesCount - 1) },
-    ]);
+    wsHub.emit(
+      userId,
+      'resume',
+      'delete',
+      resume.id,
+      undefined,
+      [
+        { id: resume.persona.id, resumesCount: Math.max(0, remainingResumesCount - 1) },
+        { personaId: resume.persona.id, resumeId: resume.id },
+      ],
+      req.realtimeClientId
+    );
 
     const data: ApiResponse = {
       success: true,
@@ -262,35 +302,100 @@ class ResumeController {
     const limitNum = parseInt(limitParam as string, 10) || 10;
     const searchQuery = search ? (search as string).trim() : '';
 
-    // Helper function to build resume list item for a single resume
-    const buildResumeListItem = async (resume: {
-      id: string;
-      fileName: string;
-      active: boolean;
-      updatedAt: Date;
-    }): Promise<PaginatedResumeListItem> => {
-      const versionsCount = await versionRepository
-        .createQueryBuilder('version')
-        .where('version.resumeId = :resumeId', { resumeId: resume.id })
-        .andWhere('version.isDeleted = :isDeleted', { isDeleted: false })
-        .getCount();
+    // Batch helpers to avoid O(N) sequential queries when building the list.
+    const getVersionsCountByResumeIds = async (
+      resumeIds: string[]
+    ): Promise<Map<string, number>> => {
+      const counts = new Map<string, number>();
+      if (resumeIds.length === 0) return counts;
 
-      const activeVersion = await versionRepository
-        .createQueryBuilder('version')
-        .select(['version.fileSize'])
-        .where('version.resumeId = :resumeId', { resumeId: resume.id })
-        .andWhere('version.active = :active', { active: true })
-        .andWhere('version.isDeleted = :isDeleted', { isDeleted: false })
-        .getOne();
+      for (const id of resumeIds) {
+        counts.set(id, 0);
+      }
 
-      return {
+      const batches: string[][] = [];
+      for (let i = 0; i < resumeIds.length; i += 25) {
+        batches.push(resumeIds.slice(i, i + 25));
+      }
+
+      const batchResults = await Promise.all(
+        batches.map(async (batch) => {
+          const rows = (await versionRepository
+            .createQueryBuilder('version')
+            .select('version.resumeId', 'resumeId')
+            .addSelect('COUNT(version.id)', 'count')
+            .where('version.resumeId IN (:...batch)', { batch })
+            .andWhere('version.isDeleted = :isDeleted', { isDeleted: false })
+            .groupBy('version.resumeId')
+            .getRawMany()) as Array<{ resumeId: string; count: string }>;
+          return rows;
+        })
+      );
+
+      for (const rows of batchResults) {
+        for (const row of rows) {
+          counts.set(row.resumeId, parseInt(row.count, 10));
+        }
+      }
+
+      return counts;
+    };
+
+    const getActiveVersionFileSizesByResumeIds = async (
+      resumeIds: string[]
+    ): Promise<Map<string, number | null>> => {
+      const fileSizes = new Map<string, number | null>();
+      if (resumeIds.length === 0) return fileSizes;
+
+      for (const id of resumeIds) {
+        fileSizes.set(id, null);
+      }
+
+      const batches: string[][] = [];
+      for (let i = 0; i < resumeIds.length; i += 25) {
+        batches.push(resumeIds.slice(i, i + 25));
+      }
+
+      const batchResults = await Promise.all(
+        batches.map(async (batch) => {
+          const rows = (await versionRepository
+            .createQueryBuilder('version')
+            .select('version.resumeId', 'resumeId')
+            .addSelect('version.fileSize', 'fileSize')
+            .where('version.resumeId IN (:...batch)', { batch })
+            .andWhere('version.active = :active', { active: true })
+            .andWhere('version.isDeleted = :isDeleted', { isDeleted: false })
+            .getRawMany()) as Array<{ resumeId: string; fileSize: number }>;
+          return rows;
+        })
+      );
+
+      for (const rows of batchResults) {
+        for (const row of rows) {
+          fileSizes.set(row.resumeId, row.fileSize);
+        }
+      }
+
+      return fileSizes;
+    };
+
+    const buildResumeListItems = async (
+      resumes: Array<{ id: string; fileName: string; active: boolean; updatedAt: Date }>
+    ): Promise<PaginatedResumeListItem[]> => {
+      const ids = resumes.map((r) => r.id);
+      const [versionsCounts, activeVersionFileSizes] = await Promise.all([
+        getVersionsCountByResumeIds(ids),
+        getActiveVersionFileSizesByResumeIds(ids),
+      ]);
+
+      return resumes.map((resume) => ({
         id: resume.id,
         fileName: resume.fileName,
         active: resume.active,
-        versionsCount,
-        activeVersionFileSize: activeVersion?.fileSize ?? null,
+        versionsCount: versionsCounts.get(resume.id) ?? 0,
+        activeVersionFileSize: activeVersionFileSizes.get(resume.id) ?? null,
         updatedAt: resume.updatedAt,
-      };
+      }));
     };
 
     const buildBaseWhereClause = (includeSearch: boolean = true) => {
@@ -319,7 +424,7 @@ class ResumeController {
         take: limitNum,
       });
 
-      const items = await Promise.all(resumes.map(buildResumeListItem));
+      const items = await buildResumeListItems(resumes);
 
       const paginatedResponse: PaginatedResumeResponse = {
         items,
@@ -360,10 +465,6 @@ class ResumeController {
         where: activeResumeWhere,
       });
 
-      if (activeResume) {
-        items.push(await buildResumeListItem(activeResume));
-      }
-
       // Get non-active resumes
       const whereClause = { ...buildBaseWhereClause(false), active: false };
       const nonActiveResumes = await resumeRepository.find({
@@ -372,9 +473,8 @@ class ResumeController {
         take: activeResume ? limitNum - 1 : limitNum,
       });
 
-      for (const resume of nonActiveResumes) {
-        items.push(await buildResumeListItem(resume));
-      }
+      const pageResumes = activeResume ? [activeResume, ...nonActiveResumes] : nonActiveResumes;
+      items.push(...(await buildResumeListItems(pageResumes)));
     } else {
       // For pages after 1, check if there's an active resume to adjust skip (exclude soft-deleted)
       const activeResumeWhere: Record<string, unknown> = {
@@ -400,9 +500,7 @@ class ResumeController {
         take: limitNum,
       });
 
-      for (const resume of nonActiveResumes) {
-        items.push(await buildResumeListItem(resume));
-      }
+      items.push(...(await buildResumeListItems(nonActiveResumes)));
     }
 
     const paginatedResponse: PaginatedResumeResponse = {

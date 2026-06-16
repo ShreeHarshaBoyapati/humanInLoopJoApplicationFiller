@@ -82,6 +82,11 @@ export function applyRealtimeEventToCache(
     }
     if (event.action === 'create' || event.action === 'branch') {
       void deps.invalidateResumes();
+      for (const c of countUpdates) {
+        if (c.resumesCount !== undefined) {
+          void deps.patchPersonaCount(c.id, c.resumesCount);
+        }
+      }
       return;
     }
     if (event.action === 'delete') {

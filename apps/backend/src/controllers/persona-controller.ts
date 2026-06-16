@@ -20,6 +20,45 @@ import { logger } from '../utils/index.js';
 import * as wsHub from '../realtime/ws-hub.js';
 import { personaToMetadata } from '../realtime/payload-mappers.js';
 
+const COUNT_BATCH_SIZE = 25;
+
+async function getResumesCountByPersonaIds(personaIds: string[]): Promise<Map<string, number>> {
+  const resumeRepository = getResumeRepository();
+  const counts = new Map<string, number>();
+  if (personaIds.length === 0) return counts;
+
+  for (const id of personaIds) {
+    counts.set(id, 0);
+  }
+
+  const batches: string[][] = [];
+  for (let i = 0; i < personaIds.length; i += COUNT_BATCH_SIZE) {
+    batches.push(personaIds.slice(i, i + COUNT_BATCH_SIZE));
+  }
+
+  const batchResults = await Promise.all(
+    batches.map(async (batch) => {
+      const rows = (await resumeRepository
+        .createQueryBuilder('resume')
+        .select('resume.personaId', 'personaId')
+        .addSelect('COUNT(resume.id)', 'count')
+        .where('resume.personaId IN (:...batch)', { batch })
+        .andWhere('resume.isDeleted = :isDeleted', { isDeleted: false })
+        .groupBy('resume.personaId')
+        .getRawMany()) as Array<{ personaId: string; count: string }>;
+      return rows;
+    })
+  );
+
+  for (const rows of batchResults) {
+    for (const row of rows) {
+      counts.set(row.personaId, parseInt(row.count, 10));
+    }
+  }
+
+  return counts;
+}
+
 class PersonaController {
   async create(req: AuthenticatedTypedRequest<CreatePersonaInput>, res: Response) {
     const personaRepository = getPersonaRepository();
@@ -54,7 +93,7 @@ class PersonaController {
 
     await personaRepository.save(persona);
 
-    wsHub.emit(userId, 'persona', 'create', persona.id);
+    wsHub.emit(userId, 'persona', 'create', persona.id, undefined, undefined, req.realtimeClientId);
 
     const data: ApiResponse<Persona> = {
       success: true,
@@ -119,7 +158,15 @@ class PersonaController {
 
     await personaRepository.save(persona);
 
-    wsHub.emit(userId, 'persona', 'update', persona.id, personaToMetadata(persona));
+    wsHub.emit(
+      userId,
+      'persona',
+      'update',
+      persona.id,
+      personaToMetadata(persona),
+      undefined,
+      req.realtimeClientId
+    );
 
     const data: ApiResponse<Persona> = {
       success: true,
@@ -165,7 +212,7 @@ class PersonaController {
       return;
     }
 
-    if (req.destroyed || res.closed) {
+    if (req.clientAborted) {
       logger.info({ id: persona.id }, 'Delete persona aborted by client; skipping DB write');
       return;
     }
@@ -200,7 +247,7 @@ class PersonaController {
       })
     );
 
-    wsHub.emit(userId, 'persona', 'delete', persona.id);
+    wsHub.emit(userId, 'persona', 'delete', persona.id, undefined, undefined, req.realtimeClientId);
 
     const data: ApiResponse = {
       success: true,
@@ -227,15 +274,18 @@ class PersonaController {
         title: ILike(`%${searchQuery}%`),
         isDeleted: false,
       };
-      const total = await personaRepository.count({ where: whereClause });
 
-      const personas = await personaRepository.find({
-        where: whereClause,
-        relations: ['resumes'],
-        order: { createdAt: 'DESC' },
-        skip: (pageNum - 1) * limitNum,
-        take: limitNum,
-      });
+      const [total, personas] = await Promise.all([
+        personaRepository.count({ where: whereClause }),
+        personaRepository.find({
+          where: whereClause,
+          order: { createdAt: 'DESC' },
+          skip: (pageNum - 1) * limitNum,
+          take: limitNum,
+        }),
+      ]);
+
+      const counts = await getResumesCountByPersonaIds(personas.map((p) => p.id));
 
       for (const p of personas) {
         items.push({
@@ -243,7 +293,7 @@ class PersonaController {
           title: p.title,
           keywords: p.keywords,
           active: p.active,
-          resumesCount: p.resumes ? p.resumes.length : 0,
+          resumesCount: counts.get(p.id) ?? 0,
           createdAt: p.createdAt,
           updatedAt: p.updatedAt,
         });
@@ -269,10 +319,26 @@ class PersonaController {
     });
 
     if (pageNum === 1) {
-      const activePersona = await personaRepository.findOne({
-        where: { user: { id: userId }, active: true, isDeleted: false },
-        relations: ['resumes'],
-      });
+      const [activePersona, nonActivePersonas] = await Promise.all([
+        personaRepository.findOne({
+          where: { user: { id: userId }, active: true, isDeleted: false },
+        }),
+        personaRepository.find({
+          where: { user: { id: userId }, active: false, isDeleted: false },
+          order: { createdAt: 'DESC' },
+          take: limitNum,
+        }),
+      ]);
+
+      const visibleNonActivePersonas = activePersona
+        ? nonActivePersonas.slice(0, limitNum - 1)
+        : nonActivePersonas.slice(0, limitNum);
+
+      const personaIdsForCounts: string[] = [];
+      if (activePersona) personaIdsForCounts.push(activePersona.id);
+      for (const p of visibleNonActivePersonas) personaIdsForCounts.push(p.id);
+
+      const counts = await getResumesCountByPersonaIds(personaIdsForCounts);
 
       if (activePersona) {
         items.push({
@@ -280,26 +346,19 @@ class PersonaController {
           title: activePersona.title,
           keywords: activePersona.keywords,
           active: activePersona.active,
-          resumesCount: activePersona.resumes ? activePersona.resumes.length : 0,
+          resumesCount: counts.get(activePersona.id) ?? 0,
           createdAt: activePersona.createdAt,
           updatedAt: activePersona.updatedAt,
         });
       }
 
-      const nonActivePersonas = await personaRepository.find({
-        where: { user: { id: userId }, active: false, isDeleted: false },
-        relations: ['resumes'],
-        order: { createdAt: 'DESC' },
-        take: activePersona ? limitNum - 1 : limitNum,
-      });
-
-      for (const p of nonActivePersonas) {
+      for (const p of visibleNonActivePersonas) {
         items.push({
           id: p.id,
           title: p.title,
           keywords: p.keywords,
           active: p.active,
-          resumesCount: p.resumes ? p.resumes.length : 0,
+          resumesCount: counts.get(p.id) ?? 0,
           createdAt: p.createdAt,
           updatedAt: p.updatedAt,
         });
@@ -313,11 +372,12 @@ class PersonaController {
 
       const nonActivePersonas = await personaRepository.find({
         where: { user: { id: userId }, active: false, isDeleted: false },
-        relations: ['resumes'],
         order: { createdAt: 'DESC' },
-        skip: skip,
+        skip: Math.max(0, skip),
         take: limitNum,
       });
+
+      const counts = await getResumesCountByPersonaIds(nonActivePersonas.map((p) => p.id));
 
       for (const p of nonActivePersonas) {
         items.push({
@@ -325,7 +385,7 @@ class PersonaController {
           title: p.title,
           keywords: p.keywords,
           active: p.active,
-          resumesCount: p.resumes ? p.resumes.length : 0,
+          resumesCount: counts.get(p.id) ?? 0,
           createdAt: p.createdAt,
           updatedAt: p.updatedAt,
         });
@@ -352,7 +412,6 @@ class PersonaController {
 
     const persona = await personaRepository.findOne({
       where: { user: { id: userId }, active: true, isDeleted: false },
-      relations: ['resumes'],
     });
 
     if (!persona) {
@@ -364,6 +423,8 @@ class PersonaController {
       return;
     }
 
+    const counts = await getResumesCountByPersonaIds([persona.id]);
+
     const data: ApiResponse<Persona> = {
       success: true,
       data: {
@@ -371,7 +432,7 @@ class PersonaController {
         title: persona.title,
         keywords: persona.keywords,
         active: persona.active,
-        resumesCount: persona.resumes ? persona.resumes.length : 0,
+        resumesCount: counts.get(persona.id) ?? 0,
         createdAt: persona.createdAt,
         updatedAt: persona.updatedAt,
       },

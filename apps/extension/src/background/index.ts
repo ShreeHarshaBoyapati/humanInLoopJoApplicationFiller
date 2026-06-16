@@ -9,6 +9,7 @@ import { handlePersonaMessage } from './handlers/persona-handler.js';
 import { handleResumeMessage } from './handlers/resume-handler.js';
 import { handleAiMessage } from './handlers/ai-handler.js';
 import { RealtimeOwner } from '../realtime/realtime-owner.js';
+import { getRealtimeClientId } from '../realtime/realtime-client';
 
 console.log('Background service worker started');
 
@@ -47,6 +48,10 @@ api.interceptors.request.use(async (config) => {
 
   if (result.token) {
     config.headers.Authorization = `Bearer ${result.token}`;
+  }
+  const clientId = getRealtimeClientId();
+  if (clientId) {
+    config.headers['X-Realtime-Client-Id'] = clientId;
   }
   return config;
 });

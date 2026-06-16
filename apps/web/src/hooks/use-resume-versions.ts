@@ -10,6 +10,8 @@ import type {
   ViewDocumentResponse,
   PaginatedResumeResponse,
   PaginatedResultResponse,
+  PaginatedPersonasResponse,
+  Persona,
 } from '@repo/shared-types';
 import type { ApiResponse } from '@repo/shared-types';
 import { RESUME_KEYS } from './use-resumes.ts';
@@ -288,7 +290,40 @@ export const useBranchVersion = () => {
     },
     onSuccess: (_result: unknown, variables: BranchVersionParams) => {
       queryClient.invalidateQueries({
-        queryKey: VERSION_KEYS.byPersonaAndResume(variables.personaId, variables.resumeId),
+        queryKey: RESUME_KEYS.byPersona(variables.personaId),
+      });
+
+      const cachedPersonaQueries = queryClient.getQueriesData({
+        queryKey: PERSONA_KEYS.lists(),
+        exact: false,
+      });
+
+      cachedPersonaQueries.forEach(([queryKey, oldData]) => {
+        if (!oldData || typeof oldData !== 'object') return;
+
+        const cacheData = oldData as {
+          pages?: PaginatedPersonasResponse[];
+          pageParams?: number[];
+        };
+
+        if (!cacheData.pages || cacheData.pages.length === 0) return;
+
+        const updatedPages = cacheData.pages.map((page) => ({
+          ...page,
+          items: page.items.map((item: Persona) =>
+            item.id === variables.personaId
+              ? {
+                  ...item,
+                  resumesCount: (item.resumesCount ?? 0) + 1,
+                }
+              : item
+          ),
+        }));
+
+        queryClient.setQueryData(queryKey, {
+          pages: updatedPages,
+          pageParams: cacheData.pageParams,
+        });
       });
     },
   });
@@ -416,6 +451,44 @@ export const useCreateVersion = () => {
     ) => {
       queryClient.invalidateQueries({
         queryKey: VERSION_KEYS.byPersonaAndResume(variables.personaId, variables.resumeId),
+      });
+
+      const cachedResumeQueries = queryClient.getQueriesData({
+        queryKey: RESUME_KEYS.lists(),
+        exact: false,
+      });
+
+      cachedResumeQueries.forEach(([queryKey, oldData]) => {
+        const personaIdParam = queryKey.find(
+          (k) => k && typeof k === 'object' && 'personaId' in k
+        ) as { personaId: string } | undefined;
+
+        const personaIdFromQuery = personaIdParam?.personaId;
+        const personaMatches = !personaIdFromQuery || personaIdFromQuery === variables.personaId;
+
+        if (!personaMatches) return;
+        if (!oldData || typeof oldData !== 'object') return;
+
+        const cacheData = oldData as {
+          pages?: PaginatedResumeResponse[];
+          pageParams?: number[];
+        };
+
+        if (!cacheData.pages || cacheData.pages.length === 0) return;
+
+        const updatedPages = cacheData.pages.map((page) => ({
+          ...page,
+          items: page.items.map((item) =>
+            item.id === variables.resumeId
+              ? { ...item, versionsCount: item.versionsCount + 1 }
+              : item
+          ),
+        }));
+
+        queryClient.setQueryData(queryKey, {
+          pages: updatedPages,
+          pageParams: cacheData.pageParams,
+        });
       });
     },
   });

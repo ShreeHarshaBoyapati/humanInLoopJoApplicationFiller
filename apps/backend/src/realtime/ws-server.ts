@@ -13,6 +13,17 @@ function parsePath(reqUrl: string): string {
   return qIdx === -1 ? reqUrl : reqUrl.slice(0, qIdx);
 }
 
+function parseQuery(reqUrl: string): Record<string, string> {
+  const qIdx = reqUrl.indexOf('?');
+  if (qIdx === -1 || qIdx === reqUrl.length - 1) return {};
+  const params = new URLSearchParams(reqUrl.slice(qIdx + 1));
+  const result: Record<string, string> = {};
+  params.forEach((value, key) => {
+    result[key] = value;
+  });
+  return result;
+}
+
 function handleProtocols(protocols: Set<string>, _request: IncomingMessage): string | false {
   if (protocols.size === 1) {
     const only = protocols.values().next().value;
@@ -55,10 +66,11 @@ export function attachWebSocketServer(httpServer: HttpServer): WebSocketServer {
     );
   });
 
-  wss.on('connection', (ws: WebSocket, _req: IncomingMessage, client: { userId: string }) => {
+  wss.on('connection', (ws: WebSocket, req: IncomingMessage, client: { userId: string }) => {
     logger.info(`[ws] new connection user:${client.userId}`);
     const { userId } = client;
-    addClient(userId, ws);
+    const query = parseQuery(req.url ?? '');
+    addClient(userId, ws, query.clientId);
     console.log(`[ws] connected user:${userId} peerCount=${peerCount(userId)}`);
     sendHello(ws, userId);
 

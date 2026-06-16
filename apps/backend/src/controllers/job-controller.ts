@@ -229,7 +229,7 @@ class JobController {
       return;
     }
 
-    if (req.destroyed || res.closed) {
+    if (req.clientAborted) {
       logger.info({ id: job.id }, 'Delete job aborted by client; skipping DB write');
       return;
     }

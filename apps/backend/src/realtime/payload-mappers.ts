@@ -28,7 +28,12 @@ export function resumeToMetadata(r: Resume): ResumeMetadata {
   };
 }
 
-export function versionToMetadata(v: ResumeVersion, resumeFileName: string): ResumeVersionMetadata {
+export function versionToMetadata(
+  v: ResumeVersion,
+  resumeFileName: string,
+  resumeId?: string,
+  personaId?: string
+): ResumeVersionMetadata {
   return {
     id: v.id,
     fileName: resumeFileName,
@@ -40,5 +45,7 @@ export function versionToMetadata(v: ResumeVersion, resumeFileName: string): Res
     dataUpdatedAt: v.dataUpdatedAt,
     createdAt: v.createdAt,
     updatedAt: v.updatedAt,
+    resumeId,
+    personaId,
   };
 }

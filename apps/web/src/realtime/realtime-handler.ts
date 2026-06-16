@@ -59,6 +59,11 @@ interface CountUpdate {
   versionsCount?: number;
 }
 
+interface ScopeUpdate {
+  personaId: string;
+  resumeId?: string;
+}
+
 function isCountUpdate(value: unknown): value is CountUpdate {
   if (!value || typeof value !== 'object') return false;
   const obj = value as { id?: unknown; resumesCount?: unknown; versionsCount?: unknown };
@@ -66,6 +71,12 @@ function isCountUpdate(value: unknown): value is CountUpdate {
   if (obj.resumesCount !== undefined && typeof obj.resumesCount !== 'number') return false;
   if (obj.versionsCount !== undefined && typeof obj.versionsCount !== 'number') return false;
   return true;
+}
+
+function isScopeUpdate(value: unknown): value is ScopeUpdate {
+  if (!value || typeof value !== 'object') return false;
+  const obj = value as { personaId?: unknown; resumeId?: unknown };
+  return typeof obj.personaId === 'string';
 }
 
 function applyCountUpdates(qc: QueryClient, updates: ReadonlyArray<unknown>): void {
@@ -157,7 +168,7 @@ export function applyRealtimeEvent(qc: QueryClient, event: unknown): void {
       qc.invalidateQueries({ queryKey: PERSONA_KEYS.lists() });
       qc.removeQueries({ queryKey: RESUME_KEYS.byPersona(event.id), exact: false });
       qc.removeQueries({
-        queryKey: VERSION_KEYS.lists(),
+        queryKey: VERSION_KEYS.all,
         exact: false,
         predicate: (query) => hasPersonaIdSegment(query.queryKey, event.id),
       });
@@ -182,43 +193,70 @@ export function applyRealtimeEvent(qc: QueryClient, event: unknown): void {
       return;
     }
     if (event.action === 'create' || event.action === 'branch') {
-      qc.invalidateQueries({ queryKey: RESUME_KEYS.lists() });
+      const scopeUpdate = related.find(isScopeUpdate);
+      if (scopeUpdate) {
+        qc.invalidateQueries({ queryKey: RESUME_KEYS.byPersona(scopeUpdate.personaId) });
+      } else {
+        qc.invalidateQueries({ queryKey: RESUME_KEYS.lists() });
+      }
+      applyCountUpdates(qc, related);
       return;
     }
     if (event.action === 'delete') {
-      qc.invalidateQueries({ queryKey: RESUME_KEYS.lists() });
-      qc.removeQueries({
-        queryKey: VERSION_KEYS.lists(),
-        exact: false,
-        predicate: (query) => hasResumeIdSegment(query.queryKey, event.id),
-      });
+      const scopeUpdate = related.find(isScopeUpdate);
+      if (scopeUpdate && scopeUpdate.resumeId) {
+        qc.invalidateQueries({ queryKey: RESUME_KEYS.byPersona(scopeUpdate.personaId) });
+        qc.removeQueries({
+          queryKey: VERSION_KEYS.byPersonaAndResume(scopeUpdate.personaId, scopeUpdate.resumeId),
+          exact: false,
+        });
+      } else {
+        qc.invalidateQueries({ queryKey: RESUME_KEYS.lists() });
+        qc.removeQueries({
+          queryKey: VERSION_KEYS.all,
+          exact: false,
+          predicate: (query) => hasResumeIdSegment(query.queryKey, event.id),
+        });
+      }
       applyCountUpdates(qc, related);
       return;
     }
   }
 
   if (event.resource === 'resume-version') {
+    const versionData = event.data as unknown as ResumeVersionMetadata | undefined;
+
     if (event.action === 'update' || event.action === 'setActive') {
-      if (event.data) {
-        applyPatchFromData<ResumeVersionMetadata>(
-          qc,
-          VERSION_KEYS.lists(),
-          event.data as unknown as ResumeVersionMetadata
-        );
-      }
+      if (!versionData?.personaId || !versionData?.resumeId) return;
+      const versionScope = VERSION_KEYS.byPersonaAndResume(
+        versionData.personaId,
+        versionData.resumeId
+      );
+      applyPatchFromData<ResumeVersionMetadata>(qc, versionScope, versionData);
       applyPatchesToMatchingQueries<ResumeVersionMetadata>(
         qc,
-        VERSION_KEYS.lists(),
+        versionScope,
         related as unknown as ResumeVersionMetadata[]
       );
       return;
     }
     if (event.action === 'create' || event.action === 'branch') {
-      qc.invalidateQueries({ queryKey: VERSION_KEYS.lists() });
+      if (!versionData?.personaId || !versionData?.resumeId) return;
+      const versionScope = VERSION_KEYS.byPersonaAndResume(
+        versionData.personaId,
+        versionData.resumeId
+      );
+      qc.invalidateQueries({ queryKey: versionScope });
+      applyCountUpdates(qc, related);
       return;
     }
     if (event.action === 'delete') {
-      qc.invalidateQueries({ queryKey: VERSION_KEYS.lists() });
+      if (!versionData?.personaId || !versionData?.resumeId) return;
+      const versionScope = VERSION_KEYS.byPersonaAndResume(
+        versionData.personaId,
+        versionData.resumeId
+      );
+      qc.invalidateQueries({ queryKey: versionScope });
       applyCountUpdates(qc, related);
       return;
     }

@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction, AuthenticatedTypedRequest } from '../types/index.js';
 import { verifyToken } from '../utils/auth.js';
 import { getUserRepository } from '../database/repositories/index.js';
+import { trackClientAbort } from './abort-detection.js';
 import * as z from 'zod';
 import { ApiResponse, TOKEN_COOKIE_NAME } from '@repo/shared-types';
 import { flattenZodErrorToString } from '../utils/validations.js';
@@ -62,7 +63,7 @@ export async function authMiddleware(
       where: { id: decoded.userId },
     });
 
-    if (!user || user.sessionId !== decoded.sessionId) {
+    if (!user) {
       res.status(401).json({
         success: false,
         message: 'Session expired or invalid',
@@ -71,6 +72,12 @@ export async function authMiddleware(
     }
     (req as AuthenticatedTypedRequest<unknown>).userId = decoded.userId;
     (req as AuthenticatedTypedRequest<unknown>).sessionId = decoded.sessionId;
+    (req as AuthenticatedTypedRequest<unknown>).realtimeClientId =
+      typeof req.headers['x-realtime-client-id'] === 'string'
+        ? req.headers['x-realtime-client-id']
+        : undefined;
+
+    trackClientAbort(req, res);
 
     next();
   } catch (error) {

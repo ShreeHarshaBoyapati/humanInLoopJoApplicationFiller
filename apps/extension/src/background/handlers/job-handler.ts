@@ -83,7 +83,7 @@ export function handleJobMessage(
     api
       .delete<ApiResponse>('/job', {
         data: payload,
-        fetchOptions: { signal: controller.signal },
+        signal: controller.signal,
       })
       .then((response) => {
         if (requestId) {

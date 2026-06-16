@@ -85,6 +85,8 @@ export interface ResumeVersionMetadata {
   dataUpdatedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
+  resumeId?: string;
+  personaId?: string;
 }
 
 export interface ResumeVersionWithFile {

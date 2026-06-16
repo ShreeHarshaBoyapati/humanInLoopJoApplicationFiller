@@ -153,6 +153,39 @@ export const useCreateResume = () => {
     },
     onSuccess: (_result: ResumeMetadata & { fileSize: number }, variables: CreateResumeParams) => {
       queryClient.invalidateQueries({ queryKey: RESUME_KEYS.byPersona(variables.personaId) });
+
+      const cachedPersonaQueries = queryClient.getQueriesData({
+        queryKey: PERSONA_KEYS.lists(),
+        exact: false,
+      });
+
+      cachedPersonaQueries.forEach(([queryKey, oldData]) => {
+        if (!oldData || typeof oldData !== 'object') return;
+
+        const cacheData = oldData as {
+          pages?: PaginatedPersonasResponse[];
+          pageParams?: number[];
+        };
+
+        if (!cacheData.pages || cacheData.pages.length === 0) return;
+
+        const updatedPages = cacheData.pages.map((page) => ({
+          ...page,
+          items: page.items.map((item: Persona) =>
+            item.id === variables.personaId
+              ? {
+                  ...item,
+                  resumesCount: (item.resumesCount ?? 0) + 1,
+                }
+              : item
+          ),
+        }));
+
+        queryClient.setQueryData(queryKey, {
+          pages: updatedPages,
+          pageParams: cacheData.pageParams,
+        });
+      });
     },
   });
 };

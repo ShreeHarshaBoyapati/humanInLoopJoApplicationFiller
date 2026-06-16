@@ -453,7 +453,15 @@ class ResumeVersionController {
 
     await versionRepository.save(version);
 
-    wsHub.emit(userId, 'resume-version', 'create', version.id);
+    wsHub.emit(
+      userId,
+      'resume-version',
+      'create',
+      version.id,
+      versionToMetadata(version, resume.fileName, resume.id, resume.persona.id),
+      [{ id: resumeId, versionsCount: existingVersionsCount + 1 }],
+      req.realtimeClientId
+    );
 
     const data: ApiResponse<ResumeVersionMetadata> = {
       success: true,
@@ -540,7 +548,9 @@ class ResumeVersionController {
       'resume-version',
       'update',
       version.id,
-      versionToMetadata(version, resume.fileName)
+      versionToMetadata(version, resume.fileName, resume.id, resume.persona.id),
+      undefined,
+      req.realtimeClientId
     );
 
     const data: ApiResponse<ResumeVersionMetadata> = {
@@ -610,7 +620,7 @@ class ResumeVersionController {
       return;
     }
 
-    if (req.destroyed || res.closed) {
+    if (req.clientAborted) {
       logger.info(
         { resumeId, versionId: version.id },
         'Delete resume version aborted by client; skipping DB write'
@@ -625,9 +635,15 @@ class ResumeVersionController {
     version.isDeleted = true;
     await versionRepository.save(version);
 
-    wsHub.emit(userId, 'resume-version', 'delete', version.id, undefined, [
-      { id: resumeId, versionsCount: Math.max(0, remainingVersionsCount - 1) },
-    ]);
+    wsHub.emit(
+      userId,
+      'resume-version',
+      'delete',
+      version.id,
+      versionToMetadata(version, resume.fileName, resume.id, resume.persona.id),
+      [{ id: resumeId, versionsCount: Math.max(0, remainingVersionsCount - 1) }],
+      req.realtimeClientId
+    );
 
     const data: ApiResponse = {
       success: true,
@@ -741,15 +757,18 @@ class ResumeVersionController {
       'resume-version',
       'setActive',
       version.id,
-      versionToMetadata(version, resume.fileName),
+      versionToMetadata(version, resume.fileName, resume.id, resume.persona.id),
       previousActiveVersion && previousActiveVersion.id !== version.id
         ? [
             versionToMetadata(
               previousActiveVersion,
-              previousActiveResume?.fileName ?? resume.fileName
+              previousActiveResume?.fileName ?? resume.fileName,
+              previousActiveResume?.id ?? undefined,
+              previousActiveResume?.persona?.id ?? undefined
             ),
           ]
-        : undefined
+        : undefined,
+      req.realtimeClientId
     );
     wsHub.emit(
       userId,
@@ -759,7 +778,8 @@ class ResumeVersionController {
       resumeToMetadata(resume),
       previousActiveResume && previousActiveResume.id !== resume.id
         ? [resumeToMetadata(previousActiveResume)]
-        : undefined
+        : undefined,
+      req.realtimeClientId
     );
     wsHub.emit(
       userId,
@@ -769,7 +789,8 @@ class ResumeVersionController {
       personaToMetadata(resume.persona),
       previousActivePersona && previousActivePersona.id !== resume.persona.id
         ? [personaToMetadata(previousActivePersona)]
-        : undefined
+        : undefined,
+      req.realtimeClientId
     );
 
     const data: ApiResponse<
@@ -868,8 +889,31 @@ class ResumeVersionController {
 
     await versionRepository.save(newVersion);
 
-    wsHub.emit(userId, 'resume', 'create', newResume.id);
-    wsHub.emit(userId, 'resume-version', 'create', newVersion.id);
+    const newPersonaResumesCount = await resumeRepository.count({
+      where: { persona: { id: resume.persona.id }, isDeleted: false },
+    });
+
+    wsHub.emit(
+      userId,
+      'resume',
+      'create',
+      newResume.id,
+      undefined,
+      [
+        { personaId: resume.persona.id },
+        { id: resume.persona.id, resumesCount: newPersonaResumesCount },
+      ],
+      req.realtimeClientId
+    );
+    wsHub.emit(
+      userId,
+      'resume-version',
+      'create',
+      newVersion.id,
+      versionToMetadata(newVersion, newResume.fileName, newResume.id, resume.persona.id),
+      undefined,
+      req.realtimeClientId
+    );
 
     const data: ApiResponse<{
       resume: {
