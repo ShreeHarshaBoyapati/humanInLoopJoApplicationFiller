@@ -270,7 +270,6 @@ class JobController {
       'metaData',
       'description',
       'requirements',
-      'highlights',
       'keySkills',
       'favorite',
       'notes',

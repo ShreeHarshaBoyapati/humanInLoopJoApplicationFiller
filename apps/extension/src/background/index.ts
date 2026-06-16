@@ -33,6 +33,7 @@ const api = axios.create({
   baseURL: API_URL,
   adapter: 'fetch',
   withCredentials: true,
+  fetchOptions: { keepalive: true },
 });
 
 // Add a request interceptor to inject the token from session storage

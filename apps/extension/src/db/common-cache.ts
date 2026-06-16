@@ -1,5 +1,6 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type {
+  Job,
   Persona,
   PaginatedResumeListItem,
   PaginatedVersionListItem,
@@ -41,6 +42,15 @@ export interface CachedVersionPage {
   totalPages: number;
 }
 
+export interface CachedJobsPage {
+  id: string; // `${token}:${limit}:${sortBy}:${sortOrder}`
+  jobs: Job[];
+  limit: number;
+  sortBy: string;
+  sortOrder: 'ASC' | 'DESC';
+  cachedAt: number;
+}
+
 /**
  * IndexedDB schema with separate object stores for each cache type
  */
@@ -57,6 +67,10 @@ interface JFPCacheDB extends DBSchema {
     key: string;
     value: CachedVersionPage;
   };
+  jobs: {
+    key: string;
+    value: CachedJobsPage;
+  };
   metadata: {
     key: string;
     value: string;
@@ -64,7 +78,7 @@ interface JFPCacheDB extends DBSchema {
 }
 
 const DB_NAME = 'jfp-cache';
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 
 let dbPromise: Promise<IDBPDatabase<JFPCacheDB>> | null = null;
 
@@ -88,6 +102,10 @@ export function getDB(): Promise<IDBPDatabase<JFPCacheDB>> {
         // Create versions store
         if (!db.objectStoreNames.contains('versions')) {
           db.createObjectStore('versions', { keyPath: 'id' });
+        }
+
+        if (!db.objectStoreNames.contains('jobs')) {
+          db.createObjectStore('jobs', { keyPath: 'id' });
         }
 
         // Create metadata store for token and other metadata

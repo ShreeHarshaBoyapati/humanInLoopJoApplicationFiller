@@ -1,0 +1,279 @@
+/* Loading container */
+.loadingContainer {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  padding: calc(var(--spacing) * 8);
+}
+
+.loadingSpinner {
+  color: var(--white-700);
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+}
+
+/* Markdown element styles */
+.mdH1 {
+  color: var(--white-900);
+  font-family: var(--heading-font);
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: calc(var(--spacing) * 4);
+  margin-top: 0;
+}
+
+.mdH2 {
+  color: var(--white-900);
+  font-family: var(--heading-font);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: calc(var(--spacing) * 3);
+  margin-top: calc(var(--spacing) * 6);
+}
+
+.mdH3 {
+  color: var(--white-900);
+  font-family: var(--heading-font);
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: calc(var(--spacing) * 2);
+  margin-top: calc(var(--spacing) * 4);
+}
+
+.mdH4 {
+  color: var(--white-900);
+  font-family: var(--heading-font);
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: calc(var(--spacing) * 2);
+  margin-top: calc(var(--spacing) * 4);
+}
+
+.mdH5 {
+  color: var(--white-900);
+  font-family: var(--heading-font);
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: calc(var(--spacing) * 2);
+  margin-top: calc(var(--spacing) * 4);
+}
+
+.mdH6 {
+  color: var(--white-900);
+  font-family: var(--heading-font);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  margin-bottom: calc(var(--spacing) * 1);
+  margin-top: calc(var(--spacing) * 3);
+}
+
+.mdParagraph {
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  margin-bottom: calc(var(--spacing) * 3);
+}
+
+/* Lists */
+.mdUl {
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  list-style-type: disc;
+  margin-bottom: calc(var(--spacing) * 3);
+  padding-left: calc(var(--spacing) * 6);
+}
+
+.mdOl {
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  list-style-type: decimal;
+  margin-bottom: calc(var(--spacing) * 3);
+  padding-left: calc(var(--spacing) * 6);
+}
+
+.mdLi {
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  margin-bottom: calc(var(--spacing) * 1);
+}
+
+/* Blockquotes */
+.mdBlockquote {
+  background-color: var(--grey-700);
+  border-left: 3px solid var(--blue-500);
+  color: var(--white-700);
+  font-family: var(--secondary-font);
+  font-size: 0.9375rem;
+  font-style: italic;
+  line-height: 1.6;
+  margin-bottom: calc(var(--spacing) * 3);
+  margin-left: 0;
+  margin-right: 0;
+  padding: calc(var(--spacing) * 3) calc(var(--spacing) * 4);
+}
+
+/* Code blocks */
+.mdPre {
+  background-color: var(--black-800);
+  border: 1px solid var(--grey-700);
+  border-radius: var(--border-radius);
+  color: var(--white-900);
+  font-family:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin-bottom: calc(var(--spacing) * 4);
+  max-height: 24rem;
+  min-height: 6rem;
+  padding: calc(var(--spacing) * 4);
+}
+
+.mdCodeBlock {
+  background-color: transparent;
+  color: var(--white-900);
+  font-family:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: 0.875rem;
+}
+
+.mdInlineCode {
+  background-color: var(--grey-700);
+  border-radius: calc(var(--spacing) * 1);
+  color: var(--blue-400);
+  font-family:
+    ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: 0.875rem;
+  padding: calc(var(--spacing) * 0.5) calc(var(--spacing) * 2);
+}
+
+/* Links */
+.mdLink {
+  color: var(--blue-400);
+  font-family: var(--secondary-font);
+  font-size: 0.9375rem;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.mdLink:hover {
+  color: var(--blue-500);
+  text-decoration: underline;
+}
+
+/* Tables */
+.mdTableWrapper {
+  display: block;
+  margin-bottom: calc(var(--spacing) * 4);
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.mdTable {
+  border-collapse: collapse;
+  display: table;
+  width: 100%;
+}
+
+.mdThead {
+  display: table-header-group;
+}
+
+.mdTbody {
+  display: table-row-group;
+}
+
+.mdTr {
+  display: table-row;
+}
+
+.mdTh {
+  border: 1px solid var(--grey-700);
+  color: var(--white-900);
+  display: table-cell;
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: calc(var(--spacing) * 3) calc(var(--spacing) * 4);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.mdTd {
+  border: 1px solid var(--grey-700);
+  color: var(--white-900);
+  display: table-cell;
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+  padding: calc(var(--spacing) * 3) calc(var(--spacing) * 4);
+  vertical-align: middle;
+}
+
+.mdTr:nth-child(even) .mdTd {
+  background-color: var(--black-800);
+}
+
+.mdThead .mdTh {
+  background-color: var(--grey-700);
+}
+
+/* Definition lists */
+.mdDl {
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  margin-bottom: calc(var(--spacing) * 3);
+}
+
+.mdDt {
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  margin-top: calc(var(--spacing) * 2);
+}
+
+.mdDd {
+  color: var(--white-700);
+  font-family: var(--secondary-font);
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  margin-bottom: calc(var(--spacing) * 2);
+  margin-left: calc(var(--spacing) * 6);
+}
+
+/* Inline emphasis */
+.mdEm {
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  font-size: 0.9375rem;
+  font-style: italic;
+}
+
+.mdStrong {
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+/* Horizontal rule */
+.mdHr {
+  background-color: transparent;
+  border: none;
+  border-top: 1px solid var(--white-700);
+  display: block;
+  flex-shrink: 0;
+  height: 0;
+  margin-bottom: calc(var(--spacing) * 4);
+  margin-top: calc(var(--spacing) * 4);
+  opacity: 0.5;
+  width: 100%;
+}

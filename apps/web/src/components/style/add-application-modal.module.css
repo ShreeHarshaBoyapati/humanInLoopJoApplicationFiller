@@ -44,3 +44,59 @@
   justify-content: flex-end;
   width: 100%;
 }
+
+.notesTabs {
+  background-color: var(--black-200);
+  border: 1px solid var(--grey-700);
+  border-radius: var(--border-radius);
+  display: flex;
+  gap: calc(var(--spacing) * 1);
+  margin-bottom: calc(var(--spacing) * 3);
+  padding: calc(var(--spacing) * 1);
+  width: fit-content;
+}
+
+.notesTab {
+  background: none;
+  border: none;
+  border-radius: calc(var(--border-radius) / 2);
+  color: var(--white-700);
+  cursor: pointer;
+  font-family: var(--secondary-font);
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: calc(var(--spacing) * 1) calc(var(--spacing) * 3);
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.notesTab:hover {
+  color: var(--white-900);
+}
+
+.notesTabActive {
+  background-color: var(--grey-700);
+  color: var(--white-900);
+}
+
+.notesTabActive:hover {
+  background-color: var(--grey-700);
+}
+
+.notesPreview {
+  background-color: var(--black-800);
+  border: 1px solid var(--grey-700);
+  border-radius: var(--border-radius);
+  max-height: 18rem;
+  min-height: 8rem;
+  overflow-y: auto;
+  padding: calc(var(--spacing) * 3);
+}
+
+.notesPreviewEmpty {
+  color: var(--white-700);
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+  font-style: italic;
+}

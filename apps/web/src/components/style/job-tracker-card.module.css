@@ -115,6 +115,31 @@
   font-size: 0.75rem;
 }
 
+.scoreValue {
+  font-family: var(--heading-font);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.acceptanceLabel {
+  color: var(--white-700);
+  font-family: var(--secondary-font);
+  font-size: 0.75rem;
+  margin-left: calc(var(--spacing) * 1);
+}
+
+.scoreHigh {
+  color: var(--green-400);
+}
+
+.scoreMid {
+  color: var(--yellow-400);
+}
+
+.scoreLow {
+  color: var(--red-600);
+}
+
 .jobTags {
   display: flex;
   flex-wrap: wrap;

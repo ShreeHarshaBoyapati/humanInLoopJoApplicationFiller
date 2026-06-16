@@ -1,12 +1,11 @@
 import { useState, useCallback } from 'react';
 import EditIcon from '@mui/icons-material/Edit';
-import { EnhancedButton, EnhancedTextInputArea } from '@repo/ui';
+import { EnhancedButton, EnhancedTextInputArea, Markdown } from '@repo/ui';
 import type { Job, UpdateJobInput } from '@repo/shared-types';
 import { useUpdateJob } from '../hooks/use-jobs';
 import { useStore } from '../store';
 import styles from './style/job-notes-tab.module.css';
 import scrollStyles from '@repo/ui/scroll-bar.module.css';
-import Markdown from './markdown';
 
 interface JobNotesTabProps {
   job: Job;

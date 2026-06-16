@@ -56,9 +56,6 @@ export default class Job {
   @Column('text', { default: '' })
   description!: string;
 
-  @Column('simple-json', { default: {} })
-  highlights!: Record<string, unknown>;
-
   @Column('simple-array', { default: [] })
   keySkills!: string[];
 

@@ -153,9 +153,6 @@ class AiController {
       if (job.metaData && Object.keys(job.metaData).length) {
         jobParts.push(`Additional Info: ${JSON.stringify(job.metaData)}`);
       }
-      if (job.highlights && Object.keys(job.highlights).length) {
-        jobParts.push(`Highlights: ${JSON.stringify(job.highlights)}`);
-      }
       const jobText = jobParts.join('\n\n');
 
       // 6. Build resume text from parsedData (structured resume data)
@@ -314,11 +311,19 @@ Your task:
       });
       await resultRepository.save(result);
 
+      const previousAcceptanceLevel = job.acceptanceLevel;
+
+      if (output.score > job.acceptanceLevel) {
+        job.acceptanceLevel = output.score;
+      }
+
       if (isFirstResult) {
         job.primaryResultId = result.id;
         job.personaId = resumeVersion.resume.persona.id;
-        await jobRepository.save(job);
       }
+
+      const acceptanceLevelChanged = job.acceptanceLevel !== previousAcceptanceLevel;
+      await jobRepository.save(job);
 
       const data: AnalyzeKeywordsApiResponse = {
         success: true,
@@ -327,7 +332,7 @@ Your task:
           ? 'This resume version is now set as primary for this job. You can change that in website.'
           : undefined,
       };
-      if (isFirstResult) {
+      if (isFirstResult || acceptanceLevelChanged) {
         data.job = job;
       }
       res.status(200).json(data);

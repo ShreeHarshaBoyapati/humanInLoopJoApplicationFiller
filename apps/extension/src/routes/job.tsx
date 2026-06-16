@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, ErrorComponent } from '@tanstack/react-router';
+import { createFileRoute, useNavigate, useRouter, ErrorComponent } from '@tanstack/react-router';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import type { Job, JobList } from '@repo/shared-types';
 import styleConstants from '@repo/ui/constants/style-constants.js';
@@ -70,6 +70,7 @@ export const Route = createFileRoute('/job')({
 
 function JobComponent() {
   const navigate = useNavigate();
+  const router = useRouter();
   const { jobData, isEditing, error: loaderError } = Route.useLoaderData();
   const [savedJobId, setSavedJobId] = useState<string | null>(jobData?.id || null);
 
@@ -77,6 +78,7 @@ function JobComponent() {
     const result = await step1.submit();
     if (result.success && result.jobId) {
       setSavedJobId(result.jobId);
+      await router.invalidate();
       navigate({ to: '/recent-jobs' });
     }
   };

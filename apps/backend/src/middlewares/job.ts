@@ -15,7 +15,6 @@ const CreateJobSchema = z.object({
   requirements: z.string().default(''),
   metaData: z.record(z.string(), z.unknown()).default({}),
   description: z.string().default(''),
-  highlights: z.record(z.string(), z.unknown()).default({}),
   keySkills: z.array(z.string()).default([]),
 });
 
@@ -32,7 +31,6 @@ const UpdateJobSchema = z.object({
   requirements: z.string().optional(),
   metaData: z.record(z.string(), z.unknown()).optional(),
   description: z.string().optional(),
-  highlights: z.record(z.string(), z.unknown()).optional(),
   keySkills: z.array(z.string()).optional(),
   favorite: z.boolean().optional(),
   primaryResultId: z.string().nullable().optional(),
@@ -56,7 +54,6 @@ const validJobFields = [
   'requirements',
   'metaData',
   'description',
-  'highlights',
   'keySkills',
   'favorite',
   'primaryResultId',

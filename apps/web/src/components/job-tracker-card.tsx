@@ -24,6 +24,12 @@ export const JobTrackerCard = ({
     return companyName ? companyName.charAt(0).toUpperCase() : 'C';
   };
 
+  const scoreClass = (score: number) => {
+    if (score >= 70) return styles.scoreHigh;
+    if (score >= 40) return styles.scoreMid;
+    return styles.scoreLow;
+  };
+
   const currentStepIndex = statusSteps.findIndex(
     (step) => step.toLowerCase() === job.status.toLowerCase()
   );
@@ -79,6 +85,10 @@ export const JobTrackerCard = ({
           <div className={styles.jobTitleRow}>
             <p className={styles.jobTitle}>{job.title}</p>
             <span className={styles.jobCompany}>{job.companyName}</span>
+            <span className={styles.acceptanceLabel}>Highest ATS Scored:</span>
+            <span className={`${styles.scoreValue} ${scoreClass(job.acceptanceLevel)}`}>
+              {job.acceptanceLevel}
+            </span>
           </div>
           {job.tags && job.tags.length > 0 && (
             <div className={styles.jobTags}>

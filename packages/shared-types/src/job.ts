@@ -13,7 +13,6 @@ export interface Job {
   metaData: Record<string, unknown>;
   description: string;
   requirements: string;
-  highlights: Record<string, unknown>;
   keySkills: string[];
   notes: string;
   favorite: boolean;
@@ -104,7 +103,7 @@ export interface CreateJobInput {
   persona?: string;
   status?: string;
   notes?: string;
-  acceptanceLevel?: number;
+  metaData?: Record<string, unknown>;
 }
 
 // Update Job Input
@@ -123,6 +122,7 @@ export interface UpdateJobInput {
   favorite?: boolean;
   primaryResultId?: string | null;
   invalidateQueries?: boolean;
+  metaData?: Record<string, unknown>;
 }
 
 // Delete Job Input

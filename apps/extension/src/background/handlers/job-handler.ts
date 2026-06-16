@@ -1,5 +1,7 @@
 import type { AxiosError, AxiosInstance } from 'axios';
-import type { ExtensionMessage, ApiResponse, JobPublic, JobList } from '@repo/shared-types';
+import type { ExtensionMessage, ApiResponse, JobPublic, Job, JobList } from '@repo/shared-types';
+
+const deleteControllers = new Map<string, AbortController>();
 
 /**
  * Handles all job-related background messages: CREATE_JOB, UPDATE_JOB, DELETE_JOB, GET_JOBS.
@@ -44,7 +46,7 @@ export function handleJobMessage(
     const payload = message.payload;
 
     api
-      .put<ApiResponse<JobPublic>>('/job', payload)
+      .put<ApiResponse<Job>>('/job', payload)
       .then((response) => {
         const { data } = response;
         if (data.success) {
@@ -62,12 +64,31 @@ export function handleJobMessage(
     return true;
   }
 
+  if (message.action === 'CANCEL_DELETE_JOB') {
+    const { requestId } = message.payload || {};
+    if (requestId && deleteControllers.has(requestId)) {
+      deleteControllers.get(requestId)?.abort();
+    }
+    sendResponse({ cancelled: true });
+    return true;
+  }
+
   if (message.action === 'DELETE_JOB') {
-    const payload = message.payload;
+    const { requestId, ...payload } = message.payload || {};
+    const controller = new AbortController();
+    if (requestId) {
+      deleteControllers.set(requestId, controller);
+    }
 
     api
-      .delete<ApiResponse>('/job', { data: payload })
+      .delete<ApiResponse>('/job', {
+        data: payload,
+        fetchOptions: { signal: controller.signal },
+      })
       .then((response) => {
+        if (requestId) {
+          deleteControllers.delete(requestId);
+        }
         const { data } = response;
         if (data.success) {
           sendResponse({ success: true });
@@ -76,6 +97,13 @@ export function handleJobMessage(
         }
       })
       .catch((error) => {
+        if (requestId) {
+          deleteControllers.delete(requestId);
+        }
+        if (error.name === 'AbortError' || error.code === 'ERR_CANCELED') {
+          sendResponse({ cancelled: true });
+          return;
+        }
         console.error('Job deletion error:', error);
         sendResponse({ success: false, error: error.response?.data?.message || error.message });
       });

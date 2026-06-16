@@ -6,9 +6,11 @@ import {
   EnhancedChip,
   EnhancedTextInputArea,
   EnhancedAccordion,
+  Markdown,
 } from '@repo/ui';
 import { Box } from '@mui/material';
-import type { Job, ScrapedJob } from '@repo/shared-types';
+import type { Job, JobStatus, ScrapedJob } from '@repo/shared-types';
+import { invalidateJobsCache, updateJobInCache } from '../db/jobs-cache';
 import styles from '../routes/style/job.module.css';
 
 interface JobFormData {
@@ -18,8 +20,6 @@ interface JobFormData {
   salary: string;
   requirements: string;
   currency: string;
-  persona: string;
-  acceptanceLevel: number;
   jobType: string;
   description: string;
   notes: string;
@@ -36,8 +36,6 @@ const initialFormData: JobFormData = {
   salary: '',
   requirements: '',
   currency: 'IND',
-  persona: 'default',
-  acceptanceLevel: 0,
   jobType: 'Full-time',
   description: '',
   notes: '',
@@ -74,8 +72,6 @@ export const Step1JobDetails = ({
         salary: String(jobData.metaData?.salary || ''),
         requirements: String(jobData.requirements),
         currency: String(jobData.metaData?.currency || 'IND'),
-        persona: jobData.personaId || '',
-        acceptanceLevel: jobData.acceptanceLevel || 0,
         jobType: String(jobData.metaData?.jobType || 'Full-time'),
         description: String(jobData.description || ''),
         notes: jobData.notes || '',
@@ -219,6 +215,7 @@ export const Step1JobDetails = ({
 
   const [tagInput, setTagInput] = useState('');
   const [skillInput, setSkillInput] = useState('');
+  const [notesView, setNotesView] = useState<'write' | 'preview'>('write');
 
   const handleAddChip = (
     field: 'tags' | 'keySkills',
@@ -261,6 +258,11 @@ export const Step1JobDetails = ({
     return true;
   };
 
+  const hasArrayChanged = (current: string[], original: string[]): boolean => {
+    if (current.length !== original.length) return true;
+    return current.some((value, index) => value !== original[index]);
+  };
+
   const submit = async (): Promise<{ success: boolean; jobId?: string; error?: string }> => {
     if (!validate()) {
       return { success: false, error: 'Validation failed' };
@@ -273,35 +275,74 @@ export const Step1JobDetails = ({
     setError(null);
     setLoading(true);
 
-    const payload = {
-      ...(isEditing && jobData?.id ? { id: jobData.id } : {}),
-      title: formData.title,
-      companyName: formData.companyName,
-      persona: formData.persona,
-      status: formData.status as 'draft' | 'active' | 'archived',
-      acceptanceLevel: Number(formData.acceptanceLevel) || 0,
-      notes: formData.notes,
-      keySkills: formData.keySkills,
-      tags: formData.tags,
-      metaData: {
-        location: formData.location,
-        salary: formData.salary,
-        currency: formData.currency,
-        jobType: formData.jobType,
-        jobPostingUrl: formData.jobPostingUrl,
-      },
-      description: formData.description,
-      requirements: formData.requirements,
-    };
+    let payload: Record<string, unknown>;
+
+    if (isEditing && jobData?.id) {
+      payload = { id: jobData.id };
+
+      if (formData.title !== originalFormDataRef.current.title) payload.title = formData.title;
+      if (formData.companyName !== originalFormDataRef.current.companyName)
+        payload.companyName = formData.companyName;
+      if (formData.status !== originalFormDataRef.current.status) payload.status = formData.status;
+      if (formData.notes !== originalFormDataRef.current.notes) payload.notes = formData.notes;
+      if (hasArrayChanged(formData.keySkills, originalFormDataRef.current.keySkills))
+        payload.keySkills = formData.keySkills;
+      if (hasArrayChanged(formData.tags, originalFormDataRef.current.tags))
+        payload.tags = formData.tags;
+      if (formData.description !== originalFormDataRef.current.description)
+        payload.description = formData.description;
+      if (formData.requirements !== originalFormDataRef.current.requirements)
+        payload.requirements = formData.requirements;
+
+      const metaDataChanged =
+        formData.location !== originalFormDataRef.current.location ||
+        formData.salary !== originalFormDataRef.current.salary ||
+        formData.currency !== originalFormDataRef.current.currency ||
+        formData.jobType !== originalFormDataRef.current.jobType ||
+        formData.jobPostingUrl !== originalFormDataRef.current.jobPostingUrl;
+
+      if (metaDataChanged) {
+        payload.metaData = {
+          location: formData.location,
+          salary: formData.salary,
+          currency: formData.currency,
+          jobType: formData.jobType,
+          jobPostingUrl: formData.jobPostingUrl,
+        };
+      }
+    } else {
+      payload = {
+        title: formData.title,
+        companyName: formData.companyName,
+        status: formData.status,
+        notes: formData.notes,
+        keySkills: formData.keySkills,
+        tags: formData.tags,
+        metaData: {
+          location: formData.location,
+          salary: formData.salary,
+          currency: formData.currency,
+          jobType: formData.jobType,
+          jobPostingUrl: formData.jobPostingUrl,
+        },
+        description: formData.description,
+        requirements: formData.requirements,
+      };
+    }
 
     if (typeof chrome !== 'undefined' && chrome.runtime) {
       const action = isEditing ? 'UPDATE_JOB' : 'CREATE_JOB';
       try {
-        const res = await new Promise<{
-          success: boolean;
-          data?: { id?: string };
-          error?: string;
-        }>((resolve, reject) => {
+        const res = await new Promise<
+          | {
+              success: true;
+              data: Job;
+            }
+          | {
+              success: false;
+              error?: string;
+            }
+        >((resolve, reject) => {
           chrome.runtime.sendMessage({ action, payload }, (response) => {
             if (chrome.runtime.lastError) {
               reject(chrome.runtime.lastError);
@@ -313,12 +354,21 @@ export const Step1JobDetails = ({
 
         setLoading(false);
 
-        if (res?.success && res.data?.id) {
+        if (res?.success && res.data) {
+          const returnedJob = res.data;
           originalFormDataRef.current = formData;
-          onSaveSuccess?.(res.data.id);
-          return { success: true, jobId: res.data.id };
+
+          if (isEditing) {
+            await updateJobInCache(returnedJob.id, returnedJob);
+          } else {
+            await invalidateJobsCache();
+          }
+
+          onSaveSuccess?.(returnedJob.id);
+          return { success: true, jobId: returnedJob.id };
         } else {
-          const errorMsg = res?.error || 'An unexpected error occurred.';
+          const errorMsg =
+            (!res || 'error' in res ? res?.error : undefined) || 'An unexpected error occurred.';
           setError(errorMsg);
           onError?.(errorMsg);
           return { success: false, error: errorMsg };
@@ -427,46 +477,6 @@ export const Step1JobDetails = ({
           </div>
         </div>
 
-        <div className={styles.row}>
-          <div className={styles.field}>
-            <EnhancedSelectDropdown
-              label="Persona"
-              testId="persona-dropdown"
-              value={formData.persona}
-              onChange={handleChange('persona') as never}
-              disabled={loading}
-              error={!!formErrors.persona}
-              showErrorMsg={!!formErrors.persona}
-              errorText={formErrors.persona}
-              options={[
-                { value: 'default', label: 'Default', dataId: 'default' },
-                {
-                  value: 'software-engineer',
-                  label: 'Software Engineer',
-                  dataId: 'software-engineer',
-                },
-                { value: 'product-manager', label: 'Product Manager', dataId: 'product-manager' },
-              ]}
-            />
-          </div>
-          <div className={styles.field}>
-            <EnhancedTextField
-              label="Acceptance Level"
-              value={String(formData.acceptanceLevel)}
-              onChange={handleChange('acceptanceLevel')}
-              type="number"
-              disabled={loading}
-              variant={formErrors.acceptanceLevel ? 'error' : 'default'}
-              helperText={formErrors.acceptanceLevel}
-              customProps={{
-                childProps: {
-                  slotProps: { htmlInput: { min: 0, max: 100 } },
-                },
-              }}
-            />
-          </div>
-        </div>
-
         <EnhancedAccordion title="Job Description">
           <EnhancedTextInputArea
             value={formData.description}
@@ -479,14 +489,56 @@ export const Step1JobDetails = ({
         </EnhancedAccordion>
 
         <EnhancedAccordion title="Notes (Markdown supported)">
-          <EnhancedTextInputArea
-            value={formData.notes}
-            onChange={handleChange('notes')}
-            placeholder="Add your personal notes or markdown content here..."
-            disabled={loading}
-            variant={formErrors.notes ? 'error' : 'default'}
-            helperText={formErrors.notes}
-          />
+          <div className={styles.notesTabs} role="tablist" aria-label="Notes view">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={notesView === 'write'}
+              data-testid="notes-tab-write"
+              className={`${styles.notesTab} ${notesView === 'write' ? styles.notesTabActive : ''}`}
+              onClick={() => setNotesView('write')}
+            >
+              Write
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={notesView === 'preview'}
+              data-testid="notes-tab-preview"
+              className={`${styles.notesTab} ${notesView === 'preview' ? styles.notesTabActive : ''}`}
+              onClick={() => setNotesView('preview')}
+            >
+              Preview
+            </button>
+          </div>
+          {notesView === 'write' ? (
+            <EnhancedTextInputArea
+              value={formData.notes}
+              onChange={handleChange('notes')}
+              placeholder={`Write your notes here... Supports Markdown formatting
+
+Examples:
+- **Bold text** and *italic text*
+- # Headers
+- [Links](https://example.com)
+- Lists (ordered and unordered)
+- \`inline code\` and code blocks
+- Tables (using | syntax)`}
+              minRows={6}
+              maxRows={12}
+              disabled={loading}
+              variant={formErrors.notes ? 'error' : 'default'}
+              helperText={formErrors.notes}
+            />
+          ) : (
+            <div className={styles.notesPreview} data-testid="notes-preview" role="tabpanel">
+              {formData.notes.trim() ? (
+                <Markdown source={formData.notes} />
+              ) : (
+                <span className={styles.notesPreviewEmpty}>Nothing to preview yet.</span>
+              )}
+            </div>
+          )}
         </EnhancedAccordion>
 
         <EnhancedAccordion title="Requirements">
@@ -510,9 +562,11 @@ export const Step1JobDetails = ({
           showErrorMsg={!!formErrors.status}
           errorText={formErrors.status}
           options={[
-            { value: 'draft', label: 'Draft (Not yet applied)', dataId: 'draft' },
-            { value: 'active', label: 'Active (Applied/Interviewing)', dataId: 'active' },
-            { value: 'archived', label: 'Archived (Rejected/Offer)', dataId: 'archived' },
+            { value: 'draft', label: 'Draft', dataId: 'draft' },
+            { value: 'applied', label: 'Applied', dataId: 'applied' },
+            { value: 'interview', label: 'Interview', dataId: 'interview' },
+            { value: 'offer', label: 'Offer', dataId: 'offer' },
+            { value: 'rejected', label: 'Rejected', dataId: 'rejected' },
           ]}
         />
 

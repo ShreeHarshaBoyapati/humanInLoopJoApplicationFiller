@@ -1,10 +1,24 @@
+/**
+ * Markdown
+ * A shared, sanitized markdown renderer used by the web app and the Chrome
+ * extension. Renders a `source` string as HTML with GitHub-flavored markdown
+ * (tables, strikethrough, task lists, autolinks, ...), allows inline/embedded
+ * HTML via `rehype-raw`, and sanitizes the result via `rehype-sanitize` using
+ * an extended tag/attribute schema.
+ *
+ * The underlying `react-markdown` bundle is loaded via `React.lazy` so the
+ * markdown chunk is not part of the initial bundle — useful for the extension
+ * popup which must stay small.
+ *
+ * Visual styling is provided by the colocated `markdown.module.css`.
+ */
 import { lazy, Suspense, type ReactNode } from 'react';
 import type { Components } from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import rehypeSanitize, { defaultSchema } from 'rehype-sanitize';
-import styles from './style/job-notes-tab.module.css';
-import scrollStyles from '@repo/ui/scroll-bar.module.css';
+import styles from './markdown.module.css';
+import scrollStyles from './scroll-bar.module.css';
 
 const ReactMarkdown = lazy(() => import('react-markdown'));
 

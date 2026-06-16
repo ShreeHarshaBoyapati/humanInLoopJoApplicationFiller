@@ -86,6 +86,16 @@
   min-width: 0;
 }
 
+.field2 {
+  flex: 0.3;
+  min-width: 0;
+}
+
+.field3 {
+  flex: 0.7;
+  min-width: 0;
+}
+
 .addButtonContainer {
   margin-top: 1.75rem;
 }
@@ -95,4 +105,17 @@
   font-family: var(--secondary-font);
   font-size: 0.875rem;
   font-style: italic;
+}
+
+.linkValue {
+  color: var(--blue-400);
+  font-family: var(--secondary-font);
+  font-size: var(--font-size-base);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.linkValue:hover {
+  color: var(--blue-500);
+  text-decoration: underline;
 }

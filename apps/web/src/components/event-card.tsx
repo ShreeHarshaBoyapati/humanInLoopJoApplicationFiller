@@ -8,11 +8,11 @@ import { useJobs } from '../hooks/use-jobs';
 import { useTags } from '../hooks/use-tags';
 import { ConfirmModal } from './confirm-modal';
 import { AddEventModal } from './add-event-modal';
-import { Markdown } from './markdown';
 import { formatDateDDMMYYYY } from '../utils/date';
 import styles from './style/event-card.module.css';
 import scrollStyles from '@repo/ui/scroll-bar.module.css';
 import { EnhancedCheckbox, EnhancedTooltipWithText } from '@repo/ui';
+import Markdown from '@repo/ui/markdown.jsx';
 
 interface EventCardProps {
   event: Event;

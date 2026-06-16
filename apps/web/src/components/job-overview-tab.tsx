@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Box } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import {
@@ -23,26 +23,39 @@ interface JobOverviewTabProps {
 interface JobEditFormData {
   companyName: string;
   title: string;
+  location: string;
+  salary: string;
+  currency: string;
+  jobType: string;
   status: string;
   description: string;
   requirements: string;
+  jobPostingUrl: string;
   keySkills: string[];
   tags: string[];
 }
 
+const getInitialFormData = (job: Job): JobEditFormData => ({
+  companyName: job.companyName || '',
+  title: job.title || '',
+  location: String(job.metaData?.location || ''),
+  salary: String(job.metaData?.salary || ''),
+  currency: String(job.metaData?.currency || 'IND'),
+  jobType: String(job.metaData?.jobType || 'Full-time'),
+  status: job.status || 'draft',
+  description: job.description || '',
+  requirements: job.requirements || '',
+  jobPostingUrl: String(job.metaData?.jobPostingUrl || ''),
+  keySkills: job.keySkills || [],
+  tags: job.tags || [],
+});
+
 export function JobOverviewTab({ job, onJobUpdate }: JobOverviewTabProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState<JobEditFormData>({
-    companyName: job.companyName || '',
-    title: job.title || '',
-    status: job.status || 'draft',
-    description: job.description || '',
-    requirements: job.requirements || '',
-    keySkills: job.keySkills || [],
-    tags: job.tags || [],
-  });
+  const [formData, setFormData] = useState<JobEditFormData>(getInitialFormData(job));
   const [skillInput, setSkillInput] = useState('');
   const [tagInput, setTagInput] = useState('');
+  const originalFormDataRef = useRef<JobEditFormData>(getInitialFormData(job));
 
   const updateJob = useUpdateJob();
   const showSnackbar = useStore((state) => state.showSnackbar);
@@ -74,16 +87,9 @@ export function JobOverviewTab({ job, onJobUpdate }: JobOverviewTabProps) {
   };
 
   const handleEditClick = () => {
-    // Reset form data to current job values when entering edit mode
-    setFormData({
-      companyName: job.companyName || '',
-      title: job.title || '',
-      status: job.status || 'draft',
-      description: job.description || '',
-      requirements: job.requirements || '',
-      keySkills: job.keySkills || [],
-      tags: job.tags || [],
-    });
+    const initial = getInitialFormData(job);
+    setFormData(initial);
+    originalFormDataRef.current = initial;
     setIsEditing(true);
   };
 
@@ -93,18 +99,44 @@ export function JobOverviewTab({ job, onJobUpdate }: JobOverviewTabProps) {
     setTagInput('');
   };
 
+  const hasArrayChanged = (current: string[], original: string[]): boolean => {
+    if (current.length !== original.length) return true;
+    return current.some((value, index) => value !== original[index]);
+  };
+
   const handleSaveClick = useCallback(async () => {
-    const payload: UpdateJobInput = {
-      id: job.id,
-      title: formData.title,
-      companyName: formData.companyName,
-      status: formData.status,
-      previousStatus: formData.status !== job.status ? job.status : undefined,
-      description: formData.description || undefined,
-      requirements: formData.requirements || undefined,
-      keySkills: formData.keySkills.length > 0 ? formData.keySkills : undefined,
-      tags: formData.tags.length > 0 ? formData.tags : undefined,
-    };
+    const original = originalFormDataRef.current;
+    const payload: UpdateJobInput = { id: job.id };
+
+    if (formData.title !== original.title) payload.title = formData.title;
+    if (formData.companyName !== original.companyName) payload.companyName = formData.companyName;
+    if (formData.status !== original.status) {
+      payload.status = formData.status;
+      payload.previousStatus = job.status;
+    }
+    if (formData.description !== original.description) payload.description = formData.description;
+    if (formData.requirements !== original.requirements)
+      payload.requirements = formData.requirements;
+    if (hasArrayChanged(formData.keySkills, original.keySkills))
+      payload.keySkills = formData.keySkills;
+    if (hasArrayChanged(formData.tags, original.tags)) payload.tags = formData.tags;
+
+    const metaDataChanged =
+      formData.location !== original.location ||
+      formData.salary !== original.salary ||
+      formData.currency !== original.currency ||
+      formData.jobType !== original.jobType ||
+      formData.jobPostingUrl !== original.jobPostingUrl;
+
+    if (metaDataChanged) {
+      payload.metaData = {
+        location: formData.location,
+        salary: formData.salary,
+        currency: formData.currency,
+        jobType: formData.jobType,
+        jobPostingUrl: formData.jobPostingUrl,
+      };
+    }
 
     updateJob.mutate(payload, {
       onSuccess: (updatedJob) => {
@@ -117,7 +149,6 @@ export function JobOverviewTab({ job, onJobUpdate }: JobOverviewTabProps) {
         setIsEditing(false);
         setSkillInput('');
         setTagInput('');
-        // Notify parent component about the update
         if (onJobUpdate && updatedJob) {
           onJobUpdate(updatedJob);
         }
@@ -128,13 +159,11 @@ export function JobOverviewTab({ job, onJobUpdate }: JobOverviewTabProps) {
         });
       },
     });
-  }, [formData, job.id, updateJob, showSnackbar, onJobUpdate]);
+  }, [formData, job.id, job.status, updateJob, showSnackbar, onJobUpdate]);
 
   const getStatusLabel = (status: string): string => {
     const statusMap: Record<string, string> = {
       draft: 'Draft',
-      active: 'Active',
-      archived: 'Archived',
       applied: 'Applied',
       interview: 'Interview',
       offer: 'Offer',
@@ -150,7 +179,47 @@ export function JobOverviewTab({ job, onJobUpdate }: JobOverviewTabProps) {
     return (
       <div className={styles.container}>
         <div className={`${styles.viewContainer} ${scrollStyles.scrollbarVerticalContainer}`}>
-          {/* Status Field */}
+          {/* Location */}
+          <div className={styles.fieldGroup}>
+            <label className={styles.fieldLabel}>Location</label>
+            <div className={styles.fieldValue}>
+              {String(job.metaData?.location || '') || (
+                <span className={styles.emptyState}>Not specified</span>
+              )}
+            </div>
+          </div>
+
+          {/* Currency & Salary */}
+          <div className={styles.row}>
+            <div className={styles.fieldGroup}>
+              <label className={styles.fieldLabel}>Currency</label>
+              <div className={styles.fieldValue}>
+                {String(job.metaData?.currency || '') || (
+                  <span className={styles.emptyState}>Not specified</span>
+                )}
+              </div>
+            </div>
+            <div className={styles.fieldGroup}>
+              <label className={styles.fieldLabel}>Salary</label>
+              <div className={styles.fieldValue}>
+                {String(job.metaData?.salary || '') || (
+                  <span className={styles.emptyState}>Not specified</span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Job Type */}
+          <div className={styles.fieldGroup}>
+            <label className={styles.fieldLabel}>Job Type</label>
+            <div className={styles.fieldValue}>
+              {String(job.metaData?.jobType || '') || (
+                <span className={styles.emptyState}>Not specified</span>
+              )}
+            </div>
+          </div>
+
+          {/* Status */}
           <div className={styles.fieldGroup}>
             <label className={styles.fieldLabel}>Status</label>
             <div className={styles.fieldValue}>
@@ -158,7 +227,26 @@ export function JobOverviewTab({ job, onJobUpdate }: JobOverviewTabProps) {
             </div>
           </div>
 
-          {/* Description Field */}
+          {/* Job Posting URL */}
+          <div className={styles.fieldGroup}>
+            <label className={styles.fieldLabel}>Job Posting URL</label>
+            <div className={styles.fieldValue}>
+              {job.metaData?.jobPostingUrl ? (
+                <a
+                  href={String(job.metaData.jobPostingUrl)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={styles.linkValue}
+                >
+                  {String(job.metaData.jobPostingUrl)}
+                </a>
+              ) : (
+                <span className={styles.emptyState}>No URL provided</span>
+              )}
+            </div>
+          </div>
+
+          {/* Description */}
           <div className={styles.fieldGroup}>
             <label className={styles.fieldLabel}>Description</label>
             <div className={styles.textContent}>
@@ -170,7 +258,7 @@ export function JobOverviewTab({ job, onJobUpdate }: JobOverviewTabProps) {
             </div>
           </div>
 
-          {/* Requirements Field */}
+          {/* Requirements */}
           <div className={styles.fieldGroup}>
             <label className={styles.fieldLabel}>Requirements</label>
             <div className={styles.textContent}>
@@ -182,7 +270,7 @@ export function JobOverviewTab({ job, onJobUpdate }: JobOverviewTabProps) {
             </div>
           </div>
 
-          {/* Key Skills Field */}
+          {/* Key Skills */}
           <div className={styles.fieldGroup}>
             <label className={styles.fieldLabel}>Key Skills</label>
             <div className={styles.chipsContainer}>
@@ -202,7 +290,7 @@ export function JobOverviewTab({ job, onJobUpdate }: JobOverviewTabProps) {
             </div>
           </div>
 
-          {/* Tags Field */}
+          {/* Tags */}
           <div className={styles.fieldGroup}>
             <label className={styles.fieldLabel}>Tags</label>
             <div className={styles.chipsContainer}>
@@ -258,6 +346,45 @@ export function JobOverviewTab({ job, onJobUpdate }: JobOverviewTabProps) {
           disabled={isLoading}
         />
 
+        {/* Location */}
+        <EnhancedTextField
+          label="Location"
+          value={formData.location}
+          onChange={handleChange('location')}
+          placeholder="e.g. Bangalore, IN"
+          disabled={isLoading}
+        />
+
+        {/* Currency & Salary */}
+        <div className={styles.row}>
+          <div className={styles.field2}>
+            <EnhancedTextField
+              label="Currency"
+              value={formData.currency}
+              onChange={handleChange('currency')}
+              placeholder="IND"
+              disabled={isLoading}
+            />
+          </div>
+          <div className={styles.field3}>
+            <EnhancedTextField
+              label="Salary"
+              value={formData.salary}
+              onChange={handleChange('salary')}
+              disabled={isLoading}
+            />
+          </div>
+        </div>
+
+        {/* Job Type */}
+        <EnhancedTextField
+          label="Job Type"
+          value={formData.jobType}
+          onChange={handleChange('jobType')}
+          placeholder="Full-time"
+          disabled={isLoading}
+        />
+
         {/* Status */}
         <EnhancedSelectDropdown
           label="Application Status"
@@ -266,14 +393,22 @@ export function JobOverviewTab({ job, onJobUpdate }: JobOverviewTabProps) {
           onChange={handleChange('status') as never}
           disabled={isLoading}
           options={[
-            { value: 'draft', label: 'Draft (Not yet applied)', dataId: 'draft' },
+            { value: 'draft', label: 'Draft', dataId: 'draft' },
             { value: 'applied', label: 'Applied', dataId: 'applied' },
             { value: 'interview', label: 'Interview', dataId: 'interview' },
             { value: 'offer', label: 'Offer', dataId: 'offer' },
             { value: 'rejected', label: 'Rejected', dataId: 'rejected' },
-            { value: 'active', label: 'Active', dataId: 'active' },
-            { value: 'archived', label: 'Archived', dataId: 'archived' },
           ]}
+        />
+
+        {/* Job Posting URL */}
+        <EnhancedTextField
+          label="Job Posting URL"
+          value={formData.jobPostingUrl}
+          onChange={handleChange('jobPostingUrl')}
+          placeholder="https://..."
+          type="url"
+          disabled={isLoading}
         />
 
         {/* Description */}

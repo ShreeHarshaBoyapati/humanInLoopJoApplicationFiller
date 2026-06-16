@@ -25,7 +25,8 @@ export type ExtensionMessage =
   | { action: 'LOGOUT' }
   | { action: 'CREATE_JOB'; payload: Omit<Job, 'id'> }
   | { action: 'UPDATE_JOB'; payload: Job }
-  | { action: 'DELETE_JOB'; payload: JobPublic }
+  | { action: 'DELETE_JOB'; payload: JobPublic & { requestId?: string } }
+  | { action: 'CANCEL_DELETE_JOB'; payload: { requestId: string } }
   | { action: 'GET_JOBS'; payload: GetJobParams }
   | { action: 'OPEN_SIDE_PANEL' }
   | { action: 'LOGOUT_TRIGGERED'; payload?: { message?: string } }

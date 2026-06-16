@@ -8,6 +8,7 @@ import {
   EnhancedChip,
   EnhancedTextInputArea,
   EnhancedAccordion,
+  Markdown,
 } from '@repo/ui';
 import type { CreateJobInput } from '@repo/shared-types';
 import { useCreateJob } from '../hooks/use-jobs';
@@ -22,8 +23,6 @@ interface JobFormData {
   salary: string;
   requirements: string;
   currency: string;
-  persona: string;
-  acceptanceLevel: number;
   jobType: string;
   description: string;
   notes: string;
@@ -40,8 +39,6 @@ const initialFormData: JobFormData = {
   salary: '',
   requirements: '',
   currency: 'IND',
-  persona: 'default',
-  acceptanceLevel: 0,
   jobType: 'Full-time',
   description: '',
   notes: '',
@@ -62,6 +59,7 @@ export function AddApplicationModal({ isOpen, onClose, onSuccess }: AddApplicati
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof JobFormData, string>>>({});
   const [tagInput, setTagInput] = useState('');
   const [skillInput, setSkillInput] = useState('');
+  const [notesView, setNotesView] = useState<'write' | 'preview'>('write');
 
   const createJob = useCreateJob();
   const showSnackbar = useStore((state) => state.showSnackbar);
@@ -134,14 +132,19 @@ export function AddApplicationModal({ isOpen, onClose, onSuccess }: AddApplicati
     const payload: CreateJobInput = {
       title: formData.title,
       companyName: formData.companyName,
-      persona: formData.persona,
       status: formData.status,
-      acceptanceLevel: Number(formData.acceptanceLevel) || 0,
       notes: formData.notes,
       keySkills: formData.keySkills,
       tags: formData.tags,
       description: formData.description,
       requirements: formData.requirements,
+      metaData: {
+        location: formData.location,
+        salary: formData.salary,
+        currency: formData.currency,
+        jobType: formData.jobType,
+        jobPostingUrl: formData.jobPostingUrl,
+      },
     };
 
     createJob.mutate(payload, {
@@ -149,6 +152,9 @@ export function AddApplicationModal({ isOpen, onClose, onSuccess }: AddApplicati
         showSnackbar('Job created successfully!', { severity: 'success' });
         setFormData(initialFormData);
         setFormErrors({});
+        setTagInput('');
+        setSkillInput('');
+        setNotesView('write');
         onClose();
         onSuccess?.();
       },
@@ -165,6 +171,7 @@ export function AddApplicationModal({ isOpen, onClose, onSuccess }: AddApplicati
     setFormErrors({});
     setTagInput('');
     setSkillInput('');
+    setNotesView('write');
     onClose();
   };
 
@@ -269,46 +276,6 @@ export function AddApplicationModal({ isOpen, onClose, onSuccess }: AddApplicati
           </div>
         </div>
 
-        <div className={styles.row}>
-          <div className={styles.field}>
-            <EnhancedSelectDropdown
-              label="Persona"
-              testId="persona-dropdown"
-              value={formData.persona}
-              onChange={handleChange('persona') as never}
-              disabled={isLoading}
-              error={!!formErrors.persona}
-              showErrorMsg={!!formErrors.persona}
-              errorText={formErrors.persona}
-              options={[
-                { value: 'default', label: 'Default', dataId: 'default' },
-                {
-                  value: 'software-engineer',
-                  label: 'Software Engineer',
-                  dataId: 'software-engineer',
-                },
-                { value: 'product-manager', label: 'Product Manager', dataId: 'product-manager' },
-              ]}
-            />
-          </div>
-          <div className={styles.field}>
-            <EnhancedTextField
-              label="Acceptance Level"
-              value={String(formData.acceptanceLevel)}
-              onChange={handleChange('acceptanceLevel')}
-              type="number"
-              disabled={isLoading}
-              variant={formErrors.acceptanceLevel ? 'error' : 'default'}
-              helperText={formErrors.acceptanceLevel}
-              customProps={{
-                childProps: {
-                  slotProps: { htmlInput: { min: 0, max: 100 } },
-                },
-              }}
-            />
-          </div>
-        </div>
-
         <EnhancedAccordion title="Job Description">
           <EnhancedTextInputArea
             value={formData.description}
@@ -321,14 +288,56 @@ export function AddApplicationModal({ isOpen, onClose, onSuccess }: AddApplicati
         </EnhancedAccordion>
 
         <EnhancedAccordion title="Notes (Markdown supported)">
-          <EnhancedTextInputArea
-            value={formData.notes}
-            onChange={handleChange('notes')}
-            placeholder="Add your personal notes or markdown content here..."
-            disabled={isLoading}
-            variant={formErrors.notes ? 'error' : 'default'}
-            helperText={formErrors.notes}
-          />
+          <div className={styles.notesTabs} role="tablist" aria-label="Notes view">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={notesView === 'write'}
+              data-testid="notes-tab-write"
+              className={`${styles.notesTab} ${notesView === 'write' ? styles.notesTabActive : ''}`}
+              onClick={() => setNotesView('write')}
+            >
+              Write
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={notesView === 'preview'}
+              data-testid="notes-tab-preview"
+              className={`${styles.notesTab} ${notesView === 'preview' ? styles.notesTabActive : ''}`}
+              onClick={() => setNotesView('preview')}
+            >
+              Preview
+            </button>
+          </div>
+          {notesView === 'write' ? (
+            <EnhancedTextInputArea
+              value={formData.notes}
+              onChange={handleChange('notes')}
+              placeholder={`Write your notes here... Supports Markdown formatting
+
+Examples:
+- **Bold text** and *italic text*
+- # Headers
+- [Links](https://example.com)
+- Lists (ordered and unordered)
+- \`inline code\` and code blocks
+- Tables (using | syntax)`}
+              minRows={6}
+              maxRows={12}
+              disabled={isLoading}
+              variant={formErrors.notes ? 'error' : 'default'}
+              helperText={formErrors.notes}
+            />
+          ) : (
+            <div className={styles.notesPreview} data-testid="notes-preview" role="tabpanel">
+              {formData.notes.trim() ? (
+                <Markdown source={formData.notes} />
+              ) : (
+                <span className={styles.notesPreviewEmpty}>Nothing to preview yet.</span>
+              )}
+            </div>
+          )}
         </EnhancedAccordion>
 
         <EnhancedAccordion title="Requirements">
@@ -352,9 +361,11 @@ export function AddApplicationModal({ isOpen, onClose, onSuccess }: AddApplicati
           showErrorMsg={!!formErrors.status}
           errorText={formErrors.status}
           options={[
-            { value: 'draft', label: 'Draft (Not yet applied)', dataId: 'draft' },
-            { value: 'active', label: 'Active (Applied/Interviewing)', dataId: 'active' },
-            { value: 'archived', label: 'Archived (Rejected/Offer)', dataId: 'archived' },
+            { value: 'draft', label: 'Draft', dataId: 'draft' },
+            { value: 'applied', label: 'Applied', dataId: 'applied' },
+            { value: 'interview', label: 'Interview', dataId: 'interview' },
+            { value: 'offer', label: 'Offer', dataId: 'offer' },
+            { value: 'rejected', label: 'Rejected', dataId: 'rejected' },
           ]}
         />
 
