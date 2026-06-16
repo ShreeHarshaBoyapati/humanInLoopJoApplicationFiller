@@ -712,6 +712,7 @@ class ResumeVersionController {
     // Get the currently active resume for the user
     const previousActiveResume = await resumeRepository.findOne({
       where: { persona: { user: { id: userId } }, active: true },
+      relations: ['persona'],
     });
     const previousResumeId = previousActiveResume?.id || null;
 

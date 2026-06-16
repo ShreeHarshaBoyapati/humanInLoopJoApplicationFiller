@@ -25,6 +25,7 @@ export function resumeToMetadata(r: Resume): ResumeMetadata {
     active: r.active,
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,
+    personaId: r.persona?.id,
   };
 }
 

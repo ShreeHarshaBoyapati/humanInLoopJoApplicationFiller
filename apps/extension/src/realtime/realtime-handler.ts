@@ -125,7 +125,26 @@ export async function applyRealtimeEventToCache(
       return;
     }
     if (event.action === 'setActive') {
-      await deps.invalidateResumes();
+      const personaIds = new Set<string>();
+      if (event.data && isFullRow(event.data)) {
+        const resume = event.data as { personaId?: unknown };
+        if (typeof resume.personaId === 'string') {
+          personaIds.add(resume.personaId);
+        }
+      }
+      for (const row of fullRows) {
+        const resume = row as { personaId?: unknown };
+        if (typeof resume.personaId === 'string') {
+          personaIds.add(resume.personaId);
+        }
+      }
+      if (personaIds.size === 0) {
+        await deps.invalidateResumes();
+        return;
+      }
+      await Promise.all(
+        Array.from(personaIds).map((personaId) => deps.clearResumesForPersona(personaId))
+      );
       return;
     }
     if (event.action === 'create' || event.action === 'branch') {

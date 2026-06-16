@@ -149,7 +149,7 @@ export function applyRealtimeEvent(qc: QueryClient, event: unknown): void {
   const related = Array.isArray(event.related) ? event.related : [];
 
   if (event.resource === 'persona') {
-    if (event.action === 'update' || event.action === 'setActive') {
+    if (event.action === 'update') {
       if (event.data) {
         applyPatchFromData<Persona>(qc, PERSONA_KEYS.lists(), event.data as unknown as Persona);
       }
@@ -158,6 +158,22 @@ export function applyRealtimeEvent(qc: QueryClient, event: unknown): void {
         PERSONA_KEYS.lists(),
         related as unknown as Persona[]
       );
+      return;
+    }
+    if (event.action === 'setActive') {
+      // Invalidate persona lists and resume lists for the affected personas
+      // because active flags may change on rows across cached pages.
+      qc.invalidateQueries({ queryKey: PERSONA_KEYS.lists() });
+      const personaIds = new Set<string>([event.id]);
+      for (const row of related) {
+        const persona = row as { id?: unknown };
+        if (typeof persona.id === 'string') {
+          personaIds.add(persona.id);
+        }
+      }
+      for (const personaId of personaIds) {
+        qc.invalidateQueries({ queryKey: RESUME_KEYS.byPersona(personaId) });
+      }
       return;
     }
     if (event.action === 'create' || event.action === 'branch') {
@@ -177,7 +193,7 @@ export function applyRealtimeEvent(qc: QueryClient, event: unknown): void {
   }
 
   if (event.resource === 'resume') {
-    if (event.action === 'update' || event.action === 'setActive') {
+    if (event.action === 'update') {
       if (event.data) {
         applyPatchFromData<ResumeMetadata>(
           qc,
@@ -190,6 +206,29 @@ export function applyRealtimeEvent(qc: QueryClient, event: unknown): void {
         RESUME_KEYS.lists(),
         related as unknown as ResumeMetadata[]
       );
+      return;
+    }
+    if (event.action === 'setActive') {
+      const personaIds = new Set<string>();
+      if (event.data) {
+        const resume = event.data as { personaId?: unknown };
+        if (typeof resume.personaId === 'string') {
+          personaIds.add(resume.personaId);
+        }
+      }
+      for (const row of related) {
+        const resume = row as { personaId?: unknown };
+        if (typeof resume.personaId === 'string') {
+          personaIds.add(resume.personaId);
+        }
+      }
+      if (personaIds.size === 0) {
+        qc.invalidateQueries({ queryKey: RESUME_KEYS.lists() });
+        return;
+      }
+      for (const personaId of personaIds) {
+        qc.invalidateQueries({ queryKey: RESUME_KEYS.byPersona(personaId) });
+      }
       return;
     }
     if (event.action === 'create' || event.action === 'branch') {
@@ -226,7 +265,7 @@ export function applyRealtimeEvent(qc: QueryClient, event: unknown): void {
   if (event.resource === 'resume-version') {
     const versionData = event.data as unknown as ResumeVersionMetadata | undefined;
 
-    if (event.action === 'update' || event.action === 'setActive') {
+    if (event.action === 'update') {
       if (!versionData?.personaId || !versionData?.resumeId) return;
       const versionScope = VERSION_KEYS.byPersonaAndResume(
         versionData.personaId,
@@ -238,6 +277,44 @@ export function applyRealtimeEvent(qc: QueryClient, event: unknown): void {
         versionScope,
         related as unknown as ResumeVersionMetadata[]
       );
+      return;
+    }
+    if (event.action === 'setActive') {
+      const resumeIds = new Set<string>();
+      if (typeof versionData?.resumeId === 'string') {
+        resumeIds.add(versionData.resumeId);
+      }
+      for (const row of related) {
+        const version = row as { resumeId?: unknown };
+        if (typeof version.resumeId === 'string') {
+          resumeIds.add(version.resumeId);
+        }
+      }
+      const personaIds = new Set<string>();
+      if (typeof versionData?.personaId === 'string') {
+        personaIds.add(versionData.personaId);
+      }
+      for (const row of related) {
+        const version = row as { personaId?: unknown };
+        if (typeof version.personaId === 'string') {
+          personaIds.add(version.personaId);
+        }
+      }
+      if (resumeIds.size === 0 || personaIds.size === 0) {
+        qc.invalidateQueries({ queryKey: VERSION_KEYS.lists() });
+        return;
+      }
+      if (personaIds.size === 1) {
+        const personaId = Array.from(personaIds)[0];
+        for (const resumeId of resumeIds) {
+          qc.invalidateQueries({
+            queryKey: VERSION_KEYS.byPersonaAndResume(personaId, resumeId),
+          });
+        }
+        return;
+      }
+
+      qc.invalidateQueries({ queryKey: VERSION_KEYS.lists() });
       return;
     }
     if (event.action === 'create' || event.action === 'branch') {

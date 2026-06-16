@@ -67,6 +67,7 @@ export interface ResumeMetadata {
   active: boolean;
   createdAt: Date;
   updatedAt: Date;
+  personaId?: string;
 }
 
 export interface ResumeWithVersions extends ResumeMetadata {
