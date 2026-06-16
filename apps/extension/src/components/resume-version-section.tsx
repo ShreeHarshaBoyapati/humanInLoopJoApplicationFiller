@@ -357,7 +357,6 @@ export function ResumeVersionSection({
       if (message.action !== 'RESOURCE_CHANGED') return;
       const payload = message.payload;
       if (!payload || payload.resource !== 'resume-version') return;
-      if (payload.action === 'update' || payload.action === 'setActive') return;
       if (!resumeId) return;
       dispatch({ type: 'RESET' });
       fetchVersions(1, searchQuery);

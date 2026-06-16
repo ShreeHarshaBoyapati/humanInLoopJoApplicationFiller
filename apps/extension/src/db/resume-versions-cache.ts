@@ -185,7 +185,6 @@ export async function patchVersionInPages(
       });
       if (mutated) {
         await cursor.update({ ...value, items: nextItems });
-        break;
       }
       cursor = await cursor.continue();
     }

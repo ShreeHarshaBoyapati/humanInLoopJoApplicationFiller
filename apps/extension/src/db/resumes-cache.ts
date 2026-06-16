@@ -190,7 +190,6 @@ export async function patchResumeInPages(
       });
       if (mutated) {
         await cursor.update({ ...value, items: nextItems });
-        break;
       }
       cursor = await cursor.continue();
     }
@@ -217,7 +216,6 @@ export async function patchResumeCountInPages(id: string, versionsCount: number)
       });
       if (mutated) {
         await cursor.update({ ...value, items: nextItems });
-        break;
       }
       cursor = await cursor.continue();
     }

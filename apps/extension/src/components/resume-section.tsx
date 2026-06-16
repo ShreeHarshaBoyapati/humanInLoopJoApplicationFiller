@@ -329,7 +329,6 @@ export function ResumeSection({
       if (message.action !== 'RESOURCE_CHANGED') return;
       const payload = message.payload;
       if (!payload || payload.resource !== 'resume') return;
-      if (payload.action === 'update' || payload.action === 'setActive') return;
       if (!personaId) return;
       dispatch({ type: 'RESET' });
       fetchResumes(1, searchQuery);

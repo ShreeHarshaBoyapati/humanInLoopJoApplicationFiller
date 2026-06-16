@@ -882,7 +882,7 @@ class ResumeVersionController {
       versionName: 'v1',
       comment: comment,
       keywords: [...version.keywords],
-      active: true,
+      active: false,
       dataUpdatedAt: version.dataUpdatedAt,
       resume: newResume,
     });

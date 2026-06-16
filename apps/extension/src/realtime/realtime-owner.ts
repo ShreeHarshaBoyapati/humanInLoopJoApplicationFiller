@@ -106,9 +106,13 @@ export class RealtimeOwner {
     this.client = new RealtimeClient({
       url,
       token,
-      onMessage: (event) => {
+      onMessage: async (event) => {
         if (event && event.type === 'resource.changed') {
-          applyRealtimeEventToCache(event, DEPS);
+          try {
+            await applyRealtimeEventToCache(event, DEPS);
+          } catch {
+            // Ignore.
+          }
           broadcastToSidePanel(event);
         }
       },

@@ -320,7 +320,6 @@ export function PersonasSection({ onSelectPersona, isFromAutofill = false }: Per
       if (message.action !== 'RESOURCE_CHANGED') return;
       const payload = message.payload;
       if (!payload || payload.resource !== 'persona') return;
-      if (payload.action === 'update' || payload.action === 'setActive') return;
       dispatch({ type: 'RESET' });
       fetchPersonas(1, searchQuery);
       if (scrollContainerRef.current) scrollContainerRef.current.scrollTop = 0;

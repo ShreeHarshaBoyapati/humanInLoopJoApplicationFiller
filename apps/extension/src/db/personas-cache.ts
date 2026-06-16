@@ -123,7 +123,6 @@ export async function patchPersonaInPages(
       });
       if (mutated) {
         await cursor.update({ ...value, items: nextItems });
-        break;
       }
       cursor = await cursor.continue();
     }
@@ -150,7 +149,6 @@ export async function patchPersonaCountInPages(id: string, resumesCount: number)
       });
       if (mutated) {
         await cursor.update({ ...value, items: nextItems });
-        break;
       }
       cursor = await cursor.continue();
     }
