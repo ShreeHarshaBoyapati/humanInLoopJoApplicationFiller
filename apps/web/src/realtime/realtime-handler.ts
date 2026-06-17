@@ -1,8 +1,16 @@
 import type { QueryClient } from '@tanstack/react-query';
-import type { Persona, ResumeMetadata, ResumeVersionMetadata } from '@repo/shared-types';
+import type {
+  Job,
+  PaginatedResultListItem,
+  Persona,
+  ResumeMetadata,
+  ResumeVersionMetadata,
+} from '@repo/shared-types';
 import { PERSONA_KEYS } from '../hooks/use-personas';
 import { RESUME_KEYS } from '../hooks/use-resumes';
 import { VERSION_KEYS } from '../hooks/use-resume-versions';
+import { JOB_KEYS, requiresListInvalidation } from '../hooks/use-jobs';
+import { RESULT_KEYS } from '../hooks/use-results';
 
 type InfinitePages<T> = { pages: { items: T[] }[]; pageParams?: number[] };
 
@@ -53,6 +61,25 @@ function applyPatchFromData<T extends { id: string }>(
   applyPatchesToMatchingQueries<T>(qc, prefix, [data]);
 }
 
+function findJobInQueryCache<T extends { id: string }>(
+  qc: QueryClient,
+  prefix: readonly unknown[],
+  id: string
+): T | undefined {
+  const entries = qc.getQueriesData<{ pages: { items: T[] }[] }>({
+    queryKey: prefix,
+    exact: false,
+  });
+  for (const [, data] of entries) {
+    if (!data?.pages) continue;
+    for (const page of data.pages) {
+      const match = page.items.find((item) => item.id === id);
+      if (match) return match;
+    }
+  }
+  return undefined;
+}
+
 interface CountUpdate {
   id: string;
   resumesCount?: number;
@@ -101,7 +128,7 @@ function applyCountUpdates(qc: QueryClient, updates: ReadonlyArray<unknown>): vo
 
 export interface RealtimeEvent {
   type: 'resource.changed';
-  resource: 'persona' | 'resume' | 'resume-version';
+  resource: 'persona' | 'resume' | 'resume-version' | 'job' | 'result';
   action: 'update' | 'setActive' | 'create' | 'branch' | 'delete';
   id: string;
   data?: { id: string } & Record<string, unknown>;
@@ -114,7 +141,11 @@ function isResourceChangedEvent(event: unknown): event is RealtimeEvent {
   return (
     e.type === 'resource.changed' &&
     typeof e.id === 'string' &&
-    (e.resource === 'persona' || e.resource === 'resume' || e.resource === 'resume-version') &&
+    (e.resource === 'persona' ||
+      e.resource === 'resume' ||
+      e.resource === 'resume-version' ||
+      e.resource === 'job' ||
+      e.resource === 'result') &&
     (e.action === 'update' ||
       e.action === 'setActive' ||
       e.action === 'create' ||
@@ -258,6 +289,60 @@ export function applyRealtimeEvent(qc: QueryClient, event: unknown): void {
         });
       }
       applyCountUpdates(qc, related);
+      return;
+    }
+  }
+
+  if (event.resource === 'job') {
+    if (event.action === 'update' || event.action === 'setActive') {
+      const jobData = event.data as unknown as Job | undefined;
+      const newStatus = jobData?.status;
+      const previousJob = jobData?.id
+        ? findJobInQueryCache<Job>(qc, JOB_KEYS.lists(), jobData.id)
+        : undefined;
+      const previousStatus = previousJob?.status;
+
+      if (requiresListInvalidation(previousStatus, newStatus)) {
+        qc.invalidateQueries({ queryKey: JOB_KEYS.lists() });
+        return;
+      }
+
+      if (jobData) {
+        applyPatchFromData<Job>(qc, JOB_KEYS.lists(), jobData);
+      }
+      applyPatchesToMatchingQueries<Job>(qc, JOB_KEYS.lists(), related as unknown as Job[]);
+      return;
+    }
+    if (event.action === 'create' || event.action === 'branch' || event.action === 'delete') {
+      qc.invalidateQueries({ queryKey: JOB_KEYS.lists() });
+      return;
+    }
+  }
+
+  if (event.resource === 'result') {
+    if (event.action === 'create') {
+      const firstRelated = Array.isArray(event.related) ? event.related[0] : undefined;
+      const jobId =
+        firstRelated && typeof firstRelated === 'object' && 'jobId' in firstRelated
+          ? (firstRelated as { jobId?: string }).jobId
+          : undefined;
+
+      if (jobId) {
+        qc.invalidateQueries({ queryKey: RESULT_KEYS.byJob(jobId) });
+      }
+
+      if (firstRelated && typeof firstRelated === 'object') {
+        const jobPatch: { id: string } & Partial<Job> = { id: jobId ?? event.id };
+        if ('primaryResultId' in firstRelated) {
+          jobPatch.primaryResultId = (
+            firstRelated as { primaryResultId?: string | null }
+          ).primaryResultId;
+        }
+        if ('acceptanceLevel' in firstRelated) {
+          jobPatch.acceptanceLevel = (firstRelated as { acceptanceLevel?: number }).acceptanceLevel;
+        }
+        applyPatchesToMatchingQueries<Job>(qc, JOB_KEYS.lists(), [jobPatch]);
+      }
       return;
     }
   }

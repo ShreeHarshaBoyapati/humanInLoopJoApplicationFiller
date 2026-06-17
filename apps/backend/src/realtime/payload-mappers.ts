@@ -1,10 +1,14 @@
 import type Persona from '../database/entities/persona.js';
 import type Resume from '../database/entities/resume.js';
 import type ResumeVersion from '../database/entities/resume-version.js';
+import type Result from '../database/entities/result.js';
+import type JobEntity from '../database/entities/job.js';
 import type {
   Persona as PersonaPayload,
   ResumeMetadata,
   ResumeVersionMetadata,
+  Job,
+  PaginatedResultListItem,
 } from '@repo/shared-types';
 
 export function personaToMetadata(p: Persona): PersonaPayload {
@@ -48,5 +52,41 @@ export function versionToMetadata(
     updatedAt: v.updatedAt,
     resumeId,
     personaId,
+  };
+}
+
+export function jobToPublic(job: JobEntity): Job {
+  return {
+    id: job.id,
+    title: job.title,
+    tags: job.tags,
+    personaId: job.personaId,
+    status: job.status,
+    acceptanceLevel: job.acceptanceLevel,
+    companyName: job.companyName,
+    metaData: job.metaData,
+    description: job.description,
+    requirements: job.requirements,
+    keySkills: job.keySkills,
+    notes: job.notes,
+    favorite: job.favorite,
+    primaryResultId: job.primaryResultId,
+    dataUpdatedAt: job.dataUpdatedAt,
+    createdAt: job.createdAt,
+    updatedAt: job.updatedAt,
+  };
+}
+
+export function resultToListItem(result: Result): PaginatedResultListItem {
+  return {
+    id: result.id,
+    versionName: result.resumeVersion.versionName,
+    resumeName: result.resumeVersion.resume.fileName,
+    personaName: result.resumeVersion.resume.persona.title,
+    score: result.score,
+    resumeId: result.resumeVersion.resume.id,
+    resumeVersionId: result.resumeVersionId,
+    createdAt: result.createdAt,
+    resumeVersionDataUpdatedAt: result.resumeVersion.dataUpdatedAt,
   };
 }

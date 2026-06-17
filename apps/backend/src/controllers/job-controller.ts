@@ -14,6 +14,8 @@ import type {
 } from '../middlewares/job.js';
 import { ApiResponse, JobList, Job, type JobStatus } from '@repo/shared-types';
 import type { StatusUpdatedAtMap, StatusUpdatedAtKey } from '../database/entities/job.js';
+import * as wsHub from '../realtime/ws-hub.js';
+import { jobToPublic } from '../realtime/payload-mappers.js';
 
 const ARCHIVED_STATUSES: JobStatus[] = ['offer', 'rejected'];
 
@@ -84,6 +86,9 @@ class JobController {
     job.statusUpdatedAt.draft = job.dataUpdatedAt;
 
     await jobRepository.save(job);
+
+    wsHub.emit(userId, 'job', 'create', job.id, jobToPublic(job), undefined, req.realtimeClientId);
+
     const data: ApiResponse<{ id: string }> = {
       success: true,
       message: 'Job created successfully',
@@ -192,6 +197,8 @@ class JobController {
 
     await jobRepository.save(job);
 
+    wsHub.emit(userId, 'job', 'update', job.id, jobToPublic(job), undefined, req.realtimeClientId);
+
     const data: ApiResponse<Job> = {
       success: true,
       data: job,
@@ -235,6 +242,8 @@ class JobController {
     }
 
     await jobRepository.remove(job);
+
+    wsHub.emit(userId, 'job', 'delete', id, undefined, undefined, req.realtimeClientId);
 
     const data: ApiResponse = {
       success: true,

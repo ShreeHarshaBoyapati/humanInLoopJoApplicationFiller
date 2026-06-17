@@ -1,7 +1,9 @@
+import type { Job } from './job.js';
+import type { PaginatedResultListItem } from './result.js';
 import type { Persona } from './persona.js';
 import type { ResumeMetadata, ResumeVersionMetadata } from './resume.js';
 
-export type RealtimeResource = 'persona' | 'resume' | 'resume-version';
+export type RealtimeResource = 'persona' | 'resume' | 'resume-version' | 'job' | 'result';
 
 export type RealtimeAction = 'update' | 'setActive' | 'create' | 'branch' | 'delete';
 
@@ -17,6 +19,8 @@ export interface ResourceChangedEvent<T = unknown> {
 export type PersonaChangedEvent = ResourceChangedEvent<Persona>;
 export type ResumeChangedEvent = ResourceChangedEvent<ResumeMetadata>;
 export type ResumeVersionChangedEvent = ResourceChangedEvent<ResumeVersionMetadata>;
+export type JobChangedEvent = ResourceChangedEvent<Job>;
+export type ResultChangedEvent = ResourceChangedEvent<PaginatedResultListItem>;
 
 export interface HelloEvent {
   type: 'hello';

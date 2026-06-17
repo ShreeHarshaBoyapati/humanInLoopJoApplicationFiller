@@ -10,6 +10,8 @@ import { decryptText } from '../utils/encryption.js';
 import { generateText, Output } from 'ai';
 import { z } from 'zod';
 import { transitDecrypt } from '@repo/utils';
+import * as wsHub from '../realtime/ws-hub.js';
+import { jobToPublic } from '../realtime/payload-mappers.js';
 import type { ApiResponse, AnalyzeKeywordsApiResponse, ResumeData } from '@repo/shared-types';
 
 const TRANSIT_SECRET = process.env.TRANSIT_SECRET ?? 'jfp-default-transit-secret-change-in-prod';
@@ -324,6 +326,26 @@ Your task:
 
       const acceptanceLevelChanged = job.acceptanceLevel !== previousAcceptanceLevel;
       await jobRepository.save(job);
+
+      const related = {
+        jobId,
+        primaryResultId: isFirstResult ? result.id : undefined,
+        acceptanceLevel: acceptanceLevelChanged ? job.acceptanceLevel : undefined,
+      };
+
+      wsHub.emit(userId, 'result', 'create', result.id, undefined, [related], req.realtimeClientId);
+
+      if (isFirstResult || acceptanceLevelChanged) {
+        wsHub.emit(
+          userId,
+          'job',
+          'update',
+          job.id,
+          jobToPublic(job),
+          undefined,
+          req.realtimeClientId
+        );
+      }
 
       const data: AnalyzeKeywordsApiResponse = {
         success: true,

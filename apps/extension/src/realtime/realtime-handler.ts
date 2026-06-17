@@ -1,4 +1,6 @@
 import type {
+  Job,
+  PaginatedResultListItem,
   Persona,
   ResumeMetadata,
   ResumeVersionMetadata,
@@ -9,14 +11,24 @@ export interface CacheInvalidationDeps {
   patchPersonasPage: (patch: { id: string } & Partial<Persona>) => Promise<void>;
   patchResumesPage: (patch: { id: string } & Partial<ResumeMetadata>) => Promise<void>;
   patchVersionsPage: (patch: { id: string } & Partial<ResumeVersionMetadata>) => Promise<void>;
+  patchJobsPage: (patch: { id: string } & Partial<Job>) => Promise<void>;
+  patchResultsPage: (patch: { id: string } & Partial<PaginatedResultListItem>) => Promise<void>;
   patchPersonaCount: (id: string, resumesCount: number) => Promise<void>;
   patchResumeCount: (id: string, versionsCount: number) => Promise<void>;
+  patchJobPrimaryAndAcceptance: (
+    id: string,
+    primaryResultId?: string | null,
+    acceptanceLevel?: number
+  ) => Promise<void>;
   clearResumesForPersona: (personaId: string) => Promise<void>;
   clearVersionsForPersona: (personaId: string) => Promise<void>;
   clearVersionsForResume: (resumeId: string) => Promise<void>;
+  clearResultsForJob: (jobId: string) => Promise<void>;
   invalidatePersonas: () => Promise<void>;
   invalidateResumes: () => Promise<void>;
   invalidateVersions: () => Promise<void>;
+  invalidateJobs: () => Promise<void>;
+  invalidateResults: () => Promise<void>;
 }
 
 interface PersonaScopeUpdate {
@@ -36,6 +48,12 @@ interface PersonaCountUpdate {
 interface ResumeCountUpdate {
   id: string;
   versionsCount: number;
+}
+
+interface ResultRelatedUpdate {
+  jobId: string;
+  primaryResultId?: string | null;
+  acceptanceLevel?: number;
 }
 
 function isFullRow(value: unknown): value is { id: string } {
@@ -66,6 +84,12 @@ function isResumeCount(value: unknown): value is ResumeCountUpdate {
   if (!value || typeof value !== 'object') return false;
   const obj = value as { id?: unknown; versionsCount?: unknown };
   return typeof obj.id === 'string' && typeof obj.versionsCount === 'number';
+}
+
+function isResultRelatedUpdate(value: unknown): value is ResultRelatedUpdate {
+  if (!value || typeof value !== 'object') return false;
+  const obj = value as { jobId?: unknown; primaryResultId?: unknown; acceptanceLevel?: unknown };
+  return typeof obj.jobId === 'string';
 }
 
 export async function applyRealtimeEventToCache(
@@ -175,6 +199,49 @@ export async function applyRealtimeEventToCache(
       }
       if (count) {
         ops.push(deps.patchPersonaCount(count.id, count.resumesCount));
+      }
+      await Promise.all(ops);
+      return;
+    }
+  }
+
+  if (event.resource === 'job') {
+    if (event.action === 'update' || event.action === 'setActive') {
+      const patches: Array<{ id: string } & Partial<Job>> = [];
+      if (event.data && isFullRow(event.data)) {
+        patches.push(event.data as { id: string } & Partial<Job>);
+      }
+      for (const row of fullRows) {
+        patches.push(row as { id: string } & Partial<Job>);
+      }
+      await Promise.all(patches.map((p) => deps.patchJobsPage(p)));
+      return;
+    }
+    if (event.action === 'create' || event.action === 'branch' || event.action === 'delete') {
+      const ops: Promise<void>[] = [deps.invalidateJobs()];
+      if (event.action === 'delete') {
+        ops.push(deps.clearResultsForJob(event.id));
+      }
+      await Promise.all(ops);
+      return;
+    }
+  }
+
+  if (event.resource === 'result') {
+    if (event.action === 'create') {
+      const update = related.find(isResultRelatedUpdate);
+      const ops: Promise<void>[] = [];
+      if (update) {
+        ops.push(deps.clearResultsForJob(update.jobId));
+        ops.push(
+          deps.patchJobPrimaryAndAcceptance(
+            update.jobId,
+            update.primaryResultId,
+            update.acceptanceLevel
+          )
+        );
+      } else {
+        ops.push(deps.invalidateResults());
       }
       await Promise.all(ops);
       return;

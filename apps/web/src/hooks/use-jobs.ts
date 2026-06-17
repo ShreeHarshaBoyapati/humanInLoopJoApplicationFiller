@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useSyncExternalStore } from 'react';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { axiosInstance } from '../utils/axios.ts';
@@ -20,7 +20,7 @@ export const JOB_KEYS = {
 
 const ACTIVE_STATUSES = ['draft', 'applied', 'interview'];
 
-const requiresListInvalidation = (previousStatus?: string, newStatus?: string): boolean => {
+export const requiresListInvalidation = (previousStatus?: string, newStatus?: string): boolean => {
   if (!previousStatus || !newStatus || previousStatus === newStatus) return false;
 
   const previousIsActive = ACTIVE_STATUSES.includes(previousStatus);
@@ -221,3 +221,31 @@ export const useDeleteJob = () => {
 
   return { ...mutation, cancel };
 };
+
+function findJobInCache(queryClient: ReturnType<typeof useQueryClient>, jobId: string): Job | null {
+  const entries = queryClient.getQueriesData<{ pages: PaginatedJobsResponse[] }>({
+    queryKey: JOB_KEYS.lists(),
+    exact: false,
+  });
+  for (const [, data] of entries) {
+    if (!data?.pages) continue;
+    for (const page of data.pages) {
+      const match = page.items.find((job) => job.id === jobId);
+      if (match) return match;
+    }
+  }
+  return null;
+}
+
+export function useJobFromCache(jobId: string | undefined, initialJob: Job | null): Job | null {
+  const queryClient = useQueryClient();
+
+  return useSyncExternalStore(
+    (callback) => {
+      const unsubscribe = queryClient.getQueryCache().subscribe(callback);
+      return () => unsubscribe();
+    },
+    () => (jobId ? (findJobInCache(queryClient, jobId) ?? initialJob) : initialJob),
+    () => initialJob
+  );
+}

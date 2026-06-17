@@ -121,4 +121,25 @@ export async function clearAllJobsCache(): Promise<void> {
   }
 }
 
+/**
+ * Patch a job page by id (signature matches the realtime handler deps).
+ */
+export async function patchJobInPages(patch: { id: string } & Partial<Job>): Promise<void> {
+  await updateJobInCache(patch.id, patch);
+}
+
+/**
+ * Patch only primaryResultId and acceptanceLevel on a cached job.
+ */
+export async function patchJobPrimaryAndAcceptanceInCache(
+  jobId: string,
+  primaryResultId?: string | null,
+  acceptanceLevel?: number
+): Promise<void> {
+  const updates: Partial<Job> & { id: string } = { id: jobId };
+  if (primaryResultId !== undefined) updates.primaryResultId = primaryResultId;
+  if (acceptanceLevel !== undefined) updates.acceptanceLevel = acceptanceLevel;
+  await updateJobInCache(jobId, updates);
+}
+
 export type { CachedJobsPage } from './common-cache';

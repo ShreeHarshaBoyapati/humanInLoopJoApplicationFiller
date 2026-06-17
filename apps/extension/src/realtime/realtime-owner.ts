@@ -18,19 +18,34 @@ import {
   invalidateVersionsForResume,
   clearVersionsForPersona,
 } from '../db/resume-versions-cache';
+import {
+  patchJobInPages,
+  patchJobPrimaryAndAcceptanceInCache,
+  clearAllJobsCache,
+} from '../db/jobs-cache';
+
+const noop = async () => {
+  // Extension side panel does not cache results today.
+};
 
 const DEPS: CacheInvalidationDeps = {
   patchPersonasPage: patchPersonaInPages,
   patchResumesPage: patchResumeInPages,
   patchVersionsPage: patchVersionInPages,
+  patchJobsPage: patchJobInPages,
+  patchResultsPage: noop,
   patchPersonaCount: patchPersonaCountInPages,
   patchResumeCount: patchResumeCountInPages,
+  patchJobPrimaryAndAcceptance: patchJobPrimaryAndAcceptanceInCache,
   clearResumesForPersona: invalidateResumesForPersona,
   clearVersionsForPersona: clearVersionsForPersona,
   clearVersionsForResume: invalidateVersionsForResume,
+  clearResultsForJob: noop,
   invalidatePersonas: clearAllPersonasCache,
   invalidateResumes: clearAllResumesCache,
   invalidateVersions: clearAllVersionsCache,
+  invalidateJobs: clearAllJobsCache,
+  invalidateResults: noop,
 };
 
 function readToken(): Promise<string | null> {

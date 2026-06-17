@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import CloseIcon from '@mui/icons-material/Close';
 import FavoriteIcon from '@mui/icons-material/Favorite';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { EnhancedButton } from '@repo/ui';
 import type { Job } from '@repo/shared-types';
-import { useUpdateJob, useDeleteJob } from '../hooks/use-jobs';
+import { useUpdateJob, useDeleteJob, useJobFromCache } from '../hooks/use-jobs';
 import { useStore } from '../store';
 import styles from './style/job-detail-sidebar.module.css';
 import { JobOverviewTab } from './job-overview-tab';
@@ -28,7 +28,15 @@ const TABS: { id: TabType; label: string }[] = [
 ];
 
 export function JobDetailSidebar({ job: initialJob, onClose }: JobDetailSidebarProps) {
-  const [localJob, setLocalJob] = useState<Job>(initialJob);
+  const cachedJob = useJobFromCache(initialJob.id, initialJob);
+  const [localJob, setLocalJob] = useState<Job>(cachedJob ?? initialJob);
+
+  useEffect(() => {
+    if (cachedJob && cachedJob.id === localJob.id) {
+      setLocalJob(cachedJob);
+    }
+  }, [cachedJob, localJob.id]);
+
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const updateJob = useUpdateJob();
