@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { EnhancedStepper, EnhancedButton } from '@repo/ui';
 import { Step1JobDetails } from './step1-job-details';
 import { Step2SelectResume } from './step2-select-resume';
@@ -34,9 +34,20 @@ export const AutofillWizard = ({
   // Step 3 analysis
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const analysisRequestIdRef = useRef<string | null>(null);
 
   // Snackbar
   const showSnackbar = useStore((state) => state.showSnackbar);
+
+  const cancelAnalysis = useCallback(() => {
+    if (analysisRequestIdRef.current) {
+      chrome.runtime.sendMessage({
+        action: 'CANCEL_ANALYZE_RESUME',
+        payload: { requestId: analysisRequestIdRef.current },
+      });
+      analysisRequestIdRef.current = null;
+    }
+  }, []);
 
   const handleSaveSuccess = (jobId: string) => {
     setSavedJobId(jobId);
@@ -78,19 +89,29 @@ export const AutofillWizard = ({
       setIsAnalyzing(true);
       setGlobalError(null);
       setActiveStep((prev) => prev + 1);
+      analysisRequestIdRef.current = `${savedJobId}-${selectedVersionId}-${Date.now()}`;
 
       chrome.runtime.sendMessage(
         {
           action: 'ANALYZE_RESUME',
-          payload: { jobId: savedJobId, resumeVersionId: selectedVersionId },
+          payload: {
+            jobId: savedJobId,
+            resumeVersionId: selectedVersionId,
+            requestId: analysisRequestIdRef.current,
+          },
         },
         (response: {
           success: boolean;
+          cancelled?: boolean;
           data?: AnalysisResult;
           message?: string;
           error?: string;
         }) => {
+          if (response?.cancelled) {
+            return;
+          }
           setIsAnalyzing(false);
+          analysisRequestIdRef.current = null;
           if (response?.success && response.data) {
             setAnalysisResult(response.data);
             if (response.message) {
@@ -116,6 +137,14 @@ export const AutofillWizard = ({
       }}
     />
   );
+
+  useEffect(() => {
+    return () => {
+      if (isAnalyzing && analysisRequestIdRef.current) {
+        cancelAnalysis();
+      }
+    };
+  }, [isAnalyzing, cancelAnalysis]);
 
   const renderStep3Content = () => (
     <Step3Analysis result={analysisResult} isLoading={isAnalyzing} />

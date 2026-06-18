@@ -709,7 +709,13 @@ export function ResumeVersionSection({
                     <div className={styles.dataSection}>
                       <div className={styles.versionInfo}>
                         <div className={styles.versionNameRow}>
-                          <p className={styles.versionName}>{version.versionName}</p>
+                          <EnhancedTooltipWithText
+                            description={version.versionName}
+                            showIcon={false}
+                            placement="top"
+                          >
+                            <p className={styles.versionName}>{version.versionName}</p>
+                          </EnhancedTooltipWithText>
                           <span className={styles.versionSize}>
                             {formatFileSize(version.fileSize)}
                           </span>

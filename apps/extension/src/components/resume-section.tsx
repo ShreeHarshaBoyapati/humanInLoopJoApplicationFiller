@@ -554,7 +554,13 @@ export function ResumeSection({
                   <div className={styles.dataSection}>
                     <div className={styles.resumeInfo}>
                       <div className={styles.resumeNameRow}>
-                        <p className={styles.resumeName}>{resume.fileName}</p>
+                        <EnhancedTooltipWithText
+                          description={resume.fileName}
+                          showIcon={false}
+                          placement="top"
+                        >
+                          <p className={styles.resumeName}>{resume.fileName}</p>
+                        </EnhancedTooltipWithText>
                         <span className={styles.resumeMeta}>
                           {formatFileSize(resume.activeVersionFileSize)}
                         </span>

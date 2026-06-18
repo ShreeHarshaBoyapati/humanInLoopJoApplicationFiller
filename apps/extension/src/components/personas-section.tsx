@@ -542,7 +542,13 @@ export function PersonasSection({ onSelectPersona, isFromAutofill = false }: Per
                     <div className={styles.personaIcon}>{getInitials(persona.title)}</div>
                     <div className={styles.personaInfo}>
                       <div className={styles.personaNameRow}>
-                        <p className={styles.personaName}>{persona.title}</p>
+                        <EnhancedTooltipWithText
+                          description={persona.title}
+                          showIcon={false}
+                          placement="top"
+                        >
+                          <p className={styles.personaName}>{persona.title}</p>
+                        </EnhancedTooltipWithText>
                         <span className={styles.personaResumesCount}>
                           {persona.resumesCount || 0} resumes
                         </span>

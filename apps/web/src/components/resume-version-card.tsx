@@ -69,7 +69,11 @@ export function ResumeVersionCard({
     return `${parseFloat((bytes / k ** i).toFixed(1))} ${sizes[i]}`;
   };
 
-  const radioTooltip = version.active ? 'Active' : 'Click to set as active';
+  const radioTooltip = hideActions
+    ? 'Select'
+    : version.active
+      ? 'Active'
+      : 'Click to set as active';
 
   // Calculate diff from previous version
   const getDiffParts = () => {
