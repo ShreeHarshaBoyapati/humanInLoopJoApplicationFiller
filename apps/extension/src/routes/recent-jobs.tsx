@@ -88,6 +88,28 @@ function RecentJobsComponent() {
     };
   }, [fetchJobs]);
 
+  useEffect(() => {
+    if (typeof chrome === 'undefined' || !chrome.runtime?.onMessage) return;
+
+    const handle = (message: {
+      action?: string;
+      payload?: { resource?: string; action?: string };
+    }) => {
+      if (message.action !== 'RESOURCE_CHANGED') return;
+      const payload = message.payload;
+      if (!payload || payload.resource !== 'job') return;
+      void (async () => {
+        const token = await getCurrentToken();
+        await fetchJobs(token, { invalidate: true });
+      })();
+    };
+
+    chrome.runtime.onMessage.addListener(handle);
+    return () => {
+      chrome.runtime.onMessage.removeListener(handle);
+    };
+  }, [fetchJobs]);
+
   const visibleJobs = jobs;
   const displayError = error || deleteError;
 
@@ -167,7 +189,7 @@ function RecentJobsComponent() {
         {displayError && <div className={styles.error}>{displayError}</div>}
 
         {!loading && visibleJobs.length === 0 && !displayError && (
-          <div className={styles.emptyState}>You haven't tracked any jobs yet.</div>
+          <div className={styles.emptyState}>No jobs tracked yet.</div>
         )}
 
         {visibleJobs.map((job) => (

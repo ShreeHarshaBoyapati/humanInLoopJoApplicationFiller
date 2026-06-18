@@ -5,7 +5,7 @@ import styleConstants from '@repo/ui/constants/style-constants.js';
 import Step1JobDetails from '../components/step1-job-details';
 import styles from '../routes/style/job.module.css';
 import scrollStyles from '@repo/ui/scroll-bar.module.css';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { EnhancedButton } from '@repo/ui';
 
 export interface JobSearch {
@@ -73,6 +73,28 @@ function JobComponent() {
   const router = useRouter();
   const { jobData, isEditing, error: loaderError } = Route.useLoaderData();
   const [savedJobId, setSavedJobId] = useState<string | null>(jobData?.id || null);
+
+  useEffect(() => {
+    if (typeof chrome === 'undefined' || !chrome.runtime?.onMessage) return;
+
+    const jobId = jobData?.id;
+    if (!jobId) return;
+
+    const handle = (message: {
+      action?: string;
+      payload?: { resource?: string; action?: string; id?: string };
+    }) => {
+      if (message.action !== 'RESOURCE_CHANGED') return;
+      const payload = message.payload;
+      if (!payload || payload.resource !== 'job' || payload.id !== jobId) return;
+      void router.invalidate();
+    };
+
+    chrome.runtime.onMessage.addListener(handle);
+    return () => {
+      chrome.runtime.onMessage.removeListener(handle);
+    };
+  }, [jobData?.id, router]);
 
   const handleUpdate = async () => {
     const result = await step1.submit();

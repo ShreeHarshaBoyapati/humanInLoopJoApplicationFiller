@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Outlet,
   createRootRoute,
@@ -18,7 +18,7 @@ import {
   notifyExtensionLogout,
   clearTokenAuth,
 } from '../utils/auth-sync.ts';
-import type { StoredAuth } from '@repo/shared-types';
+import type { ApiResponse, StoredAuth, UserPublic } from '@repo/shared-types';
 import { useStore } from '../store/index.ts';
 import { SnackbarContainer } from '../components/snackbar-container.tsx';
 
@@ -56,19 +56,34 @@ function RootComponent() {
   const pathname = routerState.location.pathname;
   const isPublicRoute = pathname === '/login' || pathname === '/google-callback';
 
+  const syncUserFromToken = useCallback(async () => {
+    try {
+      const response = await axiosInstance.get<ApiResponse<UserPublic>>('/user/me');
+      if (response.data.success && response.data.data) {
+        useStore.getState().setUser({
+          id: response.data.data.id,
+          email: response.data.data.email,
+        });
+      }
+    } catch (error) {
+      console.error('[Auth Sync] Failed to fetch current user:', error);
+    }
+  }, []);
+
   // Listen for extension auth changes
   useEffect(() => {
     const cleanup = listenForExtensionAuth((authData: StoredAuth | null) => {
-      console.log('==cleanup is getting called========');
-
       if (authData) {
         setIsAuthenticated(true);
+        void syncUserFromToken();
         // Only navigate to home if not on a public route
         if (!isPublicRoute) {
           navigate({ to: '/' });
         }
       } else {
         setIsAuthenticated(false);
+        useStore.getState().clearUser();
+        queryClient.clear();
         // Only navigate to login if not on a public route
         if (!isPublicRoute) {
           navigate({ to: '/login' });
@@ -77,15 +92,16 @@ function RootComponent() {
     });
 
     return cleanup;
-  }, [navigate, isPublicRoute]);
+  }, [navigate, isPublicRoute, queryClient, syncUserFromToken]);
 
   // Check existing auth on mount
   useEffect(() => {
     const auth = getTokenFromCookie();
     if (auth) {
       setIsAuthenticated(true);
+      void syncUserFromToken();
     }
-  }, []);
+  }, [syncUserFromToken]);
 
   const handleLogout = async () => {
     setShowLogoutModal(true);
