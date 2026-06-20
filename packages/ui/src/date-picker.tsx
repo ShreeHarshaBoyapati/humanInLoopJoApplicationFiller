@@ -9,8 +9,12 @@ import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import type { Dayjs } from 'dayjs';
 import dayjs from 'dayjs';
+import 'dayjs/locale/en-gb';
 import styleConstants from './constants/style-constants';
+
 import { EnhancedFieldLabel, type EnhancedFieldLabelProps } from './field-label';
+
+dayjs.locale('en-gb');
 
 interface DatePickerProps {
   label?: string;
@@ -297,11 +301,7 @@ const yearButtonStyles = {
   },
 };
 
-const StyledDesktopDatePicker = styled(
-  ({ value: _value, ...props }: React.ComponentProps<typeof DesktopDatePicker>) => (
-    <DesktopDatePicker {...props} />
-  )
-)(() => ({
+const StyledDesktopDatePicker = styled(DesktopDatePicker)(() => ({
   '& .MuiPickersInputBase-root.MuiPickersOutlinedInput-root': {
     padding: '0px 1em',
   },
@@ -440,7 +440,7 @@ export const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(
             {...(customProps.labelProps || {})}
           />
         )}
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="en-gb">
           <Box ref={pickerWrapperRef} sx={{ width: '100%' }}>
             <StyledDesktopDatePicker
               open={open}

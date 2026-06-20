@@ -1,16 +1,21 @@
 import type { QueryClient } from '@tanstack/react-query';
 import type {
+  Event,
+  EventList,
   Job,
   PaginatedResultListItem,
   Persona,
   ResumeMetadata,
   ResumeVersionMetadata,
+  Tag,
 } from '@repo/shared-types';
 import { PERSONA_KEYS } from '../hooks/use-personas';
 import { RESUME_KEYS } from '../hooks/use-resumes';
 import { VERSION_KEYS } from '../hooks/use-resume-versions';
 import { JOB_KEYS, requiresListInvalidation } from '../hooks/use-jobs';
 import { RESULT_KEYS } from '../hooks/use-results';
+import { EVENT_KEYS } from '../hooks/use-events';
+import { TAG_KEYS } from '../hooks/use-tags';
 
 type InfinitePages<T> = { pages: { items: T[] }[]; pageParams?: number[] };
 
@@ -59,6 +64,47 @@ function applyPatchFromData<T extends { id: string }>(
   data: { id: string } & Partial<T>
 ): void {
   applyPatchesToMatchingQueries<T>(qc, prefix, [data]);
+}
+
+type EventPages = { pages: EventList[]; pageParams?: number[] };
+
+function isEventPages(value: unknown): value is EventPages {
+  if (!value || typeof value !== 'object') return false;
+  const pages = (value as { pages?: unknown }).pages;
+  return Array.isArray(pages);
+}
+
+function patchEventInPages(
+  qc: QueryClient,
+  queryKey: readonly unknown[],
+  patchById: Map<string, Partial<Event>>
+): void {
+  qc.setQueryData(queryKey, (old: unknown) => {
+    if (!isEventPages(old)) return old;
+    return {
+      pages: old.pages.map((page) => ({
+        ...page,
+        events: page.events.map((item) => {
+          const patch = patchById.get(item.id);
+          return patch ? { ...item, ...patch } : item;
+        }),
+      })),
+      pageParams: old.pageParams ?? old.pages.map((_, index) => index + 1),
+    };
+  });
+}
+
+function applyEventPatchesToMatchingQueries(
+  qc: QueryClient,
+  prefix: readonly unknown[],
+  patches: ReadonlyArray<{ id: string } & Partial<Event>>
+): void {
+  if (patches.length === 0) return;
+  const patchById = new Map(patches.map((p) => [p.id, p]));
+  const entries = qc.getQueriesData({ queryKey: prefix, exact: false });
+  for (const [queryKey] of entries) {
+    patchEventInPages(qc, queryKey, patchById);
+  }
 }
 
 function findJobInQueryCache<T extends { id: string }>(
@@ -128,7 +174,7 @@ function applyCountUpdates(qc: QueryClient, updates: ReadonlyArray<unknown>): vo
 
 export interface RealtimeEvent {
   type: 'resource.changed';
-  resource: 'persona' | 'resume' | 'resume-version' | 'job' | 'result';
+  resource: 'persona' | 'resume' | 'resume-version' | 'job' | 'result' | 'event' | 'tag';
   action: 'update' | 'setActive' | 'create' | 'branch' | 'delete';
   id: string;
   data?: { id: string } & Record<string, unknown>;
@@ -145,13 +191,47 @@ function isResourceChangedEvent(event: unknown): event is RealtimeEvent {
       e.resource === 'resume' ||
       e.resource === 'resume-version' ||
       e.resource === 'job' ||
-      e.resource === 'result') &&
+      e.resource === 'result' ||
+      e.resource === 'event' ||
+      e.resource === 'tag') &&
     (e.action === 'update' ||
       e.action === 'setActive' ||
       e.action === 'create' ||
       e.action === 'branch' ||
       e.action === 'delete')
   );
+}
+
+function isEventScope(
+  value: unknown
+): value is { id: string; date: string; tagId: string | null; jobId: string | null } {
+  if (!value || typeof value !== 'object') return false;
+  const obj = value as { id?: unknown; date?: unknown; tagId?: unknown; jobId?: unknown };
+  return (
+    typeof obj.id === 'string' &&
+    typeof obj.date === 'string' &&
+    (obj.tagId === null || typeof obj.tagId === 'string') &&
+    (obj.jobId === null || typeof obj.jobId === 'string')
+  );
+}
+
+function eventDateMatchesQueryRange(date: string, params: Record<string, unknown>): boolean {
+  const from = typeof params.from === 'string' ? params.from : undefined;
+  const to = typeof params.to === 'string' ? params.to : undefined;
+  if (from && date < from) return false;
+  if (to && date > to) return false;
+  return true;
+}
+
+function eventMatchesQueryFilters(
+  event: { tagId: string | null; jobId: string | null },
+  params: Record<string, unknown>
+): boolean {
+  const tagId = typeof params.tagId === 'string' ? params.tagId : undefined;
+  const jobId = typeof params.jobId === 'string' ? params.jobId : undefined;
+  if (tagId && event.tagId !== tagId) return false;
+  if (jobId && event.jobId !== jobId) return false;
+  return true;
 }
 
 function hasPersonaIdSegment(key: readonly unknown[], id: string): boolean {
@@ -420,6 +500,63 @@ export function applyRealtimeEvent(qc: QueryClient, event: unknown): void {
       );
       qc.invalidateQueries({ queryKey: versionScope });
       applyCountUpdates(qc, related);
+      return;
+    }
+  }
+
+  if (event.resource === 'event') {
+    if (event.action === 'update') {
+      if (event.data) {
+        applyEventPatchesToMatchingQueries(qc, EVENT_KEYS.lists(), [
+          event.data as unknown as Event,
+        ]);
+      }
+      return;
+    }
+
+    const scope = event.data && isEventScope(event.data) ? event.data : undefined;
+    if (!scope) {
+      qc.invalidateQueries({ queryKey: EVENT_KEYS.lists() });
+      qc.invalidateQueries({ queryKey: [...EVENT_KEYS.all, 'dots'], exact: false });
+      return;
+    }
+
+    const predicate = (query: { queryKey: readonly unknown[] }) => {
+      const params = query.queryKey[2];
+      if (!params || typeof params !== 'object') return true;
+      const record = params as Record<string, unknown>;
+      return (
+        eventDateMatchesQueryRange(scope.date, record) && eventMatchesQueryFilters(scope, record)
+      );
+    };
+
+    if (event.action === 'delete') {
+      qc.invalidateQueries({ queryKey: EVENT_KEYS.lists(), predicate });
+      qc.invalidateQueries({ queryKey: [...EVENT_KEYS.all, 'dots'], exact: false, predicate });
+      return;
+    }
+
+    if (event.action === 'create') {
+      qc.invalidateQueries({ queryKey: EVENT_KEYS.lists(), predicate });
+      qc.invalidateQueries({ queryKey: [...EVENT_KEYS.all, 'dots'], exact: false, predicate });
+      return;
+    }
+  }
+
+  if (event.resource === 'tag') {
+    if (event.action === 'update') {
+      qc.invalidateQueries({ queryKey: TAG_KEYS.lists() });
+      qc.invalidateQueries({ queryKey: [...EVENT_KEYS.all, 'dots'], exact: false });
+      return;
+    }
+    if (event.action === 'create') {
+      qc.invalidateQueries({ queryKey: TAG_KEYS.lists() });
+      return;
+    }
+    if (event.action === 'delete') {
+      qc.invalidateQueries({ queryKey: TAG_KEYS.lists() });
+      qc.invalidateQueries({ queryKey: EVENT_KEYS.lists() });
+      qc.invalidateQueries({ queryKey: [...EVENT_KEYS.all, 'dots'], exact: false });
       return;
     }
   }

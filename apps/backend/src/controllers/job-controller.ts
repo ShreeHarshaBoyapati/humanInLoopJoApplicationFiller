@@ -13,13 +13,13 @@ import type {
   GetJobsInfer,
 } from '../middlewares/job.js';
 import { ApiResponse, JobList, Job, type JobStatus } from '@repo/shared-types';
-import type { StatusUpdatedAtMap, StatusUpdatedAtKey } from '../database/entities/job.js';
+import type { StatusUpdatedAtMap } from '../database/entities/job.js';
 import * as wsHub from '../realtime/ws-hub.js';
 import { jobToPublic } from '../realtime/payload-mappers.js';
 
 const ARCHIVED_STATUSES: JobStatus[] = ['offer', 'rejected'];
 
-const STATUS_ORDER: StatusUpdatedAtKey[] = ['draft', 'applied', 'interview', 'offer', 'rejected'];
+const STATUS_ORDER: JobStatus[] = ['draft', 'applied', 'interview', 'offer', 'rejected'];
 
 function emptyStatusUpdatedAt(): StatusUpdatedAtMap {
   return {
@@ -37,11 +37,16 @@ function recomputeStatusUpdatedAt(
 ): StatusUpdatedAtMap {
   const next: StatusUpdatedAtMap = { ...current };
   next[newStatus] = new Date();
-  const newIdx = STATUS_ORDER.indexOf(newStatus);
-  for (let i = newIdx + 1; i < STATUS_ORDER.length; i++) {
-    const key = STATUS_ORDER[i] as StatusUpdatedAtKey;
-    next[key] = null;
+
+  const newIndex = STATUS_ORDER.indexOf(newStatus);
+  if (newIndex === -1) {
+    return next;
   }
+
+  STATUS_ORDER.slice(newIndex + 1).forEach((status) => {
+    next[status] = null;
+  });
+
   return next;
 }
 
@@ -174,12 +179,12 @@ class JobController {
       }
     }
 
-    Object.assign(job, updateData);
-
     if (updateData.status !== undefined && updateData.status !== job.status) {
       const current = (job.statusUpdatedAt as StatusUpdatedAtMap) || emptyStatusUpdatedAt();
       job.statusUpdatedAt = recomputeStatusUpdatedAt(current, updateData.status);
     }
+
+    Object.assign(job, updateData);
 
     const nonContentFields = [
       'personaId',

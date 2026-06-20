@@ -86,6 +86,15 @@
   opacity: 0.6;
 }
 
+.jobLine {
+  color: var(--blue-400);
+  font-family: var(--secondary-font);
+  font-size: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .descriptionWrapper {
   color: var(--white-900);
   font-family: var(--secondary-font);

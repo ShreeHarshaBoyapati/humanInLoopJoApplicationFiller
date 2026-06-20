@@ -2,6 +2,7 @@ import { useCallback, useRef, useSyncExternalStore } from 'react';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { axiosInstance } from '../utils/axios.ts';
+import { EVENT_KEYS } from './use-events.ts';
 import type {
   Job,
   ApiResponse,
@@ -169,6 +170,13 @@ export const useUpdateJob = () => {
           }
         );
       }
+
+      queryClient.invalidateQueries({
+        queryKey: [...EVENT_KEYS.lists(), { jobId: updatedJob.id }],
+      });
+      queryClient.invalidateQueries({
+        queryKey: [...EVENT_KEYS.all, 'dots', { jobId: updatedJob.id }],
+      });
     },
   });
 };

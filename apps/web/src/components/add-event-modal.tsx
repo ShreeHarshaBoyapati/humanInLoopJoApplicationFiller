@@ -16,7 +16,7 @@ import {
 } from '@repo/ui';
 import dayjs from 'dayjs';
 import type { AutocompleteOption } from '@repo/ui';
-import type { CreateEventInput, Event, Job, UpdateEventInput } from '@repo/shared-types';
+import type { CreateEventInput, Event, Job, Tag, UpdateEventInput } from '@repo/shared-types';
 import { useStore } from '../store';
 import { useCreateEvent, useUpdateEvent } from '../hooks/use-events';
 import { useCreateTag, useDeleteTag, useTags, useUpdateTag } from '../hooks/use-tags';
@@ -33,6 +33,7 @@ interface AddEventModalProps {
   onSuccess?: () => void;
   initialDate?: string;
   initialJob?: Job | null;
+  initialTag?: Tag | null;
   eventToEdit?: Event | null;
 }
 
@@ -62,7 +63,8 @@ function toDateInput(date: string): string {
 
 function toTimeInput(time: string | null): string {
   if (!time) return '';
-  return time;
+  const parsed = dayjs(time, ['HH:mm', 'HH:mm:ss'], true);
+  return parsed.isValid() ? parsed.format('HH:mm') : '';
 }
 
 export function AddEventModal({
@@ -71,17 +73,56 @@ export function AddEventModal({
   onSuccess,
   initialDate,
   initialJob,
+  initialTag,
   eventToEdit,
 }: AddEventModalProps) {
   const [view, setView] = useState<'form' | 'manageTags'>('form');
-  const [form, setForm] = useState<FormState>(emptyForm);
+  const [form, setForm] = useState<FormState>(() => {
+    const initialDateValue = toDateInput(initialDate ?? '');
+    if (eventToEdit) {
+      return {
+        title: eventToEdit.title,
+        description: eventToEdit.description,
+        date: initialDateValue || toDateInput(eventToEdit.date),
+        time: toTimeInput(eventToEdit.time),
+        tagId: eventToEdit.tagId ?? '',
+        jobId: eventToEdit.jobId ?? '',
+      };
+    }
+    return {
+      ...emptyForm,
+      date: initialDateValue,
+      jobId: initialJob?.id ?? '',
+    };
+  });
   const [tagSearch, setTagSearch] = useState('');
   const [debouncedTagSearch, setDebouncedTagSearch] = useState('');
+  const [jobSearch, setJobSearch] = useState('');
+  const [debouncedJobSearch, setDebouncedJobSearch] = useState('');
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const showSnackbar = useStore((state) => state.showSnackbar);
   const createEvent = useCreateEvent();
   const updateEvent = useUpdateEvent();
   const isEdit = Boolean(eventToEdit);
+
+  const buildInitialForm = useCallback((): FormState => {
+    const initialDateValue = toDateInput(initialDate ?? '');
+    if (eventToEdit) {
+      return {
+        title: eventToEdit.title,
+        description: eventToEdit.description,
+        date: initialDateValue || toDateInput(eventToEdit.date),
+        time: toTimeInput(eventToEdit.time),
+        tagId: eventToEdit.tagId ?? '',
+        jobId: eventToEdit.jobId ?? '',
+      };
+    }
+    return {
+      ...emptyForm,
+      date: initialDateValue,
+      jobId: initialJob?.id ?? '',
+    };
+  }, [eventToEdit, initialDate, initialJob]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -90,28 +131,34 @@ export function AddEventModal({
       setErrors({});
       setTagSearch('');
       setDebouncedTagSearch('');
+      setJobSearch('');
+      setDebouncedJobSearch('');
+      return;
     }
-  }, [isOpen]);
+    const initialForm = buildInitialForm();
+    setForm(initialForm);
+    setView('form');
+    setErrors({});
+    const initialJobLabel = initialJob
+      ? `${initialJob.title} @ ${initialJob.companyName || '—'}`
+      : '';
+    if (eventToEdit) {
+      setTagSearch(initialTag?.name ?? '');
+      setDebouncedTagSearch(initialTag?.name ?? '');
+      setJobSearch(initialJobLabel);
+      setDebouncedJobSearch(initialJobLabel);
+    } else {
+      setTagSearch('');
+      setDebouncedTagSearch('');
+      setJobSearch(initialJobLabel);
+      setDebouncedJobSearch(initialJobLabel);
+    }
+  }, [isOpen, buildInitialForm, eventToEdit, initialJob, initialTag]);
 
   useEffect(() => {
-    if (!isOpen) return;
-    if (eventToEdit) {
-      setForm({
-        title: eventToEdit.title,
-        description: eventToEdit.description,
-        date: toDateInput(eventToEdit.date),
-        time: toTimeInput(eventToEdit.time),
-        tagId: eventToEdit.tagId ?? '',
-        jobId: eventToEdit.jobId ?? '',
-      });
-    } else {
-      setForm({
-        ...emptyForm,
-        date: toDateInput(initialDate ?? ''),
-        jobId: initialJob?.id ?? '',
-      });
-    }
-  }, [isOpen, eventToEdit, initialDate, initialJob]);
+    const timer = setTimeout(() => setDebouncedJobSearch(jobSearch), 300);
+    return () => clearTimeout(timer);
+  }, [jobSearch]);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedTagSearch(tagSearch), 300);
@@ -126,13 +173,22 @@ export function AddEventModal({
     search: debouncedTagSearch,
     limit: 200,
   });
-  console.log('==the tags data is====:', tagsData);
 
   const tags = tagsData?.tags ?? [];
   const isTagListLoading = isFetchingTags || (debouncedTagSearch === '' && !tagsData);
 
-  const { data: jobsPages } = useJobs({ limit: 50, searchQuery: '' });
+  const {
+    data: jobsPages,
+    isFetching: isFetchingJobs,
+    refetch: refetchJobs,
+  } = useJobs({
+    limit: 50,
+    searchQuery: debouncedJobSearch,
+  });
   const jobs = useMemo(() => jobsPages?.pages.flatMap((p) => p.items) ?? [], [jobsPages]);
+  const jobTotal = jobsPages?.pages[0]?.total ?? 0;
+  const isJobListTruncated = jobTotal > 50;
+  const isJobListLoading = isFetchingJobs || (debouncedJobSearch === '' && !jobsPages);
 
   const selectedTag = useMemo(
     () => tags.find((t) => t.id === form.tagId) ?? null,
@@ -147,19 +203,23 @@ export function AddEventModal({
   }, [isTaskTagSelected, form.jobId]);
 
   const tagOptions = useMemo<AutocompleteOption[]>(() => {
-    if (initialJob) {
-      return tags
-        .filter((t) => t.name !== RESERVED_TASK_TAG)
-        .map((t) => ({ value: t.id, label: t.name }));
+    if (form.tagId && initialTag && !tags.find((t) => t.id === form.tagId)) {
+      return [{ value: form.tagId, label: initialTag.name }];
     }
     return tags.map((t) => ({ value: t.id, label: t.name }));
-  }, [tags, initialJob]);
-  console.log('the tag options are:', tagOptions);
+  }, [tags, initialTag, form.tagId]);
 
-  const jobOptions = useMemo<AutocompleteOption[]>(
-    () => jobs.map((j) => ({ value: j.id, label: `${j.title} @ ${j.companyName || '—'}` })),
-    [jobs]
-  );
+  const jobOptions = useMemo<AutocompleteOption[]>(() => {
+    if (form.jobId && initialJob && !jobs.find((j) => j.id === form.jobId)) {
+      return [
+        { value: form.jobId, label: `${initialJob.title} @ ${initialJob.companyName || '—'}` },
+      ];
+    }
+    return jobs.map((j) => ({
+      value: j.id,
+      label: `${j.title} @ ${j.companyName || '—'}`,
+    }));
+  }, [jobs, initialJob, form.jobId]);
 
   const selectedTagOption = useMemo(
     () => (form.tagId ? (tagOptions.find((o) => o.value === form.tagId) ?? null) : null),
@@ -168,6 +228,14 @@ export function AddEventModal({
   const selectedJobOption = useMemo(
     () => (form.jobId ? (jobOptions.find((o) => o.value === form.jobId) ?? null) : null),
     [form.jobId, jobOptions]
+  );
+  const tagValueForDropdown = useMemo(
+    () => (selectedTagOption && tagSearch === selectedTagOption.label ? selectedTagOption : null),
+    [selectedTagOption, tagSearch]
+  );
+  const jobValueForDropdown = useMemo(
+    () => (selectedJobOption && jobSearch === selectedJobOption.label ? selectedJobOption : null),
+    [selectedJobOption, jobSearch]
   );
 
   const handleChange = (field: keyof FormState) => (value: string) => {
@@ -195,6 +263,10 @@ export function AddEventModal({
     }
     const tag = tags.find((t) => t.id === form.tagId);
     const isTask = tag?.name === RESERVED_TASK_TAG;
+    if (isTask && form.jobId) {
+      showSnackbar('Task events cannot be linked to a job.', { severity: 'error' });
+      return;
+    }
     const baseFields = {
       title: form.title.trim(),
       description: form.description,
@@ -261,10 +333,21 @@ export function AddEventModal({
       customProps={{
         childProps: {
           modal: { sx: { maxWidth: '560px', minWidth: '420px' } },
-          body: {
-            className: scrollStyles.scrollbarVerticalContainer,
-            sx: { maxHeight: '70vh', overflowY: 'auto', padding: 0 },
-          },
+          body:
+            view === 'manageTags'
+              ? {
+                  sx: {
+                    display: 'flex',
+                    flexDirection: 'column',
+                    maxHeight: '70vh',
+                    overflowY: 'hidden',
+                    padding: 0,
+                  },
+                }
+              : {
+                  className: scrollStyles.scrollbarVerticalContainer,
+                  sx: { maxHeight: '70vh', overflowY: 'auto', padding: 0 },
+                },
         },
       }}
       footer={
@@ -292,15 +375,23 @@ export function AddEventModal({
           errors={errors}
           tagOptions={tagOptions}
           jobOptions={jobOptions}
-          selectedTagOption={selectedTagOption}
-          selectedJobOption={selectedJobOption}
+          selectedTagOption={tagValueForDropdown}
+          selectedJobOption={jobValueForDropdown}
           isTaskTagSelected={isTaskTagSelected}
           isTaskTagRestricted={Boolean(initialJob)}
           isTagListLoading={isTagListLoading}
+          isJobListLoading={isJobListLoading}
+          isJobListTruncated={isJobListTruncated}
+          tagSearch={tagSearch}
+          jobSearch={jobSearch}
           onChange={handleChange}
           onTagSearchChange={setTagSearch}
+          onJobSearchChange={setJobSearch}
           onTagDropdownOpen={() => {
             void refetchTags();
+          }}
+          onJobDropdownOpen={() => {
+            void refetchJobs();
           }}
           onManageClick={() => handleViewChange('manageTags')}
           onDeleteSelectedTag={(tagId) => {
@@ -324,9 +415,15 @@ interface FormViewProps {
   isTaskTagSelected: boolean;
   isTaskTagRestricted: boolean;
   isTagListLoading: boolean;
+  isJobListLoading: boolean;
+  isJobListTruncated: boolean;
+  tagSearch: string;
+  jobSearch: string;
   onChange: (field: keyof FormState) => (value: string) => void;
   onTagSearchChange: (value: string) => void;
+  onJobSearchChange: (value: string) => void;
   onTagDropdownOpen: () => void;
+  onJobDropdownOpen: () => void;
   onManageClick: () => void;
   onDeleteSelectedTag: (tagId: string) => void;
 }
@@ -341,9 +438,15 @@ function FormView({
   isTaskTagSelected,
   isTaskTagRestricted,
   isTagListLoading,
+  isJobListLoading,
+  isJobListTruncated,
+  tagSearch,
+  jobSearch,
   onChange,
   onTagSearchChange,
+  onJobSearchChange,
   onTagDropdownOpen,
+  onJobDropdownOpen,
   onManageClick,
 }: FormViewProps) {
   return (
@@ -365,6 +468,7 @@ function FormView({
           placeholder="Search tags..."
           options={tagOptions}
           value={selectedTagOption}
+          inputValue={tagSearch}
           onChange={(newValue) => onChange('tagId')(newValue ? String(newValue.value) : '')}
           onInputChange={onTagSearchChange}
           onOpen={onTagDropdownOpen}
@@ -386,13 +490,25 @@ function FormView({
         placeholder="Search jobs..."
         options={jobOptions}
         value={selectedJobOption}
+        inputValue={jobSearch}
         onChange={(newValue) => onChange('jobId')(newValue ? String(newValue.value) : '')}
+        onInputChange={onJobSearchChange}
+        onOpen={onJobDropdownOpen}
+        loading={isJobListLoading}
+        loadingText="Loading jobs..."
         disabled={isTaskTagSelected}
         error={Boolean(errors.jobId)}
         showErrorMsg={Boolean(errors.jobId)}
         errorText={errors.jobId}
         showSupportingText={isTaskTagSelected}
         supportingText="Task events do not belong to a job."
+        listboxFooter={
+          isJobListTruncated ? (
+            <span className={styles.jobFilterFooter}>
+              Showing first 50 jobs. Type to search for more.
+            </span>
+          ) : undefined
+        }
       />
 
       {isTaskTagRestricted && (
@@ -406,13 +522,12 @@ function FormView({
       <div className={styles.row}>
         <DatePicker
           label="Date"
-          value={form.date ? dayjs(form.date, 'YYYY-MM-DD') : null}
+          value={form.date ? dayjs(form.date) : null}
           onChange={(value) => {
             onChange('date')(value ? value.format('YYYY-MM-DD') : '');
           }}
           error={Boolean(errors.date)}
           helperText={errors.date}
-          format="YYYY-MM-DD"
         />
         <TimePicker
           label="Time"

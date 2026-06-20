@@ -5,9 +5,8 @@ import { Calendar } from 'react-calendar';
 import type { TileArgs } from 'react-calendar';
 import { useEventDots } from '../hooks/use-events';
 import { EventsHeaderRow } from './events-header-row';
-import { EventsList } from './events-list';
+import { JobCalendarEventsList } from './job-calendar-events-list';
 import { AddEventModal } from './add-event-modal';
-import { STATUS_PSEUDO_COLOR } from '../utils/calendar';
 import type { Job } from '@repo/shared-types';
 import styles from './style/small-calendar-panel.module.css';
 
@@ -40,30 +39,14 @@ export function SmallCalendarPanel({ job }: SmallCalendarPanelProps) {
 
   const { data: dotsData } = useEventDots({ mode: 'dots', from, to, jobId: job.id });
 
-  const tagById = useMemo(() => {
-    const map = new Map<string, string>();
-    (dotsData?.tags ?? []).forEach((t) => map.set(t.id, t.color));
-    return map;
-  }, [dotsData]);
-
   const itemsByDate = useMemo(() => {
     const map = new Map<string, Array<{ color: string }>>();
-    const tagIds = (dotsData?.tags ?? []).map((t) => t.id);
-    (dotsData?.dates ?? []).forEach((date) => {
-      const items: Array<{ color: string }> = [];
-      tagIds.forEach((id) => {
-        const color = tagById.get(id) ?? '#888';
-        items.push({ color });
-      });
+    (dotsData?.dates ?? []).forEach(({ date, tagColor }) => {
+      const items = tagColor.map((color) => ({ color }));
       map.set(date, items);
     });
-    (dotsData?.statusPseudoEvents ?? []).forEach((sp) => {
-      const items = map.get(sp.date) ?? [];
-      items.push({ color: STATUS_PSEUDO_COLOR });
-      map.set(sp.date, items);
-    });
     return map;
-  }, [dotsData, tagById]);
+  }, [dotsData]);
 
   return (
     <div className={styles.container}>
@@ -108,8 +91,9 @@ export function SmallCalendarPanel({ job }: SmallCalendarPanelProps) {
 
       <div className={styles.eventsSection}>
         <EventsHeaderRow onAddClick={() => setIsAddOpen(true)} />
-        <EventsList
+        <JobCalendarEventsList
           params={{ mode: 'list', jobId: job.id, from: selectedDate, to: selectedDate }}
+          selectedDate={selectedDate}
         />
       </div>
 

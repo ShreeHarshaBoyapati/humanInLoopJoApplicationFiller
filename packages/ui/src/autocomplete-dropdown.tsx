@@ -173,6 +173,7 @@ export interface EnhancedAutocompleteDropdownProps {
   value: AutocompleteOption | null;
   onChange: (value: AutocompleteOption | null) => void;
   onInputChange?: (value: string) => void;
+  inputValue?: string;
   onOpen?: () => void;
   onClose?: () => void;
   loading?: boolean;
@@ -210,6 +211,7 @@ export const EnhancedAutocompleteDropdown = forwardRef<
     value = null,
     onChange,
     onInputChange,
+    inputValue: controlledInputValue,
     onOpen,
     onClose,
     loading = false,
@@ -259,11 +261,12 @@ export const EnhancedAutocompleteDropdown = forwardRef<
           id={id}
           data-testid={testId}
           options={options}
+          {...(controlledInputValue !== undefined ? { inputValue: controlledInputValue } : {})}
           onChange={(_: SyntheticEvent, newValue: AutocompleteOption | null) => {
             onChange(newValue);
           }}
-          onInputChange={(_: SyntheticEvent, newInputValue: string, reason: string) => {
-            if (reason === 'input' && onInputChange) {
+          onInputChange={(_: SyntheticEvent, newInputValue: string, _reason: string) => {
+            if (onInputChange) {
               onInputChange(newInputValue);
             }
           }}
@@ -289,12 +292,10 @@ export const EnhancedAutocompleteDropdown = forwardRef<
           }}
           getOptionKey={(option) => option.value}
           renderOption={(props, option, state) => {
-            const { key, ...rest } = props;
             return (
               <Box
                 component="li"
-                key={option.value}
-                {...rest}
+                {...props}
                 sx={{
                   display: 'flex',
                   alignItems: 'center',
@@ -331,7 +332,7 @@ export const EnhancedAutocompleteDropdown = forwardRef<
               </Box>
             );
           }}
-          value={value ?? undefined}
+          value={value ?? null}
           popupIcon={<ArrowDownIcon />}
           clearIcon={<ClearIcon />}
           slotProps={{

@@ -6,8 +6,12 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { usePickerActionsContext } from '@mui/x-date-pickers/hooks';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
 import type { Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
+import 'dayjs/locale/en-gb';
 import styleConstants from './constants/style-constants';
 import { EnhancedFieldLabel, type EnhancedFieldLabelProps } from './field-label';
+
+dayjs.locale('en-gb');
 import { EnhancedButton } from './button';
 
 interface TimePickerProps {
@@ -71,11 +75,7 @@ function StyledActionBar(props: unknown) {
   );
 }
 
-const StyledDesktopTimePicker = styled(
-  ({ value: _value, ...props }: React.ComponentProps<typeof DesktopTimePicker>) => (
-    <DesktopTimePicker {...props} />
-  )
-)(() => ({
+const StyledDesktopTimePicker = styled(DesktopTimePicker)(() => ({
   '& .MuiPickersInputBase-root.MuiPickersOutlinedInput-root': {
     padding: '0px 1em',
     cursor: 'pointer',
@@ -326,7 +326,7 @@ export const TimePicker = forwardRef<HTMLInputElement, TimePickerProps>(
             {...(customProps.labelProps || {})}
           />
         )}
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <LocalizationProvider dateAdapter={AdapterDayjs} adapterLocale="en-gb">
           <Box ref={pickerWrapperRef} sx={{ width: '100%' }}>
             <StyledDesktopTimePicker
               open={open}

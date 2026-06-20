@@ -1,7 +1,9 @@
 import crypto from 'crypto';
 import type { Response, AuthenticatedTypedRequest } from '../types/index.js';
 import { getTagRepository, getUserRepository } from '../database/repositories/index.js';
-import { ApiResponse, type Tag, type TagList } from '@repo/shared-types';
+import { ApiResponse, STATUS_PSEUDO_COLOR, type Tag, type TagList } from '@repo/shared-types';
+import * as wsHub from '../realtime/ws-hub.js';
+import { tagToPublic } from '../realtime/payload-mappers.js';
 import type {
   CreateTagInput,
   UpdateTagInput,
@@ -11,10 +13,36 @@ import type {
 
 const RESERVED_TASK_TAG = 'task';
 
-function deterministicColor(name: string): string {
-  const normalized = name.trim().toLowerCase();
+function hashColor(input: string): string {
+  const normalized = input.trim().toLowerCase();
   const hex = crypto.createHash('sha1').update(normalized).digest('hex').slice(0, 6);
   return `#${hex}`;
+}
+
+async function generateUniqueColor(
+  tagRepository: ReturnType<typeof getTagRepository>,
+  userId: string,
+  name: string
+): Promise<string> {
+  let color = hashColor(name);
+
+  if (color.toLowerCase() === STATUS_PSEUDO_COLOR.toLowerCase()) {
+    color = hashColor(`${name}:reserved`);
+  }
+
+  const existingColors = new Set(
+    (await tagRepository.find({ where: { user: { id: userId } }, select: ['color'] })).map((t) =>
+      t.color.toLowerCase()
+    )
+  );
+
+  let attempt = 0;
+  while (existingColors.has(color.toLowerCase()) && attempt < 100) {
+    attempt += 1;
+    color = hashColor(`${name}:${attempt}`);
+  }
+
+  return color;
 }
 
 class TagController {
@@ -44,12 +72,15 @@ class TagController {
       return;
     }
 
+    const color = await generateUniqueColor(tagRepository, userId, trimmedName);
     const tag = tagRepository.create({
       name: trimmedName,
-      color: deterministicColor(trimmedName),
+      color,
       user,
     });
     await tagRepository.save(tag);
+
+    wsHub.emit(userId, 'tag', 'create', tag.id, tagToPublic(tag), undefined, req.realtimeClientId);
 
     const data: ApiResponse<{ id: string }> = {
       success: true,
@@ -84,11 +115,12 @@ class TagController {
           return;
         }
         tag.name = trimmed;
-        tag.color = deterministicColor(trimmed);
       }
     }
 
     await tagRepository.save(tag);
+
+    wsHub.emit(userId, 'tag', 'update', tag.id, tagToPublic(tag), undefined, req.realtimeClientId);
 
     const data: ApiResponse<Tag> = {
       success: true,
@@ -123,6 +155,8 @@ class TagController {
     }
 
     await tagRepository.delete({ id });
+
+    wsHub.emit(userId, 'tag', 'delete', tag.id, undefined, undefined, req.realtimeClientId);
 
     res.status(200).json({ success: true, message: 'Tag deleted successfully' });
   }

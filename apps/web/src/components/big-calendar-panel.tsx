@@ -8,7 +8,6 @@ import { useEventDots } from '../hooks/use-events';
 import { EventsHeaderRow } from './events-header-row';
 import { EventsList } from './events-list';
 import { AddEventModal } from './add-event-modal';
-import { STATUS_PSEUDO_COLOR } from '../utils/calendar';
 import styles from './style/big-calendar-panel.module.css';
 
 function toYmd(d: Date): string {
@@ -35,30 +34,15 @@ export function BigCalendarPanel() {
   const to = useMemo(() => toYmd(endOfMonth(activeStartDate)), [activeStartDate]);
 
   const { data: dotsData } = useEventDots({ mode: 'dots', from, to });
-  const tagById = useMemo(() => {
-    const map = new Map<string, string>();
-    (dotsData?.tags ?? []).forEach((t) => map.set(t.id, t.color));
-    return map;
-  }, [dotsData]);
 
   const itemsByDate = useMemo(() => {
     const map = new Map<string, Array<{ color: string }>>();
-    const tagIds = (dotsData?.tags ?? []).map((t) => t.id);
-    (dotsData?.dates ?? []).forEach((date) => {
-      const items: Array<{ color: string }> = [];
-      tagIds.forEach((id) => {
-        const color = tagById.get(id) ?? '#888';
-        items.push({ color });
-      });
+    (dotsData?.dates ?? []).forEach(({ date, tagColor }) => {
+      const items = tagColor.map((color) => ({ color }));
       map.set(date, items);
     });
-    (dotsData?.statusPseudoEvents ?? []).forEach((sp) => {
-      const items = map.get(sp.date) ?? [];
-      items.push({ color: STATUS_PSEUDO_COLOR });
-      map.set(sp.date, items);
-    });
     return map;
-  }, [dotsData, tagById]);
+  }, [dotsData]);
 
   const handlePrev = () => {
     setActiveStartDate(new Date(activeStartDate.getFullYear(), activeStartDate.getMonth() - 1, 1));

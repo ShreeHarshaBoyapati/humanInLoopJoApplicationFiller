@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import { axiosInstance } from '../utils/axios.ts';
+import { EVENT_KEYS } from './use-events';
 import type {
   ApiResponse,
   CreateTagInput,
@@ -134,7 +135,8 @@ export const useDeleteTag = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: TAG_KEYS.lists() });
-      queryClient.invalidateQueries({ queryKey: ['events', 'list'] });
+      queryClient.invalidateQueries({ queryKey: EVENT_KEYS.lists() });
+      queryClient.invalidateQueries({ queryKey: [...EVENT_KEYS.all, 'dots'], exact: false });
     },
   });
   const cancel = useCallback(() => {

@@ -64,7 +64,7 @@ export function EventCard({ event }: EventCardProps) {
     );
   };
 
-  const jobLine = job ? `${job.title}${job.companyName ? ` @ ${job.companyName}` : ''}` : 'No job';
+  const jobLine = job ? `${job.title}${job.companyName ? ` @ ${job.companyName}` : ''}` : null;
   const timeLine = event.time ? event.time : 'All day';
   const radioTooltip = event.isCompleted
     ? 'Click to mark as incomplete'
@@ -85,9 +85,9 @@ export function EventCard({ event }: EventCardProps) {
         <div className={styles.titleRow}>
           <span
             className={`${styles.titleText} ${event.isCompleted ? styles.titleTextCompleted : ''}`}
-            title={jobLine}
+            title={event.title}
           >
-            {jobLine}
+            {event.title}
           </span>
           {tag && (
             <span
@@ -101,6 +101,14 @@ export function EventCard({ event }: EventCardProps) {
         <span className={`${styles.metaLine} ${event.isCompleted ? styles.metaLineCompleted : ''}`}>
           {timeLine}
         </span>
+        {jobLine && (
+          <span
+            className={`${styles.jobLine} ${event.isCompleted ? styles.metaLineCompleted : ''}`}
+            title={jobLine}
+          >
+            {jobLine}
+          </span>
+        )}
         <span className={`${styles.metaLine} ${event.isCompleted ? styles.metaLineCompleted : ''}`}>
           {formatDateDDMMYYYY(event.date)}
         </span>
@@ -136,6 +144,7 @@ export function EventCard({ event }: EventCardProps) {
         onClose={() => setIsEditOpen(false)}
         eventToEdit={event}
         initialJob={job ?? null}
+        initialTag={tag ?? null}
         initialDate={event.date}
       />
 

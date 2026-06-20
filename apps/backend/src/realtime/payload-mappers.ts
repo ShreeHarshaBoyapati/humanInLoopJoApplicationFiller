@@ -3,12 +3,16 @@ import type Resume from '../database/entities/resume.js';
 import type ResumeVersion from '../database/entities/resume-version.js';
 import type Result from '../database/entities/result.js';
 import type JobEntity from '../database/entities/job.js';
+import type Event from '../database/entities/event.js';
+import type Tag from '../database/entities/tag.js';
 import type {
   Persona as PersonaPayload,
   ResumeMetadata,
   ResumeVersionMetadata,
   Job,
   PaginatedResultListItem,
+  Event as EventPayload,
+  Tag as TagPayload,
 } from '@repo/shared-types';
 
 export function personaToMetadata(p: Persona): PersonaPayload {
@@ -88,5 +92,31 @@ export function resultToListItem(result: Result): PaginatedResultListItem {
     resumeVersionId: result.resumeVersionId,
     createdAt: result.createdAt,
     resumeVersionDataUpdatedAt: result.resumeVersion.dataUpdatedAt,
+  };
+}
+
+export function eventToPublic(event: Event): EventPayload {
+  return {
+    id: event.id,
+    title: event.title,
+    description: event.description,
+    date: event.date,
+    time: event.time,
+    tagId: event.tagId,
+    jobId: event.jobId,
+    isCompleted: event.isCompleted,
+    completedAt: event.completedAt,
+    createdAt: event.createdAt,
+    updatedAt: event.updatedAt,
+  };
+}
+
+export function tagToPublic(tag: Tag): TagPayload {
+  return {
+    id: tag.id,
+    name: tag.name,
+    color: tag.color,
+    createdAt: tag.createdAt,
+    updatedAt: tag.updatedAt,
   };
 }

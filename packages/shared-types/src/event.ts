@@ -25,10 +25,12 @@ export interface Event {
   updatedAt: Date;
 }
 
+export const STATUS_PSEUDO_COLOR = '#9ca3af';
+
 export interface StatusPseudoEvent {
   date: string;
   status: string;
-  color: 'STATUS_PSEUDO';
+  color: string;
 }
 
 export interface EventPagination {
@@ -46,16 +48,13 @@ export interface EventList {
   statusPseudoEvents?: StatusPseudoEvent[];
 }
 
-export interface EventDotsTag {
-  id: string;
-  name: string;
-  color: string;
+export interface EventDotsDate {
+  date: string;
+  tagColor: string[];
 }
 
 export interface EventDotsResponse {
-  tags: EventDotsTag[];
-  dates: string[];
-  statusPseudoEvents?: StatusPseudoEvent[];
+  dates: EventDotsDate[];
 }
 
 export interface CreateEventInput {

@@ -6,6 +6,7 @@ import {
 } from '../database/repositories/index.js';
 import {
   ApiResponse,
+  STATUS_PSEUDO_COLOR,
   type EventDotsResponse,
   type Job,
   type JobStatus,
@@ -13,6 +14,8 @@ import {
   type EventList,
   type StatusPseudoEvent,
 } from '@repo/shared-types';
+import * as wsHub from '../realtime/ws-hub.js';
+import { eventToPublic } from '../realtime/payload-mappers.js';
 import type JobEntity from '../database/entities/job.js';
 import type {
   CreateEventInput,
@@ -60,29 +63,17 @@ class EventController {
     const map = (job as JobEntity).statusUpdatedAt as Record<JobStatus, Date | null> | undefined;
     if (!map) return [];
 
-    const byDate = new Map<string, { status: string; ts: number }>();
-    const statuses: JobStatus[] = [
-      'draft',
-      'applied',
-      'interview',
-      'offer',
-      'rejected',
-      'archived',
-    ];
+    const statuses: JobStatus[] = ['draft', 'applied', 'interview', 'offer', 'rejected'];
+
+    const events: StatusPseudoEvent[] = [];
     for (const status of statuses) {
       const ts = map[status];
       if (!ts) continue;
       const tsDate = ts instanceof Date ? ts : new Date(ts);
-      const date = toUtcDateString(tsDate);
-      const existing = byDate.get(date);
-      if (!existing || tsDate.getTime() > existing.ts) {
-        byDate.set(date, { status, ts: tsDate.getTime() });
-      }
+      events.push({ date: toUtcDateString(tsDate), status, color: STATUS_PSEUDO_COLOR });
     }
 
-    return Array.from(byDate.entries())
-      .map(([date, { status }]) => ({ date, status, color: 'STATUS_PSEUDO' as const }))
-      .sort((a, b) => a.date.localeCompare(b.date));
+    return events.sort((a, b) => a.date.localeCompare(b.date));
   }
 
   create = async (req: AuthenticatedTypedRequest<CreateEventInput>, res: Response) => {
@@ -132,6 +123,16 @@ class EventController {
       user: { id: userId } as never,
     });
     await eventRepository.save(event);
+
+    wsHub.emit(
+      userId,
+      'event',
+      'create',
+      event.id,
+      { id: event.id, date: event.date, tagId: event.tagId, jobId: event.jobId },
+      undefined,
+      req.realtimeClientId
+    );
 
     const data: ApiResponse<{ id: string }> = {
       success: true,
@@ -210,6 +211,16 @@ class EventController {
     await eventRepository.save(event);
     await this.enforceCompletedTaskCap(userId);
 
+    wsHub.emit(
+      userId,
+      'event',
+      'update',
+      event.id,
+      eventToPublic(event),
+      undefined,
+      req.realtimeClientId
+    );
+
     const data: ApiResponse<Event> = {
       success: true,
       data: this.toPublicEvent(event),
@@ -228,9 +239,19 @@ class EventController {
       res.status(404).json({ success: false, message: 'Event not found' });
       return;
     }
-
+    const eventCopy = { ...event };
     await eventRepository.remove(event);
     await this.enforceCompletedTaskCap(userId);
+
+    wsHub.emit(
+      userId,
+      'event',
+      'delete',
+      eventCopy.id,
+      { id: eventCopy.id, date: eventCopy.date, tagId: eventCopy.tagId, jobId: eventCopy.jobId },
+      undefined,
+      req.realtimeClientId
+    );
 
     res.status(200).json({ success: true, message: 'Event deleted successfully' });
   };
@@ -312,7 +333,12 @@ class EventController {
     if (jobId) {
       const job = await jobRepository.findOne({ where: { id: jobId, user: { id: userId } } });
       if (job) {
-        responseData.statusPseudoEvents = this.computeStatusPseudoEvents(job);
+        const pseudoEvents = this.computeStatusPseudoEvents(job);
+        responseData.statusPseudoEvents = pseudoEvents.filter((sp) => {
+          if (from && sp.date < from) return false;
+          if (to && sp.date > to) return false;
+          return true;
+        });
       }
     }
 
@@ -332,7 +358,8 @@ class EventController {
 
     const qb = eventRepository
       .createQueryBuilder('event')
-      .select(['event.date AS date', 'event.tagId AS "tagId"'])
+      .select(['event.date AS date', 'event.tagId AS "tagId"', 'tag.color AS color'])
+      .innerJoin('event.tag', 'tag')
       .leftJoin('event.user', 'user')
       .where('user.id = :userId', { userId })
       .andWhere('event.tagId IS NOT NULL');
@@ -345,50 +372,37 @@ class EventController {
     }
 
     if (jobId) {
-      const tagRepository = getTagRepository();
-      const taskTag = await tagRepository.findOne({
-        where: { name: RESERVED_TASK_TAG, user: { id: userId } },
-      });
-      const orClauses = ['event.jobId = :jobId'];
-      const orParams: Record<string, unknown> = { jobId };
-      if (taskTag) {
-        orClauses.push('(event.tagId = :taskTagId AND event.user = :tagUser)');
-        orParams.taskTagId = taskTag.id;
-        orParams.tagUser = userId;
-      }
-      qb.andWhere(`(${orClauses.join(' OR ')})`, orParams);
+      qb.andWhere('event.jobId = :jobId', { jobId });
     } else if (tagId) {
       qb.andWhere('event.tagId = :tagId', { tagId });
     }
 
-    const rows: Array<{ date: string; tagId: string }> = await qb.getRawMany();
+    const rows: Array<{ date: string; color: string }> = await qb.getRawMany();
 
-    const dates = Array.from(new Set(rows.map((r) => r.date))).sort();
-    const tagIds = Array.from(new Set(rows.map((r) => r.tagId)));
-
-    let tags: EventDotsResponse['tags'] = [];
-    if (tagIds.length > 0) {
-      const tagRepository = getTagRepository();
-      const tagRows = await tagRepository
-        .createQueryBuilder('tag')
-        .select(['tag.id AS id', 'tag.name AS name', 'tag.color AS color'])
-        .where('tag.id IN (:...ids)', { ids: tagIds })
-        .andWhere('tag.user = :userId', { userId })
-        .getRawMany();
-      tags = tagRows.map((t) => ({ id: t.id, name: t.name, color: t.color }));
+    const colorsByDate = new Map<string, Set<string>>();
+    for (const { date, color } of rows) {
+      const set = colorsByDate.get(date) ?? new Set<string>();
+      set.add(color);
+      colorsByDate.set(date, set);
     }
-
-    const response: EventDotsResponse = { tags, dates };
 
     if (jobId) {
       const jobRepository = getJobRepository();
       const job = await jobRepository.findOne({ where: { id: jobId, user: { id: userId } } });
       if (job) {
-        response.statusPseudoEvents = this.computeStatusPseudoEvents(job);
+        for (const sp of this.computeStatusPseudoEvents(job)) {
+          const set = colorsByDate.get(sp.date) ?? new Set<string>();
+          set.add(sp.color);
+          colorsByDate.set(sp.date, set);
+        }
       }
     }
 
-    return response;
+    const dates: EventDotsResponse['dates'] = Array.from(colorsByDate.entries())
+      .map(([date, colors]) => ({ date, tagColor: Array.from(colors) }))
+      .sort((a, b) => a.date.localeCompare(b.date));
+
+    return { dates };
   }
 
   private toPublicEvent(e: {
