@@ -174,7 +174,7 @@ export function AddEventModal({
     limit: 200,
   });
 
-  const tags = tagsData?.tags ?? [];
+  const tags = useMemo(() => tagsData?.tags ?? [], [tagsData]);
   const isTagListLoading = isFetchingTags || (debouncedTagSearch === '' && !tagsData);
 
   const {
@@ -243,7 +243,7 @@ export function AddEventModal({
     setErrors((prev) => ({ ...prev, [field]: '' }));
   };
 
-  const validate = (): boolean => {
+  const validate = useCallback((): boolean => {
     const next: Partial<Record<keyof FormState, string>> = {};
     if (!form.title.trim()) next.title = 'Title is required';
     if (!form.date) next.date = 'Date is required';
@@ -254,7 +254,7 @@ export function AddEventModal({
     }
     setErrors(next);
     return Object.keys(next).length === 0;
-  };
+  }, [form, isTaskTagSelected]);
 
   const handleSubmit = useCallback(() => {
     if (!validate()) {
@@ -298,7 +298,18 @@ export function AddEventModal({
         onError: onErrorCb,
       });
     }
-  }, [form, isEdit, eventToEdit, tags, createEvent, updateEvent, showSnackbar, onSuccess, onClose]);
+  }, [
+    form,
+    isEdit,
+    eventToEdit,
+    tags,
+    validate,
+    createEvent,
+    updateEvent,
+    showSnackbar,
+    onSuccess,
+    onClose,
+  ]);
 
   const handleClose = () => {
     if (createEvent.isPending || updateEvent.isPending) return;

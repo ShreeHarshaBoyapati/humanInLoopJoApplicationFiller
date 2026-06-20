@@ -195,7 +195,7 @@ export function ResumeVersionCard({
 
       setIsViewing(false);
     }
-  }, [viewDocumentQuery.isSuccess, viewDocumentQuery.data]);
+  }, [viewDocumentQuery, showSnackbar]);
 
   // Show snackbar on error
   useEffect(() => {

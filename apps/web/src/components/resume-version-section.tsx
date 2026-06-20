@@ -180,7 +180,7 @@ export function ResumeVersionSection({
         showSnackbar(message, { severity: 'error' });
       }
     },
-    [resume.id, setActiveVersion, showSnackbar]
+    [resume.id, personaId, setActiveVersion, showSnackbar]
   );
 
   const handleEdit = useCallback((version: ResumeVersionMetadata) => {
@@ -212,7 +212,7 @@ export function ResumeVersionSection({
       }
       showSnackbar(message, { severity: 'error' });
     }
-  }, [resume.id, deleteVersion, selectedVersionForDelete, showSnackbar]);
+  }, [resume.id, personaId, deleteVersion, selectedVersionForDelete, showSnackbar]);
 
   const handleBranchClick = useCallback((version: ResumeVersionMetadata) => {
     setSelectedVersionForBranch(version);

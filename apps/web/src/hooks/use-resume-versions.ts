@@ -214,6 +214,7 @@ export const useSetActiveVersion = () => {
         previousResumeId: string | null;
         newResumeId: string;
       },
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       _variables: SetActiveVersionParams
     ) => {
       queryClient.invalidateQueries({

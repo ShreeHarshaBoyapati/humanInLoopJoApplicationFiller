@@ -37,14 +37,6 @@ type StatusUpdatedAtMap = {
   rejected: Date | null;
 };
 
-const STATUS_ORDER: (keyof StatusUpdatedAtMap)[] = [
-  'draft',
-  'applied',
-  'interview',
-  'offer',
-  'rejected',
-];
-
 function emptyStatusUpdatedAt(): StatusUpdatedAtMap {
   return {
     draft: null,

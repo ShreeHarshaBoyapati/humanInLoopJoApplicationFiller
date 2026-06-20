@@ -3,11 +3,9 @@ import type {
   Event,
   EventList,
   Job,
-  PaginatedResultListItem,
   Persona,
   ResumeMetadata,
   ResumeVersionMetadata,
-  Tag,
 } from '@repo/shared-types';
 import { PERSONA_KEYS } from '../hooks/use-personas';
 import { RESUME_KEYS } from '../hooks/use-resumes';

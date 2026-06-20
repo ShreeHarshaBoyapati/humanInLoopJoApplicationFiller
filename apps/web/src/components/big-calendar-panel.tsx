@@ -44,12 +44,6 @@ export function BigCalendarPanel() {
     return map;
   }, [dotsData]);
 
-  const handlePrev = () => {
-    setActiveStartDate(new Date(activeStartDate.getFullYear(), activeStartDate.getMonth() - 1, 1));
-  };
-  const handleNext = () => {
-    setActiveStartDate(new Date(activeStartDate.getFullYear(), activeStartDate.getMonth() + 1, 1));
-  };
   const handleToday = () => {
     const today = new Date();
     setActiveStartDate(startOfMonth(today));

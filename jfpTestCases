@@ -1,0 +1,52 @@
+
+-> the markdown for notes is added.
+-- the design of the markdown -done
+-- the loading state and the error state. --done
+-- the changes being saved and sync with the extension
+-- syncing see the different conditions and finallize where it will work and where not.
+
+-> the stale in the result list  --done
+-- need to update the job, not update the job portion -done
+-- update the version and not update the version portion(in multiple jobs) -done
+
+-> the primary marking for the result list.
+-- for a new job the first time should make it primary both in extension and in the web. --done	
+-- for the exisiting on the change should make the persona also change and it should be searchable in the list. --done
+-- design wise the radio button should have primary on it. --done
+
+-> the addition of the new result.
+-- the loading and error. -- done
+-- the cancel on return and unmount also. -- done
+
+-> view the resume version from result list.
+-- loading, error handling, pagination and search. -- done
+
+-> added the result list with result being shown
+-- see the action buttons loading and error states -- done
+-- check the pagination,scrolling, search
+-- see where the cache is and its invalidation
+
+-> active setting of resume
+
+-> soft delete of the persona,resume, version
+-- the cancellation of the delete
+-- start with a resume version delete
+-- then the parent resume delete and see the inside deleted version if actually deleted or not.
+-- if the persona deletes then all the inside should delete
+
+-> overiew in the job section
+-- loading and error -- done
+
+-> top buttons in sidebar.
+-- loading and error -- done
+-- for the delete there should be cancellation -- done
+
+-> fix the routing 
+-- check the header banner route.
+
+-> job listing
+-> need to store the job in the indexDb for extension
+
+login:
+->in the same browser when in web it is login then if the extension is opened anywhere else in same browser it should be opened. vice versa
+->in different browser no they should be different login.

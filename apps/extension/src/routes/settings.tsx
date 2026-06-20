@@ -47,8 +47,6 @@ function SettingsComponent() {
   const search = Route.useSearch();
   const { user } = Route.useLoaderData();
 
-  const currentReturnTo = search.returnTo || '/';
-
   const handleBack = () => {
     if (search.returnTo) {
       navigate({

@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource } from 'typeorm';
 import initializeDataSource from '../src/database/data-source.js';
 import User from '../src/database/entities/user.js';
 import Job from '../src/database/entities/job.js';

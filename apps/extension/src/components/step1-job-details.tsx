@@ -9,7 +9,7 @@ import {
   Markdown,
 } from '@repo/ui';
 import { Box } from '@mui/material';
-import type { Job, JobStatus, ScrapedJob } from '@repo/shared-types';
+import type { Job, ScrapedJob } from '@repo/shared-types';
 import { invalidateJobsCache, updateJobInCache } from '../db/jobs-cache';
 import styles from '../routes/style/job.module.css';
 

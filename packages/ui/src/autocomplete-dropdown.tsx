@@ -265,6 +265,7 @@ export const EnhancedAutocompleteDropdown = forwardRef<
           onChange={(_: SyntheticEvent, newValue: AutocompleteOption | null) => {
             onChange(newValue);
           }}
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           onInputChange={(_: SyntheticEvent, newInputValue: string, _reason: string) => {
             if (onInputChange) {
               onInputChange(newInputValue);

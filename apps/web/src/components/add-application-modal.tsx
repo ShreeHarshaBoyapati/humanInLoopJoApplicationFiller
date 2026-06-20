@@ -103,7 +103,7 @@ export function AddApplicationModal({ isOpen, onClose, onSuccess }: AddApplicati
     }));
   };
 
-  const validate = (): boolean => {
+  const validate = useCallback((): boolean => {
     const newErrors: Partial<Record<keyof JobFormData, string>> = {};
     let hasError = false;
 
@@ -121,7 +121,7 @@ export function AddApplicationModal({ isOpen, onClose, onSuccess }: AddApplicati
       return false;
     }
     return true;
-  };
+  }, [formData]);
 
   const handleSubmit = useCallback(async () => {
     if (!validate()) {
@@ -164,7 +164,7 @@ export function AddApplicationModal({ isOpen, onClose, onSuccess }: AddApplicati
         });
       },
     });
-  }, [formData, createJob, showSnackbar, onClose, onSuccess]);
+  }, [formData, validate, createJob, showSnackbar, onClose, onSuccess]);
 
   const handleClose = () => {
     setFormData(initialFormData);

@@ -33,7 +33,7 @@ export const ResumeVersionView = ({
   // Fetch parsed data on mount
   useEffect(() => {
     viewParsedDataMutation.mutate({ resumeId, versionId });
-  }, [resumeId, versionId]);
+  }, [resumeId, versionId, viewParsedDataMutation]);
 
   // Helper function to convert base64 to Blob
   const base64ToBlob = (base64: string, contentType: string): Blob | null => {

@@ -129,6 +129,7 @@ export const useUpdateJob = () => {
 
   return useMutation({
     mutationFn: async (data: UpdateJobInput) => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { invalidateQueries: _invalidate, previousStatus: _previousStatus, ...apiData } = data;
       try {
         const response = await axiosInstance.put<ApiResponse<Job>>('/job', apiData);
