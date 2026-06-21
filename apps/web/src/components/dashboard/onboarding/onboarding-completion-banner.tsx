@@ -21,6 +21,7 @@ export const OnboardingCompletionBanner = () => {
           label="Go to Job Tracker"
           colorTheme="primary"
           onClick={() => navigate({ to: '/job-tracker' })}
+          customProps={{ props: { sx: { width: 'fit-content', maxWidth: 'fit-content' } } }}
         />
       </div>
     </div>

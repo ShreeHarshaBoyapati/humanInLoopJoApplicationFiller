@@ -33,18 +33,20 @@ export const OnboardingAccordion = ({
   onSkip,
 }: OnboardingAccordionProps) => {
   const [expandedKey, setExpandedKey] = useState<OnboardingStepKey | null>(null);
+  const [hasAutoExpanded, setHasAutoExpanded] = useState(false);
 
   useEffect(() => {
+    if (hasAutoExpanded) return;
+
     const effectiveComplete = (key: OnboardingStepKey) => {
       const step = steps.find((s) => s.key === key);
       return step?.isComplete === true || isLocallyComplete(key);
     };
 
-    if (expandedKey === null || effectiveComplete(expandedKey)) {
-      const nextKey = STEP_ORDER.find((key) => !effectiveComplete(key)) ?? null;
-      setExpandedKey(nextKey);
-    }
-  }, [steps, isLocallyComplete, expandedKey]);
+    const nextKey = STEP_ORDER.find((key) => !effectiveComplete(key)) ?? null;
+    setExpandedKey(nextKey);
+    setHasAutoExpanded(true);
+  }, [steps, isLocallyComplete, hasAutoExpanded]);
 
   const handleToggle = (key: OnboardingStepKey) => {
     setExpandedKey((current) => (current === key ? null : key));

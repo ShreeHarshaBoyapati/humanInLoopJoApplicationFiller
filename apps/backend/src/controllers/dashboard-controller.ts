@@ -85,9 +85,84 @@ class DashboardController {
     const jobRepository = getJobRepository();
     const apiKeyRepository = getApiKeyRepository();
     const eventRepository = getEventRepository();
-    const tagRepository = getTagRepository();
     const personaRepository = getPersonaRepository();
     const resumeRepository = getResumeRepository();
+    const resumeVersionRepository = getResumeVersionRepository();
+
+    const user = await userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      const data: ApiResponse = { success: false, message: 'User not found' };
+      res.status(404).json(data);
+      return;
+    }
+
+    if (user.onboardingComplete) {
+      const completedPayload: OnboardingResponse = {
+        isComplete: true,
+        completedSteps: 4,
+        totalSteps: 4,
+        steps: [
+          { key: 'aiProvider', severity: 'required', isComplete: true },
+          { key: 'personaAndResume', severity: 'required', isComplete: true },
+          { key: 'firstJob', severity: 'recommended', isComplete: true },
+          { key: 'eventOrTag', severity: 'optional', isComplete: true },
+        ],
+      };
+      const completedData: ApiResponse<OnboardingResponse> = {
+        success: true,
+        data: completedPayload,
+      };
+      res.status(200).json(completedData);
+      return;
+    }
+
+    const hasAiKey =
+      (await apiKeyRepository.count({ where: { user: { id: userId }, active: true } })) > 0;
+
+    const personaAndResumeComplete =
+      (await resumeVersionRepository.count({
+        where: {
+          isDeleted: false,
+          resume: { isDeleted: false, persona: { isDeleted: false, user: { id: userId } } },
+        },
+      })) > 0;
+
+    const firstJobComplete = (await jobRepository.count({ where: { user: { id: userId } } })) > 0;
+
+    const eventCount = await eventRepository.count({ where: { user: { id: userId } } });
+    const eventOrTagComplete = eventCount > 0;
+
+    const steps: OnboardingStep[] = [
+      { key: 'aiProvider', severity: 'required', isComplete: hasAiKey },
+      { key: 'personaAndResume', severity: 'required', isComplete: personaAndResumeComplete },
+      { key: 'firstJob', severity: 'recommended', isComplete: firstJobComplete },
+      { key: 'eventOrTag', severity: 'optional', isComplete: eventOrTagComplete },
+    ];
+
+    const completedSteps = steps.filter((s) => s.isComplete).length;
+    const isComplete = completedSteps === steps.length;
+
+    if (isComplete) {
+      user.onboardingComplete = true;
+      await userRepository.save(user);
+    }
+
+    const payload: OnboardingResponse = {
+      isComplete,
+      completedSteps,
+      totalSteps: 4,
+      steps,
+    };
+
+    const data: ApiResponse<OnboardingResponse> = { success: true, data: payload };
+    res.status(200).json(data);
+  }
+
+  async skipOnboarding(req: AuthenticatedTypedRequest<null>, res: Response) {
+    const userId = req.userId;
+    const userRepository = getUserRepository();
+    const jobRepository = getJobRepository();
+    const apiKeyRepository = getApiKeyRepository();
     const resumeVersionRepository = getResumeVersionRepository();
 
     const user = await userRepository.findOne({ where: { id: userId } });
@@ -100,57 +175,34 @@ class DashboardController {
     const hasAiKey =
       (await apiKeyRepository.count({ where: { user: { id: userId }, active: true } })) > 0;
 
-    const personas = await personaRepository.find({
-      where: { user: { id: userId }, isDeleted: false },
-      relations: ['resumes'],
-    });
-    const personaWithVersions = await Promise.all(
-      personas.map(async (persona) => {
-        const resumes = await resumeRepository.find({
-          where: { persona: { id: persona.id }, isDeleted: false },
-        });
-        if (resumes.length === 0) return false;
-        const resumeIds = resumes.map((r) => r.id);
-        const versions = await resumeVersionRepository.count({
-          where: { resume: { id: In(resumeIds) }, isDeleted: false },
-        });
-        return versions > 0;
-      })
-    );
-    const personaAndResumeComplete = personaWithVersions.some(Boolean);
+    const personaAndResumeComplete =
+      (await resumeVersionRepository.count({
+        where: {
+          isDeleted: false,
+          resume: { isDeleted: false, persona: { isDeleted: false, user: { id: userId } } },
+        },
+      })) > 0;
 
     const firstJobComplete = (await jobRepository.count({ where: { user: { id: userId } } })) > 0;
 
-    const eventCount = await eventRepository.count({ where: { user: { id: userId } } });
-    const tagCount = await tagRepository.count({ where: { user: { id: userId } } });
-    const eventOrTagComplete = eventCount > 0 || tagCount > 0;
+    if (!(hasAiKey && personaAndResumeComplete && firstJobComplete)) {
+      const data: ApiResponse = {
+        success: false,
+        message: 'All required onboarding steps must be completed first',
+      };
+      res.status(400).json(data);
+      return;
+    }
 
-    const steps: OnboardingStep[] = [
-      { key: 'aiProvider', severity: 'required', isComplete: hasAiKey },
-      { key: 'personaAndResume', severity: 'required', isComplete: personaAndResumeComplete },
-      { key: 'firstJob', severity: 'recommended', isComplete: firstJobComplete },
-      { key: 'eventOrTag', severity: 'optional', isComplete: eventOrTagComplete },
-    ];
-
-    const completedSteps = steps.filter((s) => s.isComplete).length;
-    const isComplete = completedSteps === steps.length;
-
-    if (isComplete && !user.onboardingComplete) {
+    if (!user.onboardingComplete) {
       user.onboardingComplete = true;
-      await userRepository.save(user);
-    } else if (!isComplete && user.onboardingComplete) {
-      user.onboardingComplete = false;
       await userRepository.save(user);
     }
 
-    const payload: OnboardingResponse = {
-      isComplete,
-      completedSteps,
-      totalSteps: 4,
-      steps,
+    const data: ApiResponse<{ onboardingComplete: true }> = {
+      success: true,
+      data: { onboardingComplete: true },
     };
-
-    const data: ApiResponse<OnboardingResponse> = { success: true, data: payload };
     res.status(200).json(data);
   }
 

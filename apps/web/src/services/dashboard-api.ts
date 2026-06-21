@@ -17,6 +17,15 @@ export const getOnboarding = async (): Promise<OnboardingResponse> => {
   return response.data.data;
 };
 
+export const completeOnboarding = async (): Promise<{ onboardingComplete: true }> => {
+  const response =
+    await axiosInstance.post<ApiResponse<{ onboardingComplete: true }>>('/dashboard/onboarding');
+  if (!response.data.success || !response.data.data) {
+    throw new Error(response.data.message || 'Failed to complete onboarding');
+  }
+  return response.data.data;
+};
+
 export interface DashboardQueryParams {
   range: DashboardRange;
   topAtsLimit?: number;

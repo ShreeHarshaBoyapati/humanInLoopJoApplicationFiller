@@ -24,6 +24,7 @@ export const Step1AiProviderBody = () => {
         <li>Anthropic</li>
         <li>Gemini</li>
         <li>Ollama</li>
+        <li>Custom (Open AI Supported)</li>
       </ul>
       <div className={styles.ctaRow}>
         <EnhancedButton
@@ -44,7 +45,7 @@ export const Step2PersonaResumeBody = () => {
       <div className={styles.infoCards}>
         <InfoCard
           title="Persona"
-          text="A persona groups jobs by role type, like Frontend or Backend."
+          text="A persona groups resumes by role type, like Frontend or Backend."
         />
         <InfoCard
           title="Resume"
@@ -52,14 +53,15 @@ export const Step2PersonaResumeBody = () => {
         />
         <InfoCard
           title="Resume version"
-          text="Create tailored versions of a resume for different personas."
+          text="Create tailored versions of a resume for different jobs."
         />
       </div>
       <div className={styles.ctaRow}>
         <EnhancedButton
-          label="Go to persona and resumes"
+          label="Go to persona"
           colorTheme="primary"
           onClick={() => navigate({ to: '/persona-resumes' })}
+          customProps={{ props: { sx: { width: 'fit-content', maxWidth: 'fit-content' } } }}
         />
       </div>
     </div>
@@ -79,11 +81,13 @@ export const Step3FirstJobBody = () => {
       <div className={styles.note}>
         Open the JobFillPro extension on a job listing page to see the auto-fill flow in action.
       </div>
+      <p className={styles.text}>Or you can manually add a job in the Job Tracker.</p>
       <div className={styles.ctaRow}>
         <EnhancedButton
-          label="Go to extension"
+          label="Go to Job Tracker"
           colorTheme="primary"
           onClick={() => navigate({ to: '/job-tracker' })}
+          customProps={{ props: { sx: { width: 'fit-content', maxWidth: 'fit-content' } } }}
         />
       </div>
     </div>
@@ -98,17 +102,18 @@ export const Step4EventOrTagBody = ({ onSkip }: StepBodyProps) => {
       <div className={styles.infoCards}>
         <InfoCard
           title="Events"
-          text="Interview dates and follow-ups show up on your dashboard calendar."
+          text="Mark the important dates and tasks in your calendar for better productivity and planning."
         />
-        <InfoCard title="Tags" text="Group events and jobs so you can filter and plan quickly." />
+        <InfoCard title="Event Tags" text="Group events so you can filter and plan quickly." />
       </div>
       <div className={styles.ctaRow}>
         <EnhancedButton
           label="Open Job Tracker"
           colorTheme="primary"
           onClick={() => navigate({ to: '/job-tracker' })}
+          customProps={{ props: { sx: { width: 'fit-content', maxWidth: 'fit-content' } } }}
         />
-        {onSkip && <EnhancedButton label="Skip for now" colorTheme="text" onClick={onSkip} />}
+        {onSkip && <EnhancedButton label="Skip" colorTheme="secondary" onClick={onSkip} />}
       </div>
     </div>
   );

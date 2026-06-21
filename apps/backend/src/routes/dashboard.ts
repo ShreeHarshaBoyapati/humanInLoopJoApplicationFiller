@@ -7,6 +7,7 @@ import { asHandler } from '../types/api.js';
 const router: express.Router = express.Router();
 
 router.get('/onboarding', authMiddleware, asHandler(DashboardController.onboarding));
+router.post('/onboarding', authMiddleware, asHandler(DashboardController.skipOnboarding));
 router.get('/', authMiddleware, dashboardValidation, asHandler(DashboardController.get));
 
 export default router;

@@ -13,6 +13,7 @@ import { OnboardingProgressCard } from './onboarding-progress-card.tsx';
 import { OnboardingAccordion } from './onboarding-accordion.tsx';
 import { OnboardingCompletionBanner } from './onboarding-completion-banner.tsx';
 import sharedStyles from '../style/onboarding.module.css';
+import styleConstants from '@repo/ui/constants/style-constants.js';
 
 export const OnboardingView = () => {
   const email = useStore((state) => state.email);
@@ -24,7 +25,12 @@ export const OnboardingView = () => {
     return (
       <div className={sharedStyles.page}>
         <OnboardingGreeting displayName={displayName} />
-        <div className={sharedStyles.card}>Loading onboarding checklist…</div>
+        <div
+          className={sharedStyles.card}
+          style={{ color: styleConstants.white700, textAlign: 'center' }}
+        >
+          Loading onboarding checklist…
+        </div>
       </div>
     );
   }
