@@ -5,11 +5,9 @@ import {
   getJobRepository,
   getUserRepository,
   getPersonaRepository,
-  getResumeRepository,
   getResumeVersionRepository,
   getApiKeyRepository,
   getEventRepository,
-  getTagRepository,
   getWeeklyGoalRepository,
 } from '../database/repositories/index.js';
 import Job from '../database/entities/job.js';
@@ -85,8 +83,6 @@ class DashboardController {
     const jobRepository = getJobRepository();
     const apiKeyRepository = getApiKeyRepository();
     const eventRepository = getEventRepository();
-    const personaRepository = getPersonaRepository();
-    const resumeRepository = getResumeRepository();
     const resumeVersionRepository = getResumeVersionRepository();
 
     const user = await userRepository.findOne({ where: { id: userId } });
@@ -217,7 +213,6 @@ class DashboardController {
     const jobRepository = getJobRepository();
     const apiKeyRepository = getApiKeyRepository();
     const eventRepository = getEventRepository();
-    const tagRepository = getTagRepository();
     const personaRepository = getPersonaRepository();
     const weeklyGoalRepository = getWeeklyGoalRepository();
 
@@ -276,6 +271,13 @@ class DashboardController {
     }
     const total = jobs.length;
 
+    const rejectedReached: Record<'interview' | 'offer', number> = { interview: 0, offer: 0 };
+    for (const job of jobs) {
+      if ((job.status as JobStatus) !== 'rejected') continue;
+      const map = (job.statusUpdatedAt as StatusUpdatedAtMap) || emptyStatusUpdatedAt();
+      if (map.interview) rejectedReached.interview += 1;
+    }
+
     const metricsByStatus: DashboardStatusMetric[] = STATUSES.map((status) => ({
       status,
       count: byStatus[status],
@@ -283,17 +285,24 @@ class DashboardController {
     }));
 
     // 2. Funnel
-    const draftCount = byStatus.draft;
-    const percent = (count: number) =>
-      draftCount === 0 ? 0 : Math.round((count / draftCount) * 1000) / 10;
-
     const stageCount: Record<JobStatus, number> = {
-      draft: draftCount,
+      draft: byStatus.draft,
       applied: byStatus.applied,
-      interview: byStatus.interview,
+      interview: byStatus.interview + rejectedReached.interview,
       offer: byStatus.offer,
       rejected: byStatus.rejected,
     };
+    let cumulative = 0;
+    cumulative += byStatus.rejected;
+    for (const s of [...FUNNEL_ORDER].reverse()) {
+      cumulative += byStatus[s];
+      stageCount[s] = cumulative;
+    }
+    stageCount.offer = byStatus.offer;
+
+    const baseline = stageCount.draft;
+    const percent = (count: number) =>
+      baseline === 0 ? 0 : Math.round((count / baseline) * 1000) / 10;
 
     const stages: DashboardFunnelStage[] = FUNNEL_ORDER.map((status, idx) => {
       const count = stageCount[status];
@@ -308,34 +317,22 @@ class DashboardController {
       return {
         status,
         count,
-        percent: idx === 0 ? 100 : percent(count),
+        percent: percent(count),
         dropoffFromPrevPercent,
       };
     });
 
-    // Append rejected as non-progressive stage (drop from applied)
-    const rejectedCount = stageCount.rejected;
-    stages.push({
-      status: 'rejected',
-      count: rejectedCount,
-      percent: percent(rejectedCount),
-      dropoffFromPrevPercent:
-        stageCount.applied === 0
-          ? 0
-          : Math.round(
-              ((stageCount.applied - rejectedCount) / Math.max(stageCount.applied, 1)) * 1000
-            ) / 10,
-    });
-
     let biggestDropoff: DashboardResponse['funnel']['biggestDropoff'] = null;
     for (let i = 1; i < FUNNEL_ORDER.length; i += 1) {
-      const cur = stages.find((s) => s.status === FUNNEL_ORDER[i]);
+      const prevStatus = FUNNEL_ORDER[i - 1] as JobStatus;
+      const curStatus = FUNNEL_ORDER[i] as JobStatus;
+      const cur = stages.find((s) => s.status === curStatus);
       if (!cur || cur.dropoffFromPrevPercent === null) continue;
       if (cur.dropoffFromPrevPercent <= 0) continue;
       if (!biggestDropoff || cur.dropoffFromPrevPercent > biggestDropoff.percent) {
         biggestDropoff = {
-          from: FUNNEL_ORDER[i - 1],
-          to: FUNNEL_ORDER[i],
+          from: prevStatus,
+          to: curStatus,
           percent: cur.dropoffFromPrevPercent,
         };
       }

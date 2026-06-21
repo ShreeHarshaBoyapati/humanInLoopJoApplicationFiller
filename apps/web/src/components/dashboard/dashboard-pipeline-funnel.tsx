@@ -108,13 +108,6 @@ export const DashboardPipelineFunnel = ({
         })}
       </div>
 
-      {funnel.biggestDropoff && (
-        <div className={styles.legend}>
-          Biggest drop-off: {funnel.biggestDropoff.from} → {funnel.biggestDropoff.to} (
-          {funnel.biggestDropoff.percent}%)
-        </div>
-      )}
-
       <div className={styles.insights}>
         <div className={styles.insightCard}>
           <span className={styles.insightTitle}>Biggest drop-off</span>
