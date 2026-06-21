@@ -8,6 +8,7 @@ import VerificationCode from './verification-code.js';
 import Result from './result.js';
 import Tag from './tag.js';
 import Event from './event.js';
+import WeeklyGoal from './weekly-goal.js';
 
 export default [
   User,
@@ -20,4 +21,5 @@ export default [
   Result,
   Tag,
   Event,
+  WeeklyGoal,
 ];

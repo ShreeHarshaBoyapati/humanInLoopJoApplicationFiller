@@ -1,0 +1,42 @@
+.card {
+  background-color: var(--black-700);
+  border: 1px solid var(--grey-700);
+  border-radius: var(--border-radius);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 3);
+  padding: calc(var(--spacing) * 4);
+}
+
+.header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.label {
+  color: var(--white-900);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.barTrack {
+  background-color: var(--grey-700);
+  border-radius: var(--border-radius);
+  height: 6px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.barFill {
+  background-color: var(--green-400);
+  border-radius: var(--border-radius);
+  height: 100%;
+  transition: width 0.3s ease;
+  width: calc(var(--progress-percent) * 1%);
+}
+
+.note {
+  color: var(--white-700);
+  font-size: 0.75rem;
+}

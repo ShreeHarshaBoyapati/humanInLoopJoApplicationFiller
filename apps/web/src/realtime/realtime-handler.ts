@@ -14,6 +14,8 @@ import { JOB_KEYS, requiresListInvalidation } from '../hooks/use-jobs';
 import { RESULT_KEYS } from '../hooks/use-results';
 import { EVENT_KEYS } from '../hooks/use-events';
 import { TAG_KEYS } from '../hooks/use-tags';
+import { ONBOARDING_KEYS } from '../hooks/use-onboarding';
+import { DASHBOARD_KEYS } from '../hooks/use-dashboard';
 
 type InfinitePages<T> = { pages: { items: T[] }[]; pageParams?: number[] };
 
@@ -172,7 +174,7 @@ function applyCountUpdates(qc: QueryClient, updates: ReadonlyArray<unknown>): vo
 
 export interface RealtimeEvent {
   type: 'resource.changed';
-  resource: 'persona' | 'resume' | 'resume-version' | 'job' | 'result' | 'event' | 'tag';
+  resource: 'persona' | 'resume' | 'resume-version' | 'job' | 'result' | 'event' | 'tag' | 'apiKey';
   action: 'update' | 'setActive' | 'create' | 'branch' | 'delete';
   id: string;
   data?: { id: string } & Record<string, unknown>;
@@ -191,7 +193,8 @@ function isResourceChangedEvent(event: unknown): event is RealtimeEvent {
       e.resource === 'job' ||
       e.resource === 'result' ||
       e.resource === 'event' ||
-      e.resource === 'tag') &&
+      e.resource === 'tag' ||
+      e.resource === 'apiKey') &&
     (e.action === 'update' ||
       e.action === 'setActive' ||
       e.action === 'create' ||
@@ -382,6 +385,7 @@ export function applyRealtimeEvent(qc: QueryClient, event: unknown): void {
 
       if (requiresListInvalidation(previousStatus, newStatus)) {
         qc.invalidateQueries({ queryKey: JOB_KEYS.lists() });
+        qc.invalidateQueries({ queryKey: DASHBOARD_KEYS.all, exact: false });
         return;
       }
 
@@ -393,6 +397,7 @@ export function applyRealtimeEvent(qc: QueryClient, event: unknown): void {
     }
     if (event.action === 'create' || event.action === 'branch' || event.action === 'delete') {
       qc.invalidateQueries({ queryKey: JOB_KEYS.lists() });
+      qc.invalidateQueries({ queryKey: DASHBOARD_KEYS.all, exact: false });
       return;
     }
   }
@@ -421,6 +426,7 @@ export function applyRealtimeEvent(qc: QueryClient, event: unknown): void {
         }
         applyPatchesToMatchingQueries<Job>(qc, JOB_KEYS.lists(), [jobPatch]);
       }
+      qc.invalidateQueries({ queryKey: DASHBOARD_KEYS.all, exact: false });
       return;
     }
   }
@@ -509,6 +515,7 @@ export function applyRealtimeEvent(qc: QueryClient, event: unknown): void {
           event.data as unknown as Event,
         ]);
       }
+      qc.invalidateQueries({ queryKey: DASHBOARD_KEYS.all, exact: false });
       return;
     }
 
@@ -531,12 +538,14 @@ export function applyRealtimeEvent(qc: QueryClient, event: unknown): void {
     if (event.action === 'delete') {
       qc.invalidateQueries({ queryKey: EVENT_KEYS.lists(), predicate });
       qc.invalidateQueries({ queryKey: [...EVENT_KEYS.all, 'dots'], exact: false, predicate });
+      qc.invalidateQueries({ queryKey: DASHBOARD_KEYS.all, exact: false });
       return;
     }
 
     if (event.action === 'create') {
       qc.invalidateQueries({ queryKey: EVENT_KEYS.lists(), predicate });
       qc.invalidateQueries({ queryKey: [...EVENT_KEYS.all, 'dots'], exact: false, predicate });
+      qc.invalidateQueries({ queryKey: DASHBOARD_KEYS.all, exact: false });
       return;
     }
   }
@@ -545,17 +554,26 @@ export function applyRealtimeEvent(qc: QueryClient, event: unknown): void {
     if (event.action === 'update') {
       qc.invalidateQueries({ queryKey: TAG_KEYS.lists() });
       qc.invalidateQueries({ queryKey: [...EVENT_KEYS.all, 'dots'], exact: false });
+      qc.invalidateQueries({ queryKey: DASHBOARD_KEYS.all, exact: false });
       return;
     }
     if (event.action === 'create') {
       qc.invalidateQueries({ queryKey: TAG_KEYS.lists() });
+      qc.invalidateQueries({ queryKey: DASHBOARD_KEYS.all, exact: false });
       return;
     }
     if (event.action === 'delete') {
       qc.invalidateQueries({ queryKey: TAG_KEYS.lists() });
       qc.invalidateQueries({ queryKey: EVENT_KEYS.lists() });
       qc.invalidateQueries({ queryKey: [...EVENT_KEYS.all, 'dots'], exact: false });
+      qc.invalidateQueries({ queryKey: DASHBOARD_KEYS.all, exact: false });
       return;
     }
+  }
+
+  if (event.resource === 'apiKey') {
+    qc.invalidateQueries({ queryKey: DASHBOARD_KEYS.all, exact: false });
+    qc.invalidateQueries({ queryKey: ONBOARDING_KEYS.all });
+    return;
   }
 }

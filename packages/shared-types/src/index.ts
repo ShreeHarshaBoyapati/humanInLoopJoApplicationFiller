@@ -15,3 +15,4 @@ export * from './result.js';
 export * from './realtime.js';
 export * from './tag.js';
 export * from './event.js';
+export * from './dashboard.js';

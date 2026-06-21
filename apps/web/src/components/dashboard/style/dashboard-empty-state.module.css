@@ -1,0 +1,16 @@
+.empty {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 3);
+  justify-content: center;
+  min-height: 120px;
+  text-align: center;
+}
+
+.message {
+  color: var(--white-700);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  max-width: 320px;
+}

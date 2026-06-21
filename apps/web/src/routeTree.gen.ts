@@ -8,161 +8,203 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as PersonaResumesRouteImport } from './routes/persona-resumes'
-import { Route as MuiDesignRouteImport } from './routes/mui-design'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as JobTrackerRouteImport } from './routes/job-tracker'
-import { Route as GoogleCallbackRouteImport } from './routes/google-callback'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as rootRouteImport } from './routes/__root';
+import { Route as SettingsRouteImport } from './routes/settings';
+import { Route as PersonaResumesRouteImport } from './routes/persona-resumes';
+import { Route as MuiDesignRouteImport } from './routes/mui-design';
+import { Route as LoginRouteImport } from './routes/login';
+import { Route as JobTrackerRouteImport } from './routes/job-tracker';
+import { Route as GoogleCallbackRouteImport } from './routes/google-callback';
+import { Route as DashboardRouteImport } from './routes/dashboard';
+import { Route as IndexRouteImport } from './routes/index';
 
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any);
 const PersonaResumesRoute = PersonaResumesRouteImport.update({
   id: '/persona-resumes',
   path: '/persona-resumes',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const MuiDesignRoute = MuiDesignRouteImport.update({
   id: '/mui-design',
   path: '/mui-design',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const JobTrackerRoute = JobTrackerRouteImport.update({
   id: '/job-tracker',
   path: '/job-tracker',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const GoogleCallbackRoute = GoogleCallbackRouteImport.update({
   id: '/google-callback',
   path: '/google-callback',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any);
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/google-callback': typeof GoogleCallbackRoute
-  '/job-tracker': typeof JobTrackerRoute
-  '/login': typeof LoginRoute
-  '/mui-design': typeof MuiDesignRoute
-  '/persona-resumes': typeof PersonaResumesRoute
+  '/': typeof IndexRoute;
+  '/dashboard': typeof DashboardRoute;
+  '/google-callback': typeof GoogleCallbackRoute;
+  '/job-tracker': typeof JobTrackerRoute;
+  '/login': typeof LoginRoute;
+  '/mui-design': typeof MuiDesignRoute;
+  '/persona-resumes': typeof PersonaResumesRoute;
+  '/settings': typeof SettingsRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/google-callback': typeof GoogleCallbackRoute
-  '/job-tracker': typeof JobTrackerRoute
-  '/login': typeof LoginRoute
-  '/mui-design': typeof MuiDesignRoute
-  '/persona-resumes': typeof PersonaResumesRoute
+  '/': typeof IndexRoute;
+  '/dashboard': typeof DashboardRoute;
+  '/google-callback': typeof GoogleCallbackRoute;
+  '/job-tracker': typeof JobTrackerRoute;
+  '/login': typeof LoginRoute;
+  '/mui-design': typeof MuiDesignRoute;
+  '/persona-resumes': typeof PersonaResumesRoute;
+  '/settings': typeof SettingsRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/google-callback': typeof GoogleCallbackRoute
-  '/job-tracker': typeof JobTrackerRoute
-  '/login': typeof LoginRoute
-  '/mui-design': typeof MuiDesignRoute
-  '/persona-resumes': typeof PersonaResumesRoute
+  __root__: typeof rootRouteImport;
+  '/': typeof IndexRoute;
+  '/dashboard': typeof DashboardRoute;
+  '/google-callback': typeof GoogleCallbackRoute;
+  '/job-tracker': typeof JobTrackerRoute;
+  '/login': typeof LoginRoute;
+  '/mui-design': typeof MuiDesignRoute;
+  '/persona-resumes': typeof PersonaResumesRoute;
+  '/settings': typeof SettingsRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
+  fileRoutesByFullPath: FileRoutesByFullPath;
   fullPaths:
     | '/'
+    | '/dashboard'
     | '/google-callback'
     | '/job-tracker'
     | '/login'
     | '/mui-design'
     | '/persona-resumes'
-  fileRoutesByTo: FileRoutesByTo
+    | '/settings';
+  fileRoutesByTo: FileRoutesByTo;
   to:
     | '/'
+    | '/dashboard'
     | '/google-callback'
     | '/job-tracker'
     | '/login'
     | '/mui-design'
     | '/persona-resumes'
+    | '/settings';
   id:
     | '__root__'
     | '/'
+    | '/dashboard'
     | '/google-callback'
     | '/job-tracker'
     | '/login'
     | '/mui-design'
     | '/persona-resumes'
-  fileRoutesById: FileRoutesById
+    | '/settings';
+  fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  GoogleCallbackRoute: typeof GoogleCallbackRoute
-  JobTrackerRoute: typeof JobTrackerRoute
-  LoginRoute: typeof LoginRoute
-  MuiDesignRoute: typeof MuiDesignRoute
-  PersonaResumesRoute: typeof PersonaResumesRoute
+  IndexRoute: typeof IndexRoute;
+  DashboardRoute: typeof DashboardRoute;
+  GoogleCallbackRoute: typeof GoogleCallbackRoute;
+  JobTrackerRoute: typeof JobTrackerRoute;
+  LoginRoute: typeof LoginRoute;
+  MuiDesignRoute: typeof MuiDesignRoute;
+  PersonaResumesRoute: typeof PersonaResumesRoute;
+  SettingsRoute: typeof SettingsRoute;
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/settings': {
+      id: '/settings';
+      path: '/settings';
+      fullPath: '/settings';
+      preLoaderRoute: typeof SettingsRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/persona-resumes': {
-      id: '/persona-resumes'
-      path: '/persona-resumes'
-      fullPath: '/persona-resumes'
-      preLoaderRoute: typeof PersonaResumesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/persona-resumes';
+      path: '/persona-resumes';
+      fullPath: '/persona-resumes';
+      preLoaderRoute: typeof PersonaResumesRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/mui-design': {
-      id: '/mui-design'
-      path: '/mui-design'
-      fullPath: '/mui-design'
-      preLoaderRoute: typeof MuiDesignRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/mui-design';
+      path: '/mui-design';
+      fullPath: '/mui-design';
+      preLoaderRoute: typeof MuiDesignRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/login';
+      path: '/login';
+      fullPath: '/login';
+      preLoaderRoute: typeof LoginRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/job-tracker': {
-      id: '/job-tracker'
-      path: '/job-tracker'
-      fullPath: '/job-tracker'
-      preLoaderRoute: typeof JobTrackerRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/job-tracker';
+      path: '/job-tracker';
+      fullPath: '/job-tracker';
+      preLoaderRoute: typeof JobTrackerRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/google-callback': {
-      id: '/google-callback'
-      path: '/google-callback'
-      fullPath: '/google-callback'
-      preLoaderRoute: typeof GoogleCallbackRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/google-callback';
+      path: '/google-callback';
+      fullPath: '/google-callback';
+      preLoaderRoute: typeof GoogleCallbackRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    '/dashboard': {
+      id: '/dashboard';
+      path: '/dashboard';
+      fullPath: '/dashboard';
+      preLoaderRoute: typeof DashboardRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/';
+      path: '/';
+      fullPath: '/';
+      preLoaderRoute: typeof IndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DashboardRoute: DashboardRoute,
   GoogleCallbackRoute: GoogleCallbackRoute,
   JobTrackerRoute: JobTrackerRoute,
   LoginRoute: LoginRoute,
   MuiDesignRoute: MuiDesignRoute,
   PersonaResumesRoute: PersonaResumesRoute,
-}
+  SettingsRoute: SettingsRoute,
+};
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+  ._addFileTypes<FileRouteTypes>();

@@ -5,12 +5,14 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  OneToOne,
 } from 'typeorm';
 import Job from './job.js';
 import ApiKey from './api-key.js';
 import Persona from './persona.js';
 import Tag from './tag.js';
 import Event from './event.js';
+import WeeklyGoal from './weekly-goal.js';
 
 @Entity()
 export default class User {
@@ -29,6 +31,9 @@ export default class User {
   @Column('varchar', { nullable: true })
   refreshToken!: string | null;
 
+  @Column('boolean', { default: false })
+  onboardingComplete!: boolean;
+
   @OneToMany(() => Job, (job) => job.user)
   jobs!: Job[];
 
@@ -43,6 +48,9 @@ export default class User {
 
   @OneToMany(() => Event, (event) => event.user)
   events!: Event[];
+
+  @OneToOne(() => WeeklyGoal, (weeklyGoal) => weeklyGoal.user)
+  weeklyGoal!: WeeklyGoal | null;
 
   @CreateDateColumn()
   createdAt!: Date;

@@ -8,6 +8,7 @@ import getVerificationCodeRepository from './verification-code-repo.js';
 import getResultRepository from './result-repo.js';
 import getTagRepository from './tag-repo.js';
 import getEventRepository from './event-repo.js';
+import getWeeklyGoalRepository from './weekly-goal-repo.js';
 
 export {
   getUserRepository,
@@ -20,4 +21,5 @@ export {
   getResultRepository,
   getTagRepository,
   getEventRepository,
+  getWeeklyGoalRepository,
 };

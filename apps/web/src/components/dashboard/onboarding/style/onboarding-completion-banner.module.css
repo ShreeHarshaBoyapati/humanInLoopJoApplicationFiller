@@ -1,0 +1,22 @@
+.banner {
+  background-color: var(--green-450);
+  border: 1px solid var(--green-430);
+  border-radius: var(--border-radius);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 3);
+  padding: calc(var(--spacing) * 5);
+}
+
+.heading {
+  color: var(--white-900);
+  font-family: var(--heading-font);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.text {
+  color: var(--white-700);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}

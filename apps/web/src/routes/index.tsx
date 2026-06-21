@@ -1,8 +1,14 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import styles from './style/index.module.css';
 import '@repo/ui/constants/css-constants.css';
+import { getTokenFromCookie } from '../utils/auth-sync.ts';
 
 export const Route = createFileRoute('/')({
+  beforeLoad: () => {
+    if (getTokenFromCookie()) {
+      throw redirect({ to: '/dashboard' });
+    }
+  },
   component: function Index() {
     return (
       <div className={styles.container}>

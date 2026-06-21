@@ -9,6 +9,8 @@ import resumeVersion from './resume-version.js';
 import result from './result.js';
 import tag from './tag.js';
 import event from './event.js';
+import dashboard from './dashboard.js';
+import weeklyGoal from './weekly-goal.js';
 
 const router: express.Router = express.Router();
 
@@ -21,6 +23,8 @@ router.use('/resume', resume);
 router.use('/resume', resumeVersion);
 router.use('/tag', tag);
 router.use('/event', event);
+router.use('/dashboard', dashboard);
+router.use('/weekly-goal', weeklyGoal);
 router.use('/', result);
 
 export default router;
