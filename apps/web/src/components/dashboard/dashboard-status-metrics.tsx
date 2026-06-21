@@ -16,7 +16,7 @@ interface DashboardStatusMetricsProps {
 const STATUS_ORDER: JobStatus[] = ['draft', 'applied', 'interview', 'offer', 'rejected'];
 
 const STATUS_LABELS: Record<JobStatus, string> = {
-  draft: 'Bookmarked',
+  draft: 'Draft',
   applied: 'Applied',
   interview: 'Interview',
   offer: 'Offer',

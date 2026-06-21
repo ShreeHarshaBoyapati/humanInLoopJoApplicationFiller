@@ -11,7 +11,6 @@ import type { DashboardRange } from '@repo/shared-types';
 import { useStore } from '../../store/index.ts';
 import { useDashboard } from '../../hooks/use-dashboard.ts';
 import { DashboardGreetingBar } from './dashboard-greeting-bar.tsx';
-import { DashboardAiKeyBanner } from './dashboard-ai-key-banner.tsx';
 import { DashboardStatusMetrics } from './dashboard-status-metrics.tsx';
 import { DashboardPipelineFunnel } from './dashboard-pipeline-funnel.tsx';
 import { DashboardWeeklyGoal } from './dashboard-weekly-goal.tsx';
@@ -20,6 +19,7 @@ import { DashboardTopAtsMatches } from './dashboard-top-ats-matches.tsx';
 import { DashboardUpcomingEvents } from './dashboard-upcoming-events.tsx';
 import { DashboardPersonaBreakdown } from './dashboard-persona-breakdown.tsx';
 import sharedStyles from './style/dashboard.module.css';
+import styleConstants from '@repo/ui/constants/style-constants.js';
 
 export const DashboardView = () => {
   const email = useStore((state: { email: string | null }) => state.email);
@@ -30,7 +30,19 @@ export const DashboardView = () => {
   const { data: dashboard, isLoading } = useDashboard({ range });
 
   if (isLoading || !dashboard) {
-    return <div className={sharedStyles.page}>Loading dashboard…</div>;
+    return (
+      <div
+        className={sharedStyles.card}
+        style={{
+          color: styleConstants.white700,
+          textAlign: 'center',
+          maxWidth: '800px',
+          margin: '0 auto',
+        }}
+      >
+        Loading dashboard…
+      </div>
+    );
   }
 
   const eventsToday = dashboard.upcomingEvents.filter(
@@ -39,15 +51,7 @@ export const DashboardView = () => {
 
   return (
     <div className={sharedStyles.page}>
-      <DashboardGreetingBar
-        email={email ?? ''}
-        eventsToday={eventsToday}
-        onOpenExtension={() => navigate({ to: '/job-tracker' })}
-      />
-
-      {!dashboard.hasAiKey && (
-        <DashboardAiKeyBanner onConfigure={() => navigate({ to: '/settings' })} />
-      )}
+      <DashboardGreetingBar email={email ?? ''} eventsToday={eventsToday} />
 
       <DashboardStatusMetrics
         metrics={dashboard.metrics}

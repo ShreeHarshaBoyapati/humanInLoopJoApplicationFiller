@@ -1,3 +1,12 @@
+// JobTrackerSection — the main "Job Tracker" view.
+// Tabs: Active / Archived (plus Calendar on mobile).
+// Features:
+//   - Search + persona autocomplete filter
+//   - Tab-aware status filter (Active: Draft/Applied/Interview, Archived: Offer/Rejected)
+//   - Sort by createdAt/updatedAt/acceptanceLevel with ASC/DESC order
+//   - Favorites-only toggle
+//   - Infinite scroll list of JobTrackerCard items with scroll restoration
+//   - Job detail sidebar on desktop; mobile shows calendar in main pane when selected
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -11,7 +20,13 @@ import { BigCalendarPanel } from './big-calendar-panel';
 import { useEnsureTaskTag } from '../hooks/use-tags';
 import { EnhancedSelectDropdown, EnhancedAutocompleteDropdown, EnhancedButton } from '@repo/ui';
 import type { AutocompleteOption } from '@repo/ui';
-import type { Job, JobFilterStatus, PaginatedJobsResponse, Persona } from '@repo/shared-types';
+import type {
+  Job,
+  JobFilterStatus,
+  JobStatus,
+  PaginatedJobsResponse,
+  Persona,
+} from '@repo/shared-types';
 import { useJobs, useUpdateJob, getStatusTransitionMessage } from '../hooks/use-jobs';
 import { usePersonas } from '../hooks/use-personas';
 import { useStore } from '../store';
@@ -33,6 +48,21 @@ const SORT_OPTIONS = [
   { value: 'acceptanceLevel', label: 'Acceptance Level' },
 ];
 
+const ALL_STATUSES_OPTION = { value: '', label: 'All Statuses' };
+
+const ACTIVE_STATUS_OPTIONS = [
+  ALL_STATUSES_OPTION,
+  { value: 'draft', label: 'Draft' },
+  { value: 'applied', label: 'Applied' },
+  { value: 'interview', label: 'Interview' },
+];
+
+const ARCHIVED_STATUS_OPTIONS = [
+  ALL_STATUSES_OPTION,
+  { value: 'offer', label: 'Offer' },
+  { value: 'rejected', label: 'Rejected' },
+];
+
 const SORT_ORDER_OPTIONS = [
   { value: 'DESC', label: 'Descending' },
   { value: 'ASC', label: 'Ascending' },
@@ -41,21 +71,33 @@ const SORT_ORDER_OPTIONS = [
 const MOBILE_BREAKPOINT = 1024;
 const PERSONA_FILTER_LIMIT = 50;
 
-export function JobTrackerSection() {
-  const [activeTab, setActiveTab] = useState<TabType>('active');
+interface JobTrackerSectionProps {
+  initialStatus?: JobStatus;
+  initialPersonaId?: string;
+}
+
+export function JobTrackerSection({
+  initialStatus,
+  initialPersonaId,
+}: JobTrackerSectionProps = {}) {
+  const initialTab: TabType =
+    initialStatus === 'offer' || initialStatus === 'rejected' ? 'archived' : 'active';
+
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window === 'undefined') return false;
     return window.innerWidth <= MOBILE_BREAKPOINT;
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [selectedPersona, setSelectedPersona] = useState('');
+  const [selectedPersona, setSelectedPersona] = useState(initialPersonaId ?? '');
   const [selectedPersonaOption, setSelectedPersonaOption] = useState<AutocompleteOption | null>(
     null
   );
   const [personaSearchQuery, setPersonaSearchQuery] = useState('');
   const [debouncedPersonaSearch, setDebouncedPersonaSearch] = useState('');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [selectedStatus, setSelectedStatus] = useState(initialStatus ?? '');
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState('DESC');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -106,8 +148,11 @@ export function JobTrackerSection() {
     return () => clearTimeout(timer);
   }, [personaSearchQuery]);
 
-  // Determine status filter based on tab
-  const statusFilter = activeTab === 'calendar' ? undefined : statusFilterForTab(activeTab);
+  const statusFilter = useMemo<string | undefined>(() => {
+    if (activeTab === 'calendar') return undefined;
+    if (selectedStatus) return selectedStatus;
+    return statusFilterForTab(activeTab);
+  }, [activeTab, selectedStatus]);
 
   const {
     data,
@@ -314,6 +359,7 @@ export function JobTrackerSection() {
       setSearchQuery('');
       setDebouncedSearch('');
     }
+    setSelectedStatus('');
   };
 
   const showJobList = !isMobile || activeTab !== 'calendar';
@@ -397,6 +443,17 @@ export function JobTrackerSection() {
                   </div>
                 </div>
                 <div className={styles.filtersRow}>
+                  <div className={styles.filterGroup}>
+                    <EnhancedSelectDropdown
+                      id="status-filter"
+                      testId="status-filter"
+                      value={selectedStatus}
+                      onChange={(e) => setSelectedStatus(e.target.value as string)}
+                      options={
+                        activeTab === 'archived' ? ARCHIVED_STATUS_OPTIONS : ACTIVE_STATUS_OPTIONS
+                      }
+                    />
+                  </div>
                   <div className={styles.filterGroup}>
                     <EnhancedSelectDropdown
                       id="sort-by"

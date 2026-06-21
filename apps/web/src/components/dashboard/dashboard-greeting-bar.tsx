@@ -1,23 +1,17 @@
 /**
  * Dashboard greeting bar.
- * Shows a time-of-day greeting, today's date, today's event count, and a shortcut to open the extension.
+ * Shows a time-of-day greeting, today's date, and today's event count.
  */
 
-import { EnhancedButton } from '@repo/ui';
 import { getDisplayName, getTimeOfDayGreeting } from '../../utils/dashboard.ts';
 import styles from './style/dashboard-greeting-bar.module.css';
 
 interface DashboardGreetingBarProps {
   email: string;
   eventsToday: number;
-  onOpenExtension: () => void;
 }
 
-export const DashboardGreetingBar = ({
-  email,
-  eventsToday,
-  onOpenExtension,
-}: DashboardGreetingBarProps) => {
+export const DashboardGreetingBar = ({ email, eventsToday }: DashboardGreetingBarProps) => {
   const displayName = getDisplayName(email);
   const greeting = getTimeOfDayGreeting();
   const today = new Date().toLocaleDateString(undefined, {
@@ -37,12 +31,6 @@ export const DashboardGreetingBar = ({
           {today} · {eventsToday} event{eventsToday === 1 ? '' : 's'} today
         </p>
       </div>
-      <EnhancedButton
-        label="Open extension"
-        colorTheme="secondary"
-        onClick={onOpenExtension}
-        size="small"
-      />
     </div>
   );
 };

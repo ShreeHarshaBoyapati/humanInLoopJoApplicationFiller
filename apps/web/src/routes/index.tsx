@@ -1,22 +1,33 @@
-import { createFileRoute, redirect } from '@tanstack/react-router';
-import styles from './style/index.module.css';
+import { createFileRoute } from '@tanstack/react-router';
+import { useOnboarding } from '../hooks/use-onboarding.ts';
+import { OnboardingView } from '../components/dashboard/onboarding/onboarding-view.tsx';
+import { DashboardView } from '../components/dashboard/dashboard-view.tsx';
+import styles from './style/dashboard.module.css';
+import scrollbarStyles from '@repo/ui/scroll-bar.module.css';
+import styleConstants from '@repo/ui/constants/style-constants.js';
 import '@repo/ui/constants/css-constants.css';
-import { getTokenFromCookie } from '../utils/auth-sync.ts';
 
 export const Route = createFileRoute('/')({
-  beforeLoad: () => {
-    if (getTokenFromCookie()) {
-      throw redirect({ to: '/dashboard' });
-    }
-  },
-  component: function Index() {
-    return (
-      <div className={styles.container}>
-        <main className={styles.main}>
-          <h1 className={styles.heading}>Welcome to JobFillPro</h1>
-          <p className={styles.description}>Select a tab from the navigation above.</p>
-        </main>
-      </div>
-    );
-  },
+  component: Index,
 });
+
+function Index() {
+  const { data: onboarding, isLoading } = useOnboarding();
+
+  return (
+    <div className={`${styles.container} ${scrollbarStyles.scrollbarVerticalContainer}`}>
+      {isLoading ? (
+        <div
+          className={styles.card}
+          style={{ color: styleConstants.white700, textAlign: 'center' }}
+        >
+          Loading dashboard…
+        </div>
+      ) : !onboarding?.isComplete ? (
+        <OnboardingView />
+      ) : (
+        <DashboardView />
+      )}
+    </div>
+  );
+}
