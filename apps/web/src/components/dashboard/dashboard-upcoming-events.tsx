@@ -9,15 +9,10 @@ import styles from './style/dashboard-upcoming-events.module.css';
 
 interface DashboardUpcomingEventsProps {
   events: DashboardUpcomingEvent[];
-  onJobClick: (jobId: string) => void;
-  onTaskClick: (date: string) => void;
+  onEventClick: (event: DashboardUpcomingEvent) => void;
 }
 
-export const DashboardUpcomingEvents = ({
-  events,
-  onJobClick,
-  onTaskClick,
-}: DashboardUpcomingEventsProps) => {
+export const DashboardUpcomingEvents = ({ events, onEventClick }: DashboardUpcomingEventsProps) => {
   if (events.length === 0) {
     return (
       <div className={styles.card}>
@@ -28,7 +23,19 @@ export const DashboardUpcomingEvents = ({
         <DashboardEmptyState
           message="No upcoming events. Add one in the Job Tracker to keep your schedule on track."
           ctaLabel="Go to Job Tracker"
-          onCtaClick={() => onTaskClick('')}
+          onCtaClick={() =>
+            onEventClick({
+              id: 'empty-state',
+              title: '',
+              jobName: null,
+              companyName: null,
+              date: '',
+              time: null,
+              type: '',
+              tagColor: '',
+              jobId: null,
+            })
+          }
         />
       </div>
     );
@@ -46,7 +53,7 @@ export const DashboardUpcomingEvents = ({
             key={event.id}
             type="button"
             className={styles.row}
-            onClick={() => (event.jobId ? onJobClick(event.jobId) : onTaskClick(event.date))}
+            onClick={() => onEventClick(event)}
           >
             <div
               className={styles.colorBar}

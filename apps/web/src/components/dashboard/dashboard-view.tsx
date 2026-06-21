@@ -83,14 +83,21 @@ export const DashboardView = () => {
       <div className={sharedStyles.twoColumn}>
         <DashboardUpcomingEvents
           events={dashboard.upcomingEvents}
-          onJobClick={(jobId) => navigate({ to: '/job-tracker', search: { jobId } })}
-          onTaskClick={(date) => navigate({ to: '/job-tracker', search: { date } })}
+          onEventClick={(event) =>
+            navigate({
+              to: '/job-tracker',
+              search: { date: event.date, tab: 'calendar' },
+            })
+          }
         />
 
         <DashboardPersonaBreakdown
           breakdown={dashboard.personaBreakdown}
-          onPersonaClick={(personaId) =>
-            navigate({ to: '/job-tracker', search: personaId ? { personaId } : {} })
+          onPersonaClick={(personaName) =>
+            navigate({
+              to: '/job-tracker',
+              search: personaName ? { personaName } : {},
+            })
           }
         />
       </div>

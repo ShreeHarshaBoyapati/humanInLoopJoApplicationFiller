@@ -8,6 +8,7 @@
 //   - Infinite scroll list of JobTrackerCard items with scroll restoration
 //   - Job detail sidebar on desktop; mobile shows calendar in main pane when selected
 import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from '@tanstack/react-router';
 import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import FavoriteIcon from '@mui/icons-material/Favorite';
@@ -73,28 +74,35 @@ const PERSONA_FILTER_LIMIT = 50;
 
 interface JobTrackerSectionProps {
   initialStatus?: JobStatus;
-  initialPersonaId?: string;
+  initialPersonaName?: string;
+  initialJobId?: string;
+  initialTab?: TabType;
+  initialDate?: string;
 }
 
 export function JobTrackerSection({
   initialStatus,
-  initialPersonaId,
+  initialPersonaName,
+  initialJobId,
+  initialTab,
+  initialDate,
 }: JobTrackerSectionProps = {}) {
-  const initialTab: TabType =
-    initialStatus === 'offer' || initialStatus === 'rejected' ? 'archived' : 'active';
-
-  const [activeTab, setActiveTab] = useState<TabType>(initialTab);
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState<TabType>(
+    initialTab ??
+      (initialStatus === 'offer' || initialStatus === 'rejected' ? 'archived' : 'active')
+  );
   const [isMobile, setIsMobile] = useState(() => {
     if (typeof window === 'undefined') return false;
     return window.innerWidth <= MOBILE_BREAKPOINT;
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [selectedPersona, setSelectedPersona] = useState(initialPersonaId ?? '');
+  const [selectedPersona, setSelectedPersona] = useState('');
   const [selectedPersonaOption, setSelectedPersonaOption] = useState<AutocompleteOption | null>(
     null
   );
-  const [personaSearchQuery, setPersonaSearchQuery] = useState('');
+  const [personaSearchQuery, setPersonaSearchQuery] = useState(initialPersonaName ?? '');
   const [debouncedPersonaSearch, setDebouncedPersonaSearch] = useState('');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState(initialStatus ?? '');
@@ -102,6 +110,7 @@ export function JobTrackerSection({
   const [sortOrder, setSortOrder] = useState('DESC');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [filterJobId, setFilterJobId] = useState<string | undefined>(initialJobId);
 
   const updateJob = useUpdateJob();
   const showSnackbar = useStore((state) => state.showSnackbar);
@@ -148,9 +157,9 @@ export function JobTrackerSection({
     return () => clearTimeout(timer);
   }, [personaSearchQuery]);
 
-  const statusFilter = useMemo<string | undefined>(() => {
+  const statusFilter = useMemo<JobFilterStatus | undefined>(() => {
     if (activeTab === 'calendar') return undefined;
-    if (selectedStatus) return selectedStatus;
+    if (selectedStatus) return selectedStatus as JobFilterStatus;
     return statusFilterForTab(activeTab);
   }, [activeTab, selectedStatus]);
 
@@ -173,6 +182,7 @@ export function JobTrackerSection({
     favorite: showFavoritesOnly ? true : undefined,
     sortBy: sortBy as 'createdAt' | 'updatedAt' | 'acceptanceLevel',
     sortOrder: sortOrder as 'ASC' | 'DESC',
+    id: filterJobId,
   });
 
   const jobs = useMemo(
@@ -194,6 +204,14 @@ export function JobTrackerSection({
     }
     return options;
   }, [personasData, personaSearchQuery]);
+
+  const selectedPersonaOptionForDropdown = useMemo(
+    () =>
+      selectedPersonaOption && personaSearchQuery === selectedPersonaOption.label
+        ? selectedPersonaOption
+        : null,
+    [selectedPersonaOption, personaSearchQuery]
+  );
 
   // Scroll position restoration for infinite scroll
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -295,6 +313,39 @@ export function JobTrackerSection({
     }
   }, [isFetchingPreviousPage, jobs.length]);
 
+  useEffect(() => {
+    if (!initialPersonaName) return;
+    if (selectedPersonaOption?.label === initialPersonaName) return;
+    if (personaSearchQuery !== initialPersonaName) {
+      setPersonaSearchQuery(initialPersonaName);
+    }
+  }, [initialPersonaName, selectedPersonaOption, personaSearchQuery]);
+
+  useEffect(() => {
+    if (!initialPersonaName) return;
+    if (selectedPersonaOption) return;
+    if (!personasData?.pages) return;
+    const allPersonas = personasData.pages.flatMap((page) => page.items) as Persona[];
+    const match = allPersonas.find(
+      (persona) => persona.title.toLowerCase() === initialPersonaName.toLowerCase()
+    );
+    if (match) {
+      setSelectedPersonaOption({ value: match.id, label: match.title });
+      setSelectedPersona(match.id);
+    }
+  }, [initialPersonaName, personasData, selectedPersonaOption]);
+
+  const lastAutoOpenedJobIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!initialJobId) return;
+    if (lastAutoOpenedJobIdRef.current === initialJobId) return;
+    const match = jobs.find((job: Job) => job.id === initialJobId);
+    if (match) {
+      lastAutoOpenedJobIdRef.current = initialJobId;
+      setSelectedJob(match);
+    }
+  }, [initialJobId, jobs]);
+
   const handleFavoriteToggle = useCallback(
     (job: Job) => {
       updateJob.mutate(
@@ -345,13 +396,26 @@ export function JobTrackerSection({
     refetch();
   };
 
-  const handleJobClick = useCallback((job: Job) => {
-    setSelectedJob(job);
-  }, []);
+  const handleJobClick = useCallback(
+    (job: Job) => {
+      setSelectedJob(job);
+      if (filterJobId) {
+        setFilterJobId(undefined);
+        if (initialJobId) {
+          navigate({ to: '/job-tracker', search: (prev) => ({ ...prev, jobId: undefined }) });
+        }
+      }
+    },
+    [filterJobId, initialJobId, navigate]
+  );
 
   const handleCloseSidebar = useCallback(() => {
     setSelectedJob(null);
-  }, []);
+    setFilterJobId(undefined);
+    if (initialJobId) {
+      navigate({ to: '/job-tracker', search: (prev) => ({ ...prev, jobId: undefined }) });
+    }
+  }, [initialJobId, navigate]);
 
   const handleTabClick = (tab: TabType) => {
     setActiveTab(tab);
@@ -422,7 +486,8 @@ export function JobTrackerSection({
                       testId="persona-filter"
                       placeholder="Search personas..."
                       options={personaOptions as AutocompleteOption[]}
-                      value={selectedPersonaOption}
+                      value={selectedPersonaOptionForDropdown}
+                      inputValue={personaSearchQuery}
                       loading={isPersonaListLoading}
                       loadingText="Loading personas..."
                       onChange={(newValue) => {
@@ -546,14 +611,14 @@ export function JobTrackerSection({
             <div
               className={`${styles.mobileCalendarWrapper} ${scrollbarStyles.scrollbarVerticalContainer}`}
             >
-              <BigCalendarPanel />
+              <BigCalendarPanel initialDate={initialDate} />
             </div>
           )}
         </div>
 
         {!isMobile && (
           <div className={`${styles.rightPane} ${scrollbarStyles.scrollbarVerticalContainer}`}>
-            <BigCalendarPanel />
+            <BigCalendarPanel initialDate={initialDate} />
           </div>
         )}
       </div>
@@ -566,7 +631,13 @@ export function JobTrackerSection({
       />
 
       {/* Job Detail Sidebar */}
-      {selectedJob && <JobDetailSidebar job={selectedJob} onClose={handleCloseSidebar} />}
+      {selectedJob && (
+        <JobDetailSidebar
+          job={selectedJob}
+          onClose={handleCloseSidebar}
+          initialTab={initialJobId ? 'ats' : undefined}
+        />
+      )}
     </div>
   );
 }

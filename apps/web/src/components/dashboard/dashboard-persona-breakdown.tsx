@@ -9,7 +9,7 @@ import styles from './style/dashboard-persona-breakdown.module.css';
 
 interface DashboardPersonaBreakdownProps {
   breakdown: PersonaBreakdownItem[];
-  onPersonaClick: (personaId: string | null) => void;
+  onPersonaClick: (personaName: string | null) => void;
 }
 
 export const DashboardPersonaBreakdown = ({
@@ -44,7 +44,7 @@ export const DashboardPersonaBreakdown = ({
             key={persona.personaId ?? 'unassigned'}
             type="button"
             className={styles.row}
-            onClick={() => onPersonaClick(persona.personaId)}
+            onClick={() => onPersonaClick(persona.name)}
           >
             <div className={styles.rowHeader}>
               <span className={styles.name}>{persona.name}</span>

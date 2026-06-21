@@ -17,6 +17,7 @@ import { ConfirmModal } from './confirm-modal';
 interface JobDetailSidebarProps {
   job: Job;
   onClose: () => void;
+  initialTab?: 'overview' | 'ats' | 'notes';
 }
 
 type TabType = 'overview' | 'ats' | 'notes';
@@ -27,7 +28,7 @@ const TABS: { id: TabType; label: string }[] = [
   { id: 'notes', label: 'Notes' },
 ];
 
-export function JobDetailSidebar({ job: initialJob, onClose }: JobDetailSidebarProps) {
+export function JobDetailSidebar({ job: initialJob, onClose, initialTab }: JobDetailSidebarProps) {
   const cachedJob = useJobFromCache(initialJob.id, initialJob);
   const [localJob, setLocalJob] = useState<Job>(cachedJob ?? initialJob);
 
@@ -37,7 +38,7 @@ export function JobDetailSidebar({ job: initialJob, onClose }: JobDetailSidebarP
     }
   }, [cachedJob, localJob.id]);
 
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  const [activeTab, setActiveTab] = useState<TabType>(initialTab ?? 'overview');
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const updateJob = useUpdateJob();
   const deleteJob = useDeleteJob();

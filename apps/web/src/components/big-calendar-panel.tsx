@@ -25,9 +25,17 @@ function endOfMonth(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth() + 1, 0);
 }
 
-export function BigCalendarPanel() {
-  const [activeStartDate, setActiveStartDate] = useState<Date>(startOfMonth(new Date()));
-  const [selectedDate, setSelectedDate] = useState<string>(toYmd(new Date()));
+interface BigCalendarPanelProps {
+  initialDate?: string;
+}
+
+export function BigCalendarPanel({ initialDate }: BigCalendarPanelProps = {}) {
+  const initialDateValue =
+    initialDate && /^\d{4}-\d{2}-\d{2}$/.test(initialDate) ? initialDate : null;
+  const [activeStartDate, setActiveStartDate] = useState<Date>(
+    initialDateValue ? new Date(`${initialDateValue}T00:00:00`) : startOfMonth(new Date())
+  );
+  const [selectedDate, setSelectedDate] = useState<string>(initialDateValue ?? toYmd(new Date()));
   const [isAddOpen, setIsAddOpen] = useState(false);
 
   const from = useMemo(() => toYmd(activeStartDate), [activeStartDate]);

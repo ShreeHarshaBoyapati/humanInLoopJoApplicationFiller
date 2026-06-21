@@ -49,12 +49,12 @@ export const getStatusTransitionMessage = (
 };
 
 export const useJobs = (params: UseJobsParams = {}) => {
-  const { limit = 10, searchQuery = '', status, persona, favorite, sortBy, sortOrder } = params;
+  const { limit = 10, searchQuery = '', status, persona, favorite, sortBy, sortOrder, id } = params;
 
   return useInfiniteQuery({
     queryKey: [
       ...JOB_KEYS.lists(),
-      { search: searchQuery, status, persona, favorite, sortBy, sortOrder },
+      { search: searchQuery, status, persona, favorite, sortBy, sortOrder, id },
     ],
     initialPageParam: 1,
     maxPages: 3,
@@ -69,6 +69,7 @@ export const useJobs = (params: UseJobsParams = {}) => {
           favorite: favorite !== undefined ? favorite : undefined,
           sortBy: sortBy || undefined,
           sortOrder: sortOrder || undefined,
+          id: id || undefined,
         },
       });
       if (!response.data.success || !response.data.data) {

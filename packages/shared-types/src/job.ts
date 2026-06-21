@@ -85,11 +85,12 @@ export interface PaginatedJobsResponse {
 export interface UseJobsParams {
   limit?: number;
   searchQuery?: string;
-  status?: string;
+  status?: JobFilterStatus;
   persona?: string;
   favorite?: boolean;
   sortBy?: 'createdAt' | 'updatedAt' | 'acceptanceLevel';
   sortOrder?: 'ASC' | 'DESC';
+  id?: string;
 }
 
 // Create Job Input
