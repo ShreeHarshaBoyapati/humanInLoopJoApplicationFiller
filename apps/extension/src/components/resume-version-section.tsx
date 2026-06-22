@@ -21,6 +21,7 @@ import { useResumeVersionsCache } from '../hooks/use-resume-versions-cache';
 import { usePersonasCache } from '../hooks/use-personas-cache';
 import { useResumesCache } from '../hooks/use-resumes-cache';
 import { useStore } from '../store';
+import { buildWebDeepLink } from '../utils/build-web-deep-link';
 
 const MAX_PAGES = 3;
 
@@ -572,7 +573,7 @@ export function ResumeVersionSection({
         <p className={styles.infoText}>
           To create, edit, or delete versions, please use the{' '}
           <a
-            href={import.meta.env.VITE_WEB_URL || 'http://localhost:5174'}
+            href={buildWebDeepLink({ personaId, resumeId })}
             target="_blank"
             rel="noopener noreferrer"
             className={styles.infoLink}

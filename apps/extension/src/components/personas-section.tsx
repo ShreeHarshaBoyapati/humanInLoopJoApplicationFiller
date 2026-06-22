@@ -8,6 +8,7 @@ import { EnhancedTextField, EnhancedTooltipWithText, EnhancedButton } from '@rep
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import type { Persona, PaginatedPersonasResponse } from '@repo/shared-types';
 import { usePersonasCache } from '../hooks/use-personas-cache';
+import { buildWebDeepLink } from '../utils/build-web-deep-link';
 
 const MAX_PAGES = 10;
 
@@ -428,7 +429,7 @@ export function PersonasSection({ onSelectPersona, isFromAutofill = false }: Per
         <p className={styles.infoText}>
           To create, edit, or delete personas, please use the{' '}
           <a
-            href={import.meta.env.VITE_WEB_URL || 'http://localhost:5174'}
+            href={buildWebDeepLink({})}
             target="_blank"
             rel="noopener noreferrer"
             className={styles.infoLink}

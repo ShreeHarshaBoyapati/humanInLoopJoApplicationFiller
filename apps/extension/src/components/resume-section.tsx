@@ -8,6 +8,7 @@ import scrollbarStyles from '@repo/ui/scroll-bar.module.css';
 import { EnhancedTextField, EnhancedTooltipWithText, EnhancedButton } from '@repo/ui';
 import type { PaginatedResumeListItem, PaginatedResumeResponse } from '@repo/shared-types';
 import { useResumesCache } from '../hooks/use-resumes-cache';
+import { buildWebDeepLink } from '../utils/build-web-deep-link';
 
 const MAX_PAGES = 10;
 
@@ -431,7 +432,7 @@ export function ResumeSection({
         <p className={styles.infoText}>
           To create, edit, or delete resumes, please use the{' '}
           <a
-            href={import.meta.env.VITE_WEB_URL || 'http://localhost:5174'}
+            href={buildWebDeepLink({ personaId })}
             target="_blank"
             rel="noopener noreferrer"
             className={styles.infoLink}
