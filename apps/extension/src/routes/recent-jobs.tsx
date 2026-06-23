@@ -179,7 +179,7 @@ function RecentJobsComponent() {
           colorTheme="tertiary"
           size="small"
           startIcon={<AddIcon fontSize="small" />}
-          onClick={() => navigate({ to: '/job' })}
+          onClick={() => navigate({ to: '/job', search: { from: '/recent-jobs' } })}
         />
       </div>
 
@@ -225,7 +225,7 @@ function RecentJobsComponent() {
                 aria-label="Edit persona"
                 onClick={(e) => {
                   e.stopPropagation();
-                  navigate({ to: '/job', search: { jobId: job.id } });
+                  navigate({ to: '/job', search: { jobId: job.id, from: '/recent-jobs' } });
                 }}
               >
                 <EditOutlinedIcon fontSize="small" />

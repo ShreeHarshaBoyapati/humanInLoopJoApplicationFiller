@@ -27,6 +27,7 @@ import onboardingStyles from './style/extension-onboarding-banner.module.css';
 import { useOnboarding } from '../hooks/use-onboarding.ts';
 import { useDashboard } from '../hooks/use-dashboard.ts';
 import { buildWebDeepLink } from '../utils/build-web-deep-link.ts';
+import AddIcon from '@mui/icons-material/Add';
 
 interface LogoutResponse {
   success: boolean;
@@ -121,9 +122,9 @@ function HomeComponent() {
             iconBgColor="var(--blue-500)"
             iconColor="var(--black-700)"
             title="Extract New Job"
-            description="Click on Quick save button. Our extension will extract requirements, salary, and fit analysis instantly."
-            buttonLabel="Extract"
-            onButtonClick={() => navigate({ to: '/job' })}
+            description="Click on Quick save button. Our extension will extract requirements, salary, and fit analysis instantly. Or you can enter job details manually."
+            buttonLabel="Add New Job"
+            onButtonClick={() => navigate({ to: '/job', search: { from: '/' } })}
           />
 
           {!isOnboarded && (

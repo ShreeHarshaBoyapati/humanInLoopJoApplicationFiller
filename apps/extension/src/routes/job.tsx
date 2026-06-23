@@ -12,6 +12,7 @@ export interface JobSearch {
   jobId?: string;
   mode?: 'autofill' | 'update';
   step?: number;
+  from?: '/' | '/recent-jobs';
 }
 
 type JobFetchList =
@@ -27,8 +28,12 @@ type JobFetchList =
 export const Route = createFileRoute('/job')({
   shouldReload: true,
   validateSearch: (search: Record<string, unknown>): JobSearch => {
+    const rawFrom = search.from;
+    const from: JobSearch['from'] =
+      rawFrom === '/' || rawFrom === '/recent-jobs' ? rawFrom : undefined;
     return {
       jobId: search.jobId as string | undefined,
+      from,
     };
   },
   loaderDeps: ({ search: { jobId } }) => ({ jobId }),
@@ -72,6 +77,7 @@ function JobComponent() {
   const navigate = useNavigate();
   const router = useRouter();
   const { jobData, isEditing, error: loaderError } = Route.useLoaderData();
+  const { from } = Route.useSearch();
   const [savedJobId, setSavedJobId] = useState<string | null>(jobData?.id || null);
 
   useEffect(() => {
@@ -106,7 +112,7 @@ function JobComponent() {
   };
 
   const onCancel = () => {
-    navigate({ to: '/recent-jobs' });
+    navigate({ to: from ?? '/recent-jobs' });
   };
 
   if (loaderError) {
