@@ -394,3 +394,270 @@ Read-only. Clicking a persona row navigates to the Job Tracker filtered to that 
 
 - All numbers that can change over time show a delta or context value below them so the user never has to remember the previous state to understand if the number is good or bad
 - Empty states: if a widget has no data (e.g. no ATS checks run yet, no events added), it shows a short message explaining what will appear here and a direct CTA to create the missing data — never a blank card
+
+---
+
+## Backend API contract
+
+The backend exposes three authenticated endpoints to power the dashboard. All endpoints require the standard auth middleware (Bearer token or `token` cookie) and operate on the currently logged-in user.
+
+### Display name
+
+The backend does **not** store a separate display name. The frontend derives a friendly name from the user's `email` (e.g. split on `@`/`.`, capitalize first segment) for both the new-user greeting and the full-dashboard greeting bar.
+
+### `GET /api/dashboard/onboarding`
+
+Returns the 4-step onboarding progress used by State 1. The frontend should call this once on dashboard load; if `isComplete === true`, render State 2 instead of State 1.
+
+**Response 200**
+
+```ts
+{
+  success: true,
+  data: {
+    isComplete: boolean;          // true when every step isComplete
+    completedSteps: number;       // 0..4
+    totalSteps: 4;
+    steps: Array<{
+      key: 'aiProvider' | 'personaAndResume' | 'firstJob' | 'eventOrTag';
+      severity: 'required' | 'recommended' | 'optional';
+      isComplete: boolean;
+    }>;
+  }
+}
+```
+
+**Step completion rules (server-derived)**
+
+| `key`              | `isComplete === true` when…                                                                                   |
+| ------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `aiProvider`       | user has at least one `ApiKey` row with `active = true`                                                       |
+| `personaAndResume` | user has at least one non-deleted persona that has a non-deleted resume with at least one non-deleted version |
+| `firstJob`         | user has at least one `Job` row                                                                               |
+| `eventOrTag`       | user has at least one `Event` row **or** at least one `Tag` row                                               |
+
+The `eventOrTag` step has a `Skip for now` button in the UI — when the user clicks Skip, the frontend marks it complete locally (no backend mutation needed) so the checklist can collapse and the completion banner can show.
+
+---
+
+### `GET /api/dashboard?range=month|threeMonths|all`
+
+Returns the full State-2 dashboard payload. `range` defaults to `month`. The frontend should refetch when the user changes the funnel time-range selector.
+
+**Query params**
+
+- `range` — `'month'` | `'threeMonths'` | `'all'` (default `'month'`)
+- `topAtsLimit` — 1..10 (default `5`)
+- `eventsLimit` — 1..20 (default `5`)
+
+**Response 200**
+
+```ts
+{
+  success: true,
+  data: {
+    user: { id: string; email: string };
+    hasAiKey: boolean;                          // mirrors onboarding step 1; controls the AI key banner
+
+    metrics: {
+      total: number;                            // total jobs across all statuses
+      byStatus: Array<{
+        status: 'draft' | 'applied' | 'interview' | 'offer' | 'rejected';
+        count: number;                          // jobs currently in this status
+        deltaThisWeek: number;                  // jobs that moved INTO this status since Monday 00:00 (user-local)
+      }>;
+    };
+
+    funnel: {
+      range: 'month' | 'threeMonths' | 'all';
+      stages: Array<{
+        status: 'draft' | 'applied' | 'interview' | 'offer' | 'rejected';
+        count: number;
+        percent: number;                        // 0..100, percent of total jobs that reached this stage
+        dropoffFromPrevPercent: number | null;  // null for the first row (draft); otherwise % drop from previous forward stage
+      }>;
+      biggestDropoff: { from: JobStatus; to: JobStatus; percent: number } | null;
+      overallSuccessRate: { percent: number; offers: number; bookmarked: number };
+    };
+
+    weeklyGoal: {
+      applications: { done: number; target: number };
+      interviews:   { done: number; target: number };
+      resetsOn: string;                         // ISO date (YYYY-MM-DD) of next Monday
+    };
+
+    topAtsMatches: Array<{
+      jobId: string;
+      title: string;
+      companyName: string;
+      score: number;                            // 0..100, MAX score across all results for this job
+      personaName: string;
+    }>;                                         // ordered by score DESC, limited by topAtsLimit
+
+    upcomingEvents: Array<{
+      id: string;
+      title: string;
+      jobName: string | null;                   // null for task-tag events (not linked to a job)
+      companyName: string | null;
+      date: string;                             // YYYY-MM-DD
+      time: string | null;                      // HH:mm or null
+      type: string;                             // tag.name (e.g. 'interview', 'follow-up', 'task')
+      tagColor: string;                         // hex
+      jobId: string | null;
+    }>;                                         // date >= today, isCompleted = false, ASC, limited by eventsLimit
+
+    personaBreakdown: Array<{
+      personaId: string | null;                 // null = the "Unassigned" bucket (jobs with personaId = NULL)
+      name: string;                             // "Unassigned" for the null bucket
+      jobsCount: number;
+      percentage: number;                       // 0..100, rounded to 1 decimal
+    }>;                                         // ordered by jobsCount DESC; percentage sums to 100
+  }
+}
+```
+
+**Funnel calculation details**
+
+- `stages[0]` (`draft`) is always `percent: 100` and `dropoffFromPrevPercent: null`.
+- For `applied/interview/offer`, `percent = (count at stage / count of draft) * 100`.
+- `rejected` is shown for completeness but is **not** a forward progression — its `dropoffFromPrevPercent` is computed against `applied` but it is excluded from `biggestDropoff`.
+- `biggestDropoff` = the adjacent pair with the largest positive drop among `applied → interview → offer` (skipping rejected).
+- `overallSuccessRate.percent = (offer / draft) * 100`.
+
+**Weekly delta details**
+
+- `deltaThisWeek` for status `S` = number of jobs whose `statusUpdatedAt[S]` is `>= startOfThisWeek` (Monday 00:00 in user-local time, returned as UTC from the server).
+- `done` counts in `weeklyGoal` use the same rule — `applicationsDone = jobs where statusUpdatedAt.applied >= startOfThisWeek`, `interviewsDone` same for `interview`.
+- `resetsOn` = next Monday at `YYYY-MM-DD` (user-local).
+
+**Empty / zero states**
+
+- All numeric fields default to `0`; arrays default to `[]`. The backend never returns `null` for these fields.
+- The frontend should still render the per-widget empty messages from the General UI rules when the relevant array is empty.
+
+---
+
+### `GET /api/weekly-goal`
+
+Returns the user's current weekly targets along with the computed progress for the current week. Auto-creates defaults (`applicationsTarget: 5`, `interviewsTarget: 2`) on first read.
+
+**Response 200**
+
+```ts
+{
+  success: true,
+  data: {
+    applicationsTarget: number;
+    interviewsTarget: number;
+    applicationsDone: number;
+    interviewsDone: number;
+    resetsOn: string;                           // YYYY-MM-DD of next Monday
+    updatedAt: Date;
+  }
+}
+```
+
+### `PUT /api/weekly-goal`
+
+Updates the user's weekly targets. Computed progress is computed on read (not stored).
+
+**Body**
+
+```ts
+{
+  applicationsTarget: number; // integer >= 1
+  interviewsTarget: number; // integer >= 1
+}
+```
+
+**Response 200** — same shape as `GET /api/weekly-goal`.
+
+---
+
+### Data model additions
+
+A new entity `WeeklyGoal` (1:1 with `User`, `ON DELETE CASCADE`) backs the weekly-goal endpoints. No changes to `User`, `Job`, `Persona`, `Resume`, `Event`, `Tag`, or `Result` entities.
+
+### Realtime
+
+No new realtime events are emitted for the dashboard. The frontend can rely on the existing `job`, `event`, `tag`, `result`, `apiKey` resource-change events it already listens to, then refetch the dashboard summary when relevant.
+
+### Auth
+
+All endpoints sit behind the existing `authMiddleware`. No new permissions or scopes are introduced.
+
+---
+
+## Frontend implementation plan
+
+### Scope
+
+This section covers the web application implementation in `apps/web`. It does not cover the browser extension; extension-specific UI flows remain unchanged.
+
+### Routing
+
+- Add a new TanStack Router route at `/dashboard`.
+- Make `/` redirect authenticated users to `/dashboard` after login.
+- The dashboard route is the authenticated landing page.
+
+### Data layer
+
+- Add a dashboard API module in `apps/web/src/services/dashboard-api.ts` that calls the three backend endpoints and reuses types from `@repo/shared-types`.
+- Add dashboard hooks in `apps/web/src/hooks/`:
+  - `use-onboarding.ts` for `GET /api/dashboard/onboarding`.
+  - `use-dashboard.ts` for `GET /api/dashboard?range=...`.
+  - `use-weekly-goal.ts` for `GET /api/weekly-goal` and `PUT /api/weekly-goal`.
+- Dashboard data changes frequently, so queries should not be aggressively cached. The hooks can rely on the existing realtime resource-change events (`job`, `event`, `tag`, `result`, `apiKey`) to trigger refetches instead of holding stale state.
+
+### State 1 — New user onboarding
+
+- `apps/web/src/components/dashboard/onboarding/onboarding-view.tsx` — orchestrator.
+- `onboarding-progress-card.tsx` — progress bar and completion count.
+- `onboarding-accordion.tsx` and `onboarding-step-card.tsx` — 4-step accordion with severity badges, expanded context, and CTAs.
+- `onboarding-completion-banner.tsx` — shown when all steps are done.
+
+Accordion behavior:
+
+- One step expanded at a time.
+- First incomplete step expanded on load.
+- Completing a step auto-collapses it and expands the next incomplete step.
+- Step 4 (`eventOrTag`) supports a local "Skip for now" action that marks it complete in the UI without a backend call.
+
+CTAs navigate using the existing TanStack Router navigation:
+
+- Step 1 → Settings → AI Configuration route.
+- Step 2 → Persona and Resumes route.
+- Step 3 → Job Tracker route (web only).
+- Step 4 → Job Tracker route.
+- Completion banner → Job Tracker route.
+
+### State 2 — Full dashboard
+
+- `apps/web/src/components/dashboard/dashboard-view.tsx` — layout orchestrator.
+- `dashboard-greeting-bar.tsx` — greeting derived from `email`, today's date, today's event count.
+- `dashboard-ai-key-banner.tsx` — shown when `hasAiKey === false`.
+- `dashboard-status-metrics.tsx` — five status cards with counts and weekly deltas.
+- `dashboard-pipeline-funnel.tsx` — horizontal bar chart with drop-off annotations, range selector, biggest drop-off insight, and overall success rate.
+- `dashboard-weekly-goal.tsx` — two progress bars and an edit trigger.
+- `weekly-goal-editor.tsx` — inline editor for application and interview targets.
+- `dashboard-top-ats-matches.tsx` — top ATS matches with score bars.
+- `dashboard-upcoming-events.tsx` — next events list.
+- `dashboard-persona-breakdown.tsx` — persona distribution bars.
+
+Each widget follows the General UI rules for empty states and numeric context.
+
+### Styling
+
+- All dashboard components use CSS modules in `apps/web/src/components/dashboard/style/`.
+- Colors, font sizes, and spacing come from `packages/ui/src/constants/css-constants.css`.
+- No inline CSS.
+
+### Realtime
+
+- The dashboard does not introduce new realtime events.
+- The existing realtime handler invalidates dashboard queries when relevant resource-change events arrive.
+
+### Auth
+
+- The dashboard route uses the existing authenticated route wrapper.
+- The API module uses the existing authenticated `api` instance.

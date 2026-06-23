@@ -19,4 +19,7 @@ export * from './verification-code';
 export * from './modal';
 export * from './date-picker';
 export * from './time-picker';
+export * from './components/dashboard/dashboard-weekly-goal';
+export * from './components/dashboard/dashboard-upcoming-events';
+export * from './components/dashboard/dashboard-status-metrics';
 export { default as EnhancedSnackbar } from './snackbar';

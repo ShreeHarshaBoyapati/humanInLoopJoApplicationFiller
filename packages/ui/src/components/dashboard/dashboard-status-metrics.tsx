@@ -1,15 +1,26 @@
 /**
  * Dashboard status metrics row.
  * Displays five equal-width cards, one per job status, with counts and weekly deltas.
+ * Click is optional — when `onStatusClick` is omitted the cards are rendered as divs.
  */
 
-import type { DashboardResponse } from '@repo/shared-types';
-import type { JobStatus } from '@repo/shared-types';
-import { DashboardEmptyState } from './dashboard-empty-state.tsx';
-import styles from './style/dashboard-status-metrics.module.css';
+import styles from './dashboard-status-metrics.module.css';
 
-interface DashboardStatusMetricsProps {
-  metrics: DashboardResponse['metrics'];
+export type JobStatus = 'draft' | 'applied' | 'interview' | 'offer' | 'rejected';
+
+export interface DashboardStatusMetric {
+  status: JobStatus;
+  count: number;
+  deltaThisWeek: number;
+}
+
+export interface DashboardStatusMetricsData {
+  total: number;
+  byStatus: DashboardStatusMetric[];
+}
+
+export interface DashboardStatusMetricsProps {
+  metrics: DashboardStatusMetricsData;
   onStatusClick?: (status: JobStatus) => void;
 }
 
@@ -26,20 +37,6 @@ const STATUS_LABELS: Record<JobStatus, string> = {
 export const DashboardStatusMetrics = ({ metrics, onStatusClick }: DashboardStatusMetricsProps) => {
   const statusMap = new Map(metrics.byStatus.map((item) => [item.status, item]));
 
-  const hasAnyData = metrics.total > 0 || metrics.byStatus.some((item) => item.count > 0);
-
-  if (!hasAnyData) {
-    return (
-      <div className={styles.row}>
-        <DashboardEmptyState
-          message="No jobs tracked yet. Add your first job to see status metrics."
-          ctaLabel="Go to Job Tracker"
-          onCtaClick={() => onStatusClick?.('draft')}
-        />
-      </div>
-    );
-  }
-
   return (
     <div className={styles.row}>
       {STATUS_ORDER.map((status) => {
@@ -47,19 +44,33 @@ export const DashboardStatusMetrics = ({ metrics, onStatusClick }: DashboardStat
         const count = item?.count ?? 0;
         const delta = item?.deltaThisWeek ?? 0;
 
-        return (
-          <button
-            key={status}
-            type="button"
-            className={styles.card}
-            onClick={() => onStatusClick?.(status)}
-          >
+        const inner = (
+          <>
             <span className={`${styles.count} ${styles[status]}`}>{count}</span>
             <span className={styles.label}>{STATUS_LABELS[status]}</span>
             <span className={`${styles.delta} ${styles[status]}`}>
               {delta >= 0 ? `+${delta}` : delta} this week
             </span>
-          </button>
+          </>
+        );
+
+        if (onStatusClick) {
+          return (
+            <button
+              key={status}
+              type="button"
+              className={styles.card}
+              onClick={() => onStatusClick(status)}
+            >
+              {inner}
+            </button>
+          );
+        }
+
+        return (
+          <div key={status} className={styles.cardStatic}>
+            {inner}
+          </div>
         );
       })}
     </div>

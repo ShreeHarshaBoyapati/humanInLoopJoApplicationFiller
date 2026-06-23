@@ -1,15 +1,32 @@
+/**
+ * Extension home route.
+ * Keeps the existing header + greeting, and renders only the Extract widget.
+ * Below it, when the user has completed onboarding, shows the three read-only
+ * dashboard widgets (Weekly goal, Upcoming events, Status metrics). When the
+ * user has NOT completed onboarding, shows a banner pointing to the web app.
+ */
+
 import { useState, MouseEvent } from 'react';
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
-import { EnhancedActionCard, StyledMenu, StyledMenuItem } from '@repo/ui';
+import {
+  EnhancedActionCard,
+  StyledMenu,
+  StyledMenuItem,
+  DashboardWeeklyGoal,
+  DashboardUpcomingEvents,
+  DashboardStatusMetrics,
+} from '@repo/ui';
 import { Typography } from '@mui/material';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
 import AddLinkIcon from '@mui/icons-material/AddLink';
-import TokenIcon from '@mui/icons-material/Token';
-import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
-import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import OpenInNewIcon from '@mui/icons-material/OpenInNew';
 import rootStyles from './style/__root.module.css';
 import styles from './style/index.module.css';
+import onboardingStyles from './style/extension-onboarding-banner.module.css';
+import { useOnboarding } from '../hooks/use-onboarding.ts';
+import { useDashboard } from '../hooks/use-dashboard.ts';
+import { buildWebDeepLink } from '../utils/build-web-deep-link.ts';
 
 interface LogoutResponse {
   success: boolean;
@@ -48,6 +65,10 @@ function HomeComponent() {
       alert('Logout clicked (chrome runtime unavailable)');
     }
   };
+
+  const { data: onboarding } = useOnboarding();
+  const isOnboarded = onboarding?.isComplete ?? false;
+  const { data: dashboard } = useDashboard('month');
 
   return (
     <>
@@ -105,68 +126,55 @@ function HomeComponent() {
             onButtonClick={() => navigate({ to: '/job' })}
           />
 
-          <div className={styles.usageCard}>
-            <div className={styles.usageHeader}>
-              <TokenIcon className={styles.usageIcon} />
-              <div className={styles.usageTitleWrapper}>
-                <span className={styles.usageTitleText}>API Token Usage</span>
-                <span className={styles.usageSubtitle}>Monthly quota resets in 12 days</span>
-              </div>
-            </div>
-            <div className={styles.progressSection}>
-              <div className={styles.progressLabels}>
-                <span className={styles.progressLabelText}>Tokens Used</span>
-                <span className={styles.progressValueText}>4,520 / 10,000</span>
-              </div>
-              <div className={styles.progressBarContainer}>
-                <div className={styles.progressBarFill} style={{ width: '45.2%' }}></div>
-              </div>
-            </div>
-          </div>
-
-          <div className={styles.savedJobsCard}>
-            <div className={styles.savedJobsHeader}>
-              <div className={styles.savedJobsTitleWrapper}>
-                <div className={styles.savedJobsTitle}>
-                  <FolderOutlinedIcon fontSize="small" />
-                  <span>Recent Saved Jobs</span>
-                </div>
-                <span className={styles.savedJobsSubtitle}>4 new matches found today</span>
-              </div>
-              <Link to="/recent-jobs" className={styles.chevronIcon}>
-                <ChevronRightIcon />
+          {!isOnboarded && (
+            <div className={onboardingStyles.onboardingBanner}>
+              <span className={onboardingStyles.onboardingTitle}>Complete your onboarding</span>
+              <p className={onboardingStyles.onboardingText}>
+                Finish the quick setup in the web app to unlock the full dashboard here.
+              </p>
+              <Link
+                to={buildWebDeepLink({ path: '/dashboard' })}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={onboardingStyles.onboardingLink}
+              >
+                Open dashboard in web app
+                <OpenInNewIcon style={{ fontSize: '0.75rem' }} />
               </Link>
             </div>
+          )}
 
-            <div className={styles.jobItem}>
-              <div className={styles.jobIconWrapper}>SF</div>
-              <div className={styles.jobItemDetails}>
-                <span className={styles.jobItemTitle}>Senior Frontend Engineer</span>
-                <span className={styles.jobItemCompany}>Stripe • Remote</span>
-              </div>
-            </div>
-
-            <div className={styles.jobItem}>
-              <div className={styles.jobIconWrapper}>PM</div>
-              <div className={styles.jobItemDetails}>
-                <span className={styles.jobItemTitle}>Product Manager</span>
-                <span className={styles.jobItemCompany}>Linear • NYC</span>
-              </div>
-            </div>
-          </div>
-
-          <div className={styles.aiStatusArea}>
-            <h3 className={styles.sectionHeading}>AI CONFIGURATION</h3>
-            <div className={styles.aiStatusCard}>
-              <div className={styles.aiStatusLabels}>
-                <span className={styles.aiStatusTitle}>Provider & Persona</span>
-                <span className={styles.aiStatusValue}>Gemini • Default</span>
-              </div>
-              <Link to="/profile" className={styles.aiStatusLink}>
-                Change
-              </Link>
-            </div>
-          </div>
+          {isOnboarded && dashboard && (
+            <>
+              <DashboardWeeklyGoal weeklyGoal={dashboard.weeklyGoal} />
+              <DashboardUpcomingEvents
+                events={dashboard.upcomingEvents}
+                onEventClick={(event) => {
+                  window.open(
+                    buildWebDeepLink({
+                      path: '/job-tracker',
+                      search: { date: event.date, tab: 'calendar' },
+                    }),
+                    '_blank',
+                    'noopener,noreferrer'
+                  );
+                }}
+              />
+              <DashboardStatusMetrics
+                metrics={dashboard.metrics}
+                onStatusClick={(status) => {
+                  window.open(
+                    buildWebDeepLink({
+                      path: '/job-tracker',
+                      search: { status },
+                    }),
+                    '_blank',
+                    'noopener,noreferrer'
+                  );
+                }}
+              />
+            </>
+          )}
         </div>
       </div>
     </>

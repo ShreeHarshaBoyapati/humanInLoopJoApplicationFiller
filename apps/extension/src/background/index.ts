@@ -8,6 +8,7 @@ import { handleApiKeyMessage } from './handlers/api-key-handler.js';
 import { handlePersonaMessage } from './handlers/persona-handler.js';
 import { handleResumeMessage } from './handlers/resume-handler.js';
 import { handleAiMessage } from './handlers/ai-handler.js';
+import { handleDashboardMessage } from './handlers/dashboard-handler.js';
 import { RealtimeOwner } from '../realtime/realtime-owner.js';
 import { getRealtimeClientId } from '../realtime/realtime-client';
 
@@ -104,4 +105,8 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, sender, sendRes
   // AI-related actions
   const aiHandled = handleAiMessage(message, sendResponse, api);
   if (aiHandled) return true;
+
+  // Dashboard-related actions
+  const dashboardHandled = handleDashboardMessage(message, sendResponse, api);
+  if (dashboardHandled) return true;
 });

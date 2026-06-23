@@ -8,15 +8,13 @@
 import { useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import type { DashboardRange } from '@repo/shared-types';
+import { DashboardStatusMetrics, DashboardUpcomingEvents } from '@repo/ui';
 import { useStore } from '../../store/index.ts';
 import { useDashboard } from '../../hooks/use-dashboard.ts';
 import { DashboardGreetingBar } from './dashboard-greeting-bar.tsx';
-import { DashboardStatusMetrics } from './dashboard-status-metrics.tsx';
 import { DashboardPipelineFunnel } from './dashboard-pipeline-funnel.tsx';
 import { DashboardWeeklyGoal } from './dashboard-weekly-goal.tsx';
-import { WeeklyGoalEditor } from './weekly-goal-editor.tsx';
 import { DashboardTopAtsMatches } from './dashboard-top-ats-matches.tsx';
-import { DashboardUpcomingEvents } from './dashboard-upcoming-events.tsx';
 import { DashboardPersonaBreakdown } from './dashboard-persona-breakdown.tsx';
 import sharedStyles from './style/dashboard.module.css';
 import styleConstants from '@repo/ui/constants/style-constants.js';
@@ -25,7 +23,6 @@ export const DashboardView = () => {
   const email = useStore((state: { email: string | null }) => state.email);
   const navigate = useNavigate();
   const [range, setRange] = useState<DashboardRange>('month');
-  const [isEditingGoal, setIsEditingGoal] = useState(false);
 
   const { data: dashboard, isLoading } = useDashboard({ range });
 
@@ -61,18 +58,7 @@ export const DashboardView = () => {
       <DashboardPipelineFunnel funnel={dashboard.funnel} range={range} onRangeChange={setRange} />
 
       <div className={sharedStyles.twoColumn}>
-        <DashboardWeeklyGoal
-          weeklyGoal={dashboard.weeklyGoal}
-          isEditing={isEditingGoal}
-          onEditToggle={() => setIsEditingGoal((prev) => !prev)}
-        >
-          <WeeklyGoalEditor
-            applicationsTarget={dashboard.weeklyGoal.applications.target}
-            interviewsTarget={dashboard.weeklyGoal.interviews.target}
-            onSaved={() => setIsEditingGoal(false)}
-            onCancel={() => setIsEditingGoal(false)}
-          />
-        </DashboardWeeklyGoal>
+        <DashboardWeeklyGoal weeklyGoal={dashboard.weeklyGoal} />
 
         <DashboardTopAtsMatches
           matches={dashboard.topAtsMatches}

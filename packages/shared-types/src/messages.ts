@@ -70,4 +70,6 @@ export type ExtensionMessage =
   | { action: 'AUTH_STORAGE_SET'; payload: StoredAuth }
   | { action: 'AUTH_STORAGE_GET' }
   | { action: 'AUTH_STORAGE_REMOVE' }
+  | { action: 'DASHBOARD_FETCH_ONBOARDING' }
+  | { action: 'DASHBOARD_FETCH_SUMMARY'; payload?: { range?: 'month' | 'threeMonths' | 'all' } }
   | { action: 'RESOURCE_CHANGED'; payload: ResourceChangedEvent };

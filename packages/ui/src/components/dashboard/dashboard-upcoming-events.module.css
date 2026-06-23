@@ -49,6 +49,16 @@
   border-color: var(--blue-500);
 }
 
+.rowStatic {
+  align-items: stretch;
+  background-color: var(--black-700);
+  border: 1px solid var(--grey-700);
+  border-radius: var(--border-radius);
+  display: flex;
+  gap: calc(var(--spacing) * 3);
+  padding: calc(var(--spacing) * 3);
+}
+
 .colorBar {
   background-color: var(--event-color);
   border-radius: var(--border-radius);
@@ -88,4 +98,9 @@
   font-size: 0.75rem;
   height: fit-content;
   padding: calc(var(--spacing) * 1) calc(var(--spacing) * 2);
+}
+
+.empty {
+  color: var(--white-700);
+  font-size: 0.875rem;
 }

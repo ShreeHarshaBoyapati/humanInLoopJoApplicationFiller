@@ -1,4 +1,4 @@
-.card {
+.wrapper {
   background-color: var(--black-700);
   border: 1px solid var(--grey-700);
   border-radius: var(--border-radius);
@@ -8,82 +8,18 @@
   padding: calc(var(--spacing) * 4);
 }
 
-.header {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: calc(var(--spacing) * 2);
-}
-
-.title {
-  color: var(--white-900);
-  font-family: var(--heading-font);
-  font-size: 1.125rem;
-  font-weight: 600;
-}
-
-.subtitle {
-  color: var(--white-700);
-  font-size: 0.75rem;
-}
-
-.goal {
+.editorWrapper {
+  background-color: var(--black-700);
+  border: 1px solid var(--grey-700);
+  border-radius: var(--border-radius);
   display: flex;
   flex-direction: column;
-  gap: calc(var(--spacing) * 3);
+  gap: calc(var(--spacing) * 4);
+  padding: calc(var(--spacing) * 4);
 }
 
-.goalRow {
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--spacing) * 2);
-}
-
-.goalHeader {
+.editRow {
   align-items: center;
   display: flex;
-  justify-content: space-between;
-}
-
-.goalLabel {
-  color: var(--white-900);
-  font-size: 0.875rem;
-}
-
-.goalCount {
-  color: var(--white-700);
-  font-size: 0.875rem;
-}
-
-.barTrack {
-  background-color: var(--grey-700);
-  border-radius: var(--border-radius);
-  height: 8px;
-  overflow: hidden;
-  width: 100%;
-}
-
-.barFill {
-  background-color: var(--green-400);
-  border-radius: var(--border-radius);
-  height: 100%;
-  transition: width 0.3s ease;
-  width: calc(var(--goal-percent) * 1%);
-}
-
-.goalNote {
-  color: var(--white-700);
-  font-size: 0.75rem;
-}
-
-.footer {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-  margin-top: auto;
-}
-
-.currentGoal {
-  color: var(--white-700);
-  font-size: 0.875rem;
+  justify-content: flex-end;
 }
