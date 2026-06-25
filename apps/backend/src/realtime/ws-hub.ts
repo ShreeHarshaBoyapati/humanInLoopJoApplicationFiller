@@ -49,6 +49,34 @@ export function peerCount(userId: string): number {
   return rooms.get(userId)?.size ?? 0;
 }
 
+export function disconnectUser(userId: string): number {
+  const room = rooms.get(userId);
+  if (!room || room.size === 0) return 0;
+
+  const event: ServerEvent = { type: 'user.deleted', userId };
+  const payload = JSON.stringify(event);
+
+  for (const client of room) {
+    if (client.readyState === client.OPEN) {
+      try {
+        client.send(payload);
+      } catch (err) {
+        logger.error({ err, userId }, '[ws] send failed during disconnectUser; continuing');
+      }
+    }
+    try {
+      client.close(1000, 'user deleted');
+    } catch (err) {
+      logger.error({ err, userId }, '[ws] close failed during disconnectUser; continuing');
+    }
+    wsToRoom.delete(client);
+    wsToClientId.delete(client);
+  }
+
+  rooms.delete(userId);
+  return room.size;
+}
+
 export function broadcast(userId: string, event: ServerEvent, originatorClientId?: string): void {
   const room = rooms.get(userId);
   if (!room || room.size === 0) return;

@@ -1,10 +1,12 @@
 /**
- * Settings route placeholder.
- * Currently hosts the AI Configuration section so the onboarding CTA has a target.
- * Replace with the real settings layout once it is implemented.
+ * Settings route — renders the three settings sections (account, AI providers,
+ * delete account) inside a single column.
  */
 
 import { createFileRoute } from '@tanstack/react-router';
+import { AccountDetailSection } from '../components/account-detail-section';
+import { ApiConfigurationSection } from '../components/api-configuration-section';
+import { DeleteAccountSection } from '../components/delete-account-section';
 import styles from './style/settings.module.css';
 
 export const Route = createFileRoute('/settings')({
@@ -14,11 +16,10 @@ export const Route = createFileRoute('/settings')({
 function SettingsPage() {
   return (
     <div className={styles.page}>
-      <h1 className={styles.heading}>AI Configuration</h1>
-      <p className={styles.description}>
-        Configure your AI provider API key here. This page will be expanded into the full settings
-        layout.
-      </p>
+      <h1 className={styles.heading}>Settings</h1>
+      <AccountDetailSection />
+      <ApiConfigurationSection />
+      <DeleteAccountSection />
     </div>
   );
 }

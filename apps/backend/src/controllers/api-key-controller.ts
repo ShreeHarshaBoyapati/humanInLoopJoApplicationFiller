@@ -1,17 +1,23 @@
 import type { Response, AuthenticatedTypedRequest } from '../types/index.js';
 import type {
   ApiResponse,
-  ApiKeyData,
   TestConnectionResponse,
   ModelOption,
+  PaginatedApiKeysResponse,
 } from '@repo/shared-types';
 import { getApiKeyRepository, getUserRepository } from '../database/repositories/index.js';
 import { encryptText, decryptText } from '../utils/encryption.js';
-import { UpdateApiKeyInputType, TestConnectionInputType } from '../middlewares/api-key.js';
+import {
+  UpdateApiKeyInputType,
+  TestConnectionInputType,
+  GetApiKeysQueryType,
+} from '../middlewares/api-key.js';
 import ApiKey from '../database/entities/api-key.js';
 import { ProviderName } from '../services/ai/registry.js';
 import { transitDecrypt, transitEncrypt } from '@repo/utils';
 import { ApiKeyService } from '../services/api-key-service.js';
+import { apiKeyToPublic } from '../realtime/payload-mappers.js';
+import * as wsHub from '../realtime/ws-hub.js';
 import logger from '../utils/logger.js';
 
 const TRANSIT_SECRET = process.env.TRANSIT_SECRET ?? 'jfp-default-transit-secret-change-in-prod';
@@ -78,13 +84,46 @@ class ApiKeyController {
         existingKey.credentials = encryptedCredentials;
         existingKey.model = model;
         await apiKeyRepository.save(existingKey);
+        try {
+          const payload = await apiKeyToPublic(existingKey);
+          wsHub.emit(
+            userId,
+            'apiKey',
+            'update',
+            existingKey.id,
+            payload,
+            undefined,
+            req.realtimeClientId
+          );
+        } catch (emitErr) {
+          logger.error({ err: emitErr, id: existingKey.id }, 'apiKey update emit failed');
+        }
       } else {
+        const userKeyCount = await apiKeyRepository.count({
+          where: { user: { id: userId } },
+        });
+
         const newKey = new ApiKey();
         newKey.provider = providerName as ProviderName;
         newKey.credentials = encryptedCredentials;
         newKey.model = model;
         newKey.user = user;
+        newKey.active = userKeyCount === 0;
         await apiKeyRepository.save(newKey);
+        try {
+          const payload = await apiKeyToPublic(newKey);
+          wsHub.emit(
+            userId,
+            'apiKey',
+            'create',
+            newKey.id,
+            payload,
+            undefined,
+            req.realtimeClientId
+          );
+        } catch (emitErr) {
+          logger.error({ err: emitErr, id: newKey.id }, 'apiKey create emit failed');
+        }
       }
 
       const response: ApiResponse = {
@@ -103,14 +142,29 @@ class ApiKeyController {
    * Get configured API Key providers for the authenticated user
    * GET /api/api-key
    */
-  async getApiKeys(req: AuthenticatedTypedRequest<null>, res: Response) {
+  async getApiKeys(
+    req: AuthenticatedTypedRequest<null> & { parsedQuery: GetApiKeysQueryType },
+    res: Response
+  ) {
     const userId = req.userId!;
+    const { page, limit, search } = req.parsedQuery;
     const apiKeyRepository = getApiKeyRepository();
 
     try {
-      const keys = await apiKeyRepository.find({
-        where: { user: { id: userId } },
-      });
+      const queryBuilder = apiKeyRepository
+        .createQueryBuilder('key')
+        .where('key.userId = :userId', { userId })
+        .orderBy('key.createdAt', 'DESC')
+        .skip((page - 1) * limit)
+        .take(limit);
+
+      if (search) {
+        queryBuilder.andWhere('LOWER(CAST(key.provider AS TEXT)) LIKE LOWER(:search)', {
+          search: `%${search}%`,
+        });
+      }
+
+      const [keys, total] = await queryBuilder.getManyAndCount();
 
       const data = await Promise.all(
         keys.map(async (k) => {
@@ -158,7 +212,19 @@ class ApiKeyController {
         })
       );
 
-      const response: ApiResponse<ApiKeyData[]> = { success: true, data };
+      const totalPages = Math.ceil(total / limit);
+      const response: ApiResponse<PaginatedApiKeysResponse> = {
+        success: true,
+        data: {
+          items: data,
+          page,
+          limit,
+          total,
+          totalPages,
+          hasNextPage: page < totalPages,
+          hasPrevPage: page > 1,
+        },
+      };
       res.status(200).json(response);
     } catch (error: unknown) {
       console.error('Error fetching API Keys:', error);
@@ -222,6 +288,12 @@ class ApiKeyController {
 
       await apiKeyRepository.remove(key);
 
+      try {
+        wsHub.emit(userId, 'apiKey', 'delete', id, undefined, undefined, req.realtimeClientId);
+      } catch (emitErr) {
+        logger.error({ err: emitErr, id }, 'apiKey delete emit failed');
+      }
+
       const response: ApiResponse = { success: true, message: 'Provider deleted successfully' };
       res.status(200).json(response);
     } catch (error: unknown) {
@@ -248,11 +320,29 @@ class ApiKeyController {
         return;
       }
 
+      const previousActiveId = keys.find((obj) => obj.active && obj.id !== id)?.id;
+
       keys.forEach((obj) => {
         obj.active = obj.id === id;
       });
 
       await apiKeyRepository.save(keys);
+
+      try {
+        const payload = await apiKeyToPublic(targetKey);
+        const related = previousActiveId ? [{ id: previousActiveId, active: false }] : undefined;
+        wsHub.emit(
+          userId,
+          'apiKey',
+          'setActive',
+          targetKey.id,
+          payload,
+          related,
+          req.realtimeClientId
+        );
+      } catch (emitErr) {
+        logger.error({ err: emitErr, id: targetKey.id }, 'apiKey setActive emit failed');
+      }
 
       const response: ApiResponse = { success: true, message: 'Provider selected successfully' };
       res.status(200).json(response);

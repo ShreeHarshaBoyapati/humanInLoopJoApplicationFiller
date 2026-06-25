@@ -90,3 +90,8 @@
   background-color: var(--black-700);
   border: none;
 }
+
+.userIcon:focus,
+.userIcon:focus-visible {
+  outline: none;
+}

@@ -1,0 +1,21 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 4);
+  padding: calc(var(--spacing) * 6);
+}
+
+.message {
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  font-size: 1rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.prompt {
+  color: var(--white-700);
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+  margin: 0;
+}

@@ -97,7 +97,9 @@ export function AiProvidersSection() {
     setIsAddingProvider(true);
     setEditingId(providerData.id);
     setProvider(providerData.provider);
-    setCredentials(providerData.credentials || {});
+
+    const { apiKey: _encryptedApiKey, ...restCredentials } = providerData.credentials || {};
+    setCredentials(restCredentials);
     setModel(providerData.model);
     setModelOptions([{ label: providerData.model, value: providerData.model }]);
     setConnectionStatus(null);

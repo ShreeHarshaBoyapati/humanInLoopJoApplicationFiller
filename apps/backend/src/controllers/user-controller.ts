@@ -21,6 +21,7 @@ import {
 } from '../middlewares/user.js';
 import { getTokensFromCode, getUserInfo } from '../services/google-oauth-service.js';
 import { sendVerificationCode } from '../services/email-service.js';
+import { disconnectUser } from '../realtime/ws-hub.js';
 
 class UserController {
   /**
@@ -571,7 +572,9 @@ class UserController {
 
     await userRepository.remove(user);
 
-    res.clearCookie('token', {
+    disconnectUser(userId);
+
+    res.clearCookie(TOKEN_COOKIE_NAME, {
       httpOnly: staticConfig.cookie.httpOnly,
       secure: staticConfig.cookie.secure,
       sameSite: staticConfig.cookie.sameSite as 'lax' | 'strict' | 'none',

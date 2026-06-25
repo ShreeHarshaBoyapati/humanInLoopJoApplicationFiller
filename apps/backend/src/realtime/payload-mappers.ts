@@ -5,7 +5,9 @@ import type Result from '../database/entities/result.js';
 import type JobEntity from '../database/entities/job.js';
 import type Event from '../database/entities/event.js';
 import type Tag from '../database/entities/tag.js';
+import type ApiKey from '../database/entities/api-key.js';
 import type {
+  ApiKeyData,
   Persona as PersonaPayload,
   ResumeMetadata,
   ResumeVersionMetadata,
@@ -14,6 +16,11 @@ import type {
   Event as EventPayload,
   Tag as TagPayload,
 } from '@repo/shared-types';
+import { transitEncrypt } from '@repo/utils';
+import { decryptText } from '../utils/encryption.js';
+import logger from '../utils/logger.js';
+
+const TRANSIT_SECRET = process.env.TRANSIT_SECRET ?? 'jfp-default-transit-secret-change-in-prod';
 
 export function personaToMetadata(p: Persona): PersonaPayload {
   return {
@@ -118,5 +125,42 @@ export function tagToPublic(tag: Tag): TagPayload {
     color: tag.color,
     createdAt: tag.createdAt,
     updatedAt: tag.updatedAt,
+  };
+}
+
+export async function apiKeyToPublic(key: ApiKey): Promise<ApiKeyData> {
+  const safeCredentials: Record<string, string> = {};
+  if (key.credentials) {
+    for (const [credKey, value] of Object.entries(key.credentials)) {
+      try {
+        if (
+          credKey.toLowerCase().includes('key') ||
+          credKey.toLowerCase().includes('secret') ||
+          credKey.toLowerCase().includes('token')
+        ) {
+          let plainText = value;
+          try {
+            plainText = decryptText(value);
+          } catch {
+            // Fallback for old/transit-only strings
+          }
+          safeCredentials[credKey] = await transitEncrypt(plainText, TRANSIT_SECRET);
+        } else {
+          safeCredentials[credKey] = value;
+        }
+      } catch (err) {
+        logger.error({ err, keyId: key.id }, 'apiKeyToPublic: failed to transform credential');
+        safeCredentials[credKey] = value;
+      }
+    }
+  }
+  return {
+    id: key.id,
+    provider: key.provider,
+    model: key.model ?? null,
+    active: key.active,
+    credentials: safeCredentials,
+    createdAt: key.createdAt,
+    updatedAt: key.updatedAt,
   };
 }

@@ -14,6 +14,7 @@ import { forwardRef } from 'react';
 import styleConstants from './constants/style-constants';
 import { EnhancedFieldLabel, type EnhancedFieldLabelProps } from './field-label.js';
 import ArrowDownIcon from './icons/arrow-down.js';
+import scrollbarStyles from './scroll-bar.module.css';
 
 const RootContainer = styled(Box)({
   display: 'flex',
@@ -286,8 +287,10 @@ export const EnhancedSelectDropdown = forwardRef<HTMLSelectElement, EnhancedSele
               },
               slotProps: {
                 paper: {
+                  className: scrollbarStyles.scrollbarVerticalContainer,
                   style: {
                     ...menuPaperStyles,
+                    maxHeight: '300px',
                   },
                 },
               },

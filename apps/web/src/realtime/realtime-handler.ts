@@ -1,5 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 import type {
+  ApiKeyData,
   Event,
   EventList,
   Job,
@@ -16,6 +17,7 @@ import { EVENT_KEYS } from '../hooks/use-events';
 import { TAG_KEYS } from '../hooks/use-tags';
 import { ONBOARDING_KEYS } from '../hooks/use-onboarding';
 import { DASHBOARD_KEYS } from '../hooks/use-dashboard';
+import { API_KEY_KEYS } from '../hooks/use-api-keys';
 
 type InfinitePages<T> = { pages: { items: T[] }[]; pageParams?: number[] };
 
@@ -572,6 +574,33 @@ export function applyRealtimeEvent(qc: QueryClient, event: unknown): void {
   }
 
   if (event.resource === 'apiKey') {
+    if (event.action === 'create' || event.action === 'delete') {
+      qc.invalidateQueries({ queryKey: API_KEY_KEYS.lists(), exact: false });
+    } else if (event.action === 'update') {
+      if (event.data) {
+        applyPatchFromData<ApiKeyData>(
+          qc,
+          API_KEY_KEYS.lists(),
+          event.data as unknown as ApiKeyData
+        );
+      }
+      const related = (event.related ?? []) as unknown as ApiKeyData[];
+      if (related.length > 0) {
+        applyPatchesToMatchingQueries<ApiKeyData>(qc, API_KEY_KEYS.lists(), related);
+      }
+    } else if (event.action === 'setActive') {
+      if (event.data) {
+        applyPatchFromData<ApiKeyData>(
+          qc,
+          API_KEY_KEYS.lists(),
+          event.data as unknown as ApiKeyData
+        );
+      }
+      const related = (event.related ?? []) as unknown as ApiKeyData[];
+      if (related.length > 0) {
+        applyPatchesToMatchingQueries<ApiKeyData>(qc, API_KEY_KEYS.lists(), related);
+      }
+    }
     qc.invalidateQueries({ queryKey: DASHBOARD_KEYS.all, exact: false });
     qc.invalidateQueries({ queryKey: ONBOARDING_KEYS.all });
     return;

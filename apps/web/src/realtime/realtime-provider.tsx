@@ -1,16 +1,26 @@
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
+import type { ServerEvent } from '@repo/shared-types';
 import { RealtimeClient, resolveRealtimeUrl } from './realtime-client';
 import { applyRealtimeEvent } from './realtime-handler';
 import { useStore } from '../store';
-import { getTokenFromCookie } from '../utils/auth-sync';
+import { getTokenFromCookie, resetAuthOnUserDeleted } from '../utils/auth-sync';
+import { queryClient } from '../utils/query-client';
 
 export interface RealtimeSyncProviderProps {
   children: React.ReactNode;
 }
 
+function isUserDeletedEvent(
+  event: ServerEvent
+): event is Extract<ServerEvent, { type: 'user.deleted' }> {
+  return event.type === 'user.deleted';
+}
+
 export function RealtimeSyncProvider({ children }: RealtimeSyncProviderProps) {
-  const queryClient = useQueryClient();
+  const reactQueryClient = useQueryClient();
+  const navigate = useNavigate();
   const userId = useStore((state) => state.id);
   const clientRef = useRef<RealtimeClient | null>(null);
 
@@ -31,7 +41,19 @@ export function RealtimeSyncProvider({ children }: RealtimeSyncProviderProps) {
       url,
       token,
       onMessage: (event) => {
-        applyRealtimeEvent(queryClient, event);
+        if (isUserDeletedEvent(event)) {
+          resetAuthOnUserDeleted({
+            clearUser: () => useStore.getState().clearUser(),
+            clearQueryCache: () => queryClient.clear(),
+            showSnackbar: (message, options) => useStore.getState().showSnackbar(message, options),
+            navigateToLogin: () => {
+              navigate({ to: '/login' });
+            },
+          });
+          client.stop();
+          return;
+        }
+        applyRealtimeEvent(reactQueryClient, event);
       },
     });
     clientRef.current = client;
@@ -43,7 +65,7 @@ export function RealtimeSyncProvider({ children }: RealtimeSyncProviderProps) {
         clientRef.current = null;
       }
     };
-  }, [userId, queryClient]);
+  }, [userId, reactQueryClient, navigate]);
 
   return <>{children}</>;
 }

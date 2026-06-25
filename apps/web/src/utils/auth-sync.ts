@@ -134,3 +134,21 @@ export function clearTokenAuth(): void {
   if (typeof document === 'undefined') return;
   document.cookie = `${TOKEN_COOKIE_NAME}=; path=/; max-age=0`;
 }
+
+export interface ResetAuthOptions {
+  clearUser: () => void;
+  clearQueryCache: () => void;
+  showSnackbar: (
+    message: string,
+    options?: { severity?: 'success' | 'error' | 'info' | 'warning' }
+  ) => void;
+  navigateToLogin: () => void;
+}
+
+export function resetAuthOnUserDeleted(options: ResetAuthOptions): void {
+  options.clearUser();
+  options.clearQueryCache();
+  clearTokenAuth();
+  options.navigateToLogin();
+  options.showSnackbar('Account deleted', { severity: 'success' });
+}

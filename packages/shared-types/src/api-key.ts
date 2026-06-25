@@ -29,3 +29,13 @@ export interface ModelOption {
 export interface TestConnectionResponse {
   models: ModelOption[];
 }
+
+export interface PaginatedApiKeysResponse {
+  items: ApiKeyData[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}

@@ -292,6 +292,7 @@
   flex-direction: row;
   gap: calc(var(--spacing) * 4);
   justify-content: center;
+  margin: 0 auto;
   max-width: 1000px;
   min-height: 80px;
   padding: calc(var(--spacing) * 4);

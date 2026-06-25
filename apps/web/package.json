@@ -16,6 +16,7 @@
     "@mui/material": "^7.3.8",
     "@repo/assets": "workspace:^",
     "@repo/ui": "workspace:*",
+    "@repo/utils": "workspace:*",
     "@tanstack/react-query": "^5.62.0",
     "@tanstack/react-query-devtools": "^5.99.2",
     "@tanstack/react-router": "^1.159.14",

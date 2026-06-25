@@ -12,7 +12,8 @@ export type RealtimeResource =
   | 'job'
   | 'result'
   | 'event'
-  | 'tag';
+  | 'tag'
+  | 'apiKey';
 
 export type RealtimeAction = 'update' | 'setActive' | 'create' | 'branch' | 'delete';
 
@@ -39,4 +40,9 @@ export interface HelloEvent {
   peerCount: number;
 }
 
-export type ServerEvent = HelloEvent | ResourceChangedEvent;
+export interface UserDeletedEvent {
+  type: 'user.deleted';
+  userId: string;
+}
+
+export type ServerEvent = HelloEvent | ResourceChangedEvent | UserDeletedEvent;
