@@ -1,0 +1,24 @@
+.section {
+  background-color: var(--black-700);
+  border: 1px solid var(--grey-700);
+  border-radius: var(--border-radius);
+  padding: calc(var(--spacing) * 4);
+  width: 100%;
+}
+
+.content {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--spacing) * 4);
+  justify-content: space-between;
+}
+
+.warning {
+  color: var(--white-700);
+  flex: 1;
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  min-width: 240px;
+}

@@ -1,5 +1,10 @@
 import type { AxiosError, AxiosInstance } from 'axios';
-import type { ExtensionMessage, ApiResponse } from '@repo/shared-types';
+import type {
+  ExtensionMessage,
+  ApiResponse,
+  ApiKeyData,
+  PaginatedApiKeysResponse,
+} from '@repo/shared-types';
 import { transitEncrypt, transitDecrypt } from '@repo/utils';
 
 // TRANSIT_SECRET must match the backend. In development the fallback is used.
@@ -103,14 +108,20 @@ export function handleApiKeyMessage(
   }
 
   if (message.action === 'GET_CONFIGURED_PROVIDERS') {
+    const { page = 1, limit = 10, search = '' } = message.payload ?? {};
+    const params: Record<string, string | number> = { page, limit };
+    if (search) {
+      params.search = search;
+    }
+
     api
-      .get<ApiResponse<any[]>>('/api-key')
-      .then((response: { data: ApiResponse<Record<string, unknown>[]> }) => {
+      .get<ApiResponse<PaginatedApiKeysResponse>>('/api-key', { params })
+      .then((response: { data: ApiResponse<PaginatedApiKeysResponse> }) => {
         const { data } = response;
-        if (data.success) {
+        if (data.success && data.data) {
           sendResponse({ success: true, data: data.data });
         } else {
-          sendResponse({ success: false, error: data.message });
+          sendResponse({ success: false, error: data.message || 'Failed to fetch providers' });
         }
       })
       .catch((error: AxiosError<ApiResponse>) => {

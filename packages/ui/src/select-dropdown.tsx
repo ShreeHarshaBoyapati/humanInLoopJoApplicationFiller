@@ -1,19 +1,20 @@
 import {
   Box,
-  BoxProps,
+  type BoxProps,
   Menu,
   MenuItem,
-  MenuItemProps,
+  type MenuItemProps,
   Select,
-  SelectProps,
+  type SelectProps,
   Typography,
-  TypographyOwnProps,
+  type TypographyOwnProps,
   styled,
 } from '@mui/material';
 import { forwardRef } from 'react';
 import styleConstants from './constants/style-constants';
-import { EnhancedFieldLabel, EnhancedFieldLabelProps } from './field-label.js';
+import { EnhancedFieldLabel, type EnhancedFieldLabelProps } from './field-label.js';
 import ArrowDownIcon from './icons/arrow-down.js';
+import scrollbarStyles from './scroll-bar.module.css';
 
 const RootContainer = styled(Box)({
   display: 'flex',
@@ -286,8 +287,10 @@ export const EnhancedSelectDropdown = forwardRef<HTMLSelectElement, EnhancedSele
               },
               slotProps: {
                 paper: {
+                  className: scrollbarStyles.scrollbarVerticalContainer,
                   style: {
                     ...menuPaperStyles,
+                    maxHeight: '300px',
                   },
                 },
               },

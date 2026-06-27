@@ -17,6 +17,34 @@ export type ApiResponse<TData = never, TErrors = never> =
       errors?: TErrors;
     };
 
+export interface PaginationParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+}
+
+export interface PaginatedResponse<T> {
+  items: T[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+/**
+ * Breakdown structure for ATS analysis results.
+ */
+export interface AnalysisBreakdown {
+  /** Keywords / skills present in job but absent in resume */
+  missingFields: string[];
+  /** Top keywords most strongly matched in the resume */
+  highlyMatchedKeys: string[];
+  /** Actionable improvement tips */
+  suggestions: string[];
+  /** AI-generated summary of overall fit */
+  overallVerdict: string;
+}
+
 /**
  * Result returned by the AI resume-job analysis endpoint.
  */

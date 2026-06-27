@@ -7,7 +7,12 @@
 export type { Request, Response, NextFunction, Application } from 'express';
 
 // Auth types
-export * from './auth.js';
+export type {
+  PasswordValidationResult,
+  TokenPayload,
+  DecodedToken,
+  AuthenticatedTypedRequest,
+} from './auth.js';
 
 // API types
 export * from './api.js';

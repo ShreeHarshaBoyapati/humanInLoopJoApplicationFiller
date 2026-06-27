@@ -15,6 +15,5 @@ router.put('/', authMiddleware, updatePersonaValidation, asHandler(PersonaContro
 router.delete('/', authMiddleware, deletePersonaValidation, asHandler(PersonaController.delete));
 router.get('/', authMiddleware, asHandler(PersonaController.get));
 router.get('/active', authMiddleware, asHandler(PersonaController.getActive));
-router.post('/set-active', authMiddleware, asHandler(PersonaController.setActive));
 
 export default router;

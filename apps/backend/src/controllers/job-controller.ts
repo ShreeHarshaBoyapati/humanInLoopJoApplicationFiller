@@ -1,17 +1,60 @@
 import type { Response, AuthenticatedTypedRequest } from '../types/index.js';
-import { getJobRepository, getUserRepository } from '../database/repositories/index.js';
+import {
+  getJobRepository,
+  getUserRepository,
+  getPersonaRepository,
+  getResultRepository,
+} from '../database/repositories/index.js';
+import { logger } from '../utils/index.js';
 import type {
   CreateJobInput,
   UpdateJobInput,
   DeleteJobInput,
   GetJobsInfer,
 } from '../middlewares/job.js';
-import { ApiResponse, JobList, JobPublic } from '@repo/shared-types';
+import { ApiResponse, JobList, Job, type JobStatus } from '@repo/shared-types';
+import type { StatusUpdatedAtMap } from '../database/entities/job.js';
+import * as wsHub from '../realtime/ws-hub.js';
+import { jobToPublic } from '../realtime/payload-mappers.js';
+
+const ARCHIVED_STATUSES: JobStatus[] = ['offer', 'rejected'];
+
+const STATUS_ORDER: JobStatus[] = ['draft', 'applied', 'interview', 'offer', 'rejected'];
+
+function emptyStatusUpdatedAt(): StatusUpdatedAtMap {
+  return {
+    draft: null,
+    applied: null,
+    interview: null,
+    offer: null,
+    rejected: null,
+  };
+}
+
+function recomputeStatusUpdatedAt(
+  current: StatusUpdatedAtMap,
+  newStatus: JobStatus
+): StatusUpdatedAtMap {
+  const next: StatusUpdatedAtMap = { ...current };
+  next[newStatus] = new Date();
+
+  const newIndex = STATUS_ORDER.indexOf(newStatus);
+  if (newIndex === -1) {
+    return next;
+  }
+
+  STATUS_ORDER.slice(newIndex + 1).forEach((status) => {
+    next[status] = null;
+  });
+
+  return next;
+}
 
 class JobController {
   async create(req: AuthenticatedTypedRequest<CreateJobInput>, res: Response) {
     const jobRepository = getJobRepository();
     const userRepository = getUserRepository();
+    const personaRepository = getPersonaRepository();
 
     const userId = req.userId;
 
@@ -20,15 +63,38 @@ class JobController {
       throw new Error('User not found');
     }
 
-    const jobData = req.body;
+    const { personaId, ...jobData } = req.body;
+
+    // Validate persona exists if provided
+    if (personaId) {
+      const persona = await personaRepository.findOne({
+        where: { id: personaId },
+        relations: ['user'],
+      });
+      if (!persona || persona.user.id !== userId) {
+        const data: ApiResponse = {
+          success: false,
+          message: 'Persona not found or not authorized',
+        };
+        res.status(400).json(data);
+        return;
+      }
+    }
 
     const job = jobRepository.create({
       ...jobData,
+      personaId: personaId || null,
       user,
+      dataUpdatedAt: new Date(),
+      statusUpdatedAt: emptyStatusUpdatedAt(),
     });
+    job.statusUpdatedAt.draft = job.dataUpdatedAt;
 
     await jobRepository.save(job);
-    const data: ApiResponse<JobPublic> = {
+
+    wsHub.emit(userId, 'job', 'create', job.id, jobToPublic(job), undefined, req.realtimeClientId);
+
+    const data: ApiResponse<{ id: string }> = {
       success: true,
       message: 'Job created successfully',
       data: {
@@ -40,10 +106,11 @@ class JobController {
 
   async update(req: AuthenticatedTypedRequest<UpdateJobInput>, res: Response) {
     const jobRepository = getJobRepository();
+    const personaRepository = getPersonaRepository();
 
     const userId = req.userId;
 
-    const { id, ...updateData } = req.body;
+    const { id, primaryResultId, personaId, ...updateData } = req.body;
 
     const job = await jobRepository.findOne({
       where: { id },
@@ -68,15 +135,78 @@ class JobController {
       return;
     }
 
+    // Handle personaId - validate and set
+    if (personaId !== undefined) {
+      if (personaId === null) {
+        job.personaId = null;
+      } else {
+        const persona = await personaRepository.findOne({
+          where: { id: personaId },
+          relations: ['user'],
+        });
+        if (!persona || persona.user.id !== userId) {
+          const data: ApiResponse = {
+            success: false,
+            message: 'Persona not found or not authorized',
+          };
+          res.status(400).json(data);
+          return;
+        }
+        job.personaId = personaId;
+      }
+    }
+
+    // Handle primaryResultId - fetch result and update persona
+    if (primaryResultId !== undefined) {
+      if (primaryResultId === null) {
+        job.primaryResultId = null;
+      } else {
+        const resultRepository = getResultRepository();
+        const result = await resultRepository.findOne({
+          where: { id: primaryResultId },
+          relations: ['resumeVersion', 'resumeVersion.resume', 'resumeVersion.resume.persona'],
+        });
+        if (!result) {
+          const data: ApiResponse = {
+            success: false,
+            message: 'Result not found',
+          };
+          res.status(400).json(data);
+          return;
+        }
+        job.primaryResultId = primaryResultId;
+        job.personaId = result.resumeVersion.resume.persona.id;
+      }
+    }
+
+    if (updateData.status !== undefined && updateData.status !== job.status) {
+      const current = (job.statusUpdatedAt as StatusUpdatedAtMap) || emptyStatusUpdatedAt();
+      job.statusUpdatedAt = recomputeStatusUpdatedAt(current, updateData.status);
+    }
+
     Object.assign(job, updateData);
+
+    const nonContentFields = [
+      'personaId',
+      'status',
+      'acceptanceLevel',
+      'favorite',
+      'primaryResultId',
+    ];
+    const updateKeys = Object.keys(updateData);
+    const hasContentFields = updateKeys.some((key) => !nonContentFields.includes(key));
+
+    if (hasContentFields) {
+      job.dataUpdatedAt = new Date();
+    }
 
     await jobRepository.save(job);
 
-    const data: ApiResponse<JobPublic> = {
+    wsHub.emit(userId, 'job', 'update', job.id, jobToPublic(job), undefined, req.realtimeClientId);
+
+    const data: ApiResponse<Job> = {
       success: true,
-      data: {
-        id: job.id,
-      },
+      data: job,
     };
     res.status(200).json(data);
   }
@@ -111,7 +241,14 @@ class JobController {
       return;
     }
 
+    if (req.clientAborted) {
+      logger.info({ id: job.id }, 'Delete job aborted by client; skipping DB write');
+      return;
+    }
+
     await jobRepository.remove(job);
+
+    wsHub.emit(userId, 'job', 'delete', id, undefined, undefined, req.realtimeClientId);
 
     const data: ApiResponse = {
       success: true,
@@ -121,14 +258,14 @@ class JobController {
     res.status(200).json(data);
   }
 
-  // Pagination, filtering by status/persona, searching by title/companyName/keySkills/tags,
+  // Pagination, filtering by status/persona/favorite, searching by title/companyName/keySkills/tags,
   // sorting by createdAt/updatedAt/acceptanceLevel, field selection
   async get(req: AuthenticatedTypedRequest<null>, res: Response) {
     const jobRepository = getJobRepository();
 
     const userId = req.userId;
 
-    const { page, limit, status, persona, search, sortBy, sortOrder, select, id } = (
+    const { page, limit, status, persona, search, sortBy, sortOrder, select, id, favorite } = (
       req as AuthenticatedTypedRequest<null> & { parsedQuery: GetJobsInfer }
     ).parsedQuery;
 
@@ -140,15 +277,19 @@ class JobController {
       'id',
       'title',
       'tags',
-      'persona',
+      'personaId',
       'status',
       'acceptanceLevel',
       'companyName',
       'metaData',
       'description',
       'requirements',
-      'highlights',
       'keySkills',
+      'favorite',
+      'notes',
+      'primaryResultId',
+      'dataUpdatedAt',
+      'statusUpdatedAt',
       'createdAt',
       'updatedAt',
     ];
@@ -166,18 +307,33 @@ class JobController {
     }
 
     if (status) {
-      queryBuilder.andWhere('job.status = :status', { status });
+      if (status === ('active' as JobStatus)) {
+        queryBuilder.andWhere('job.status NOT IN (:...archivedStatuses)', {
+          archivedStatuses: ARCHIVED_STATUSES,
+        });
+      } else if (status === ('archived' as JobStatus)) {
+        queryBuilder.andWhere('job.status IN (:...archivedStatuses)', {
+          archivedStatuses: ARCHIVED_STATUSES,
+        });
+      } else {
+        queryBuilder.andWhere('job.status = :status', { status });
+      }
     }
 
     if (persona) {
-      queryBuilder.andWhere('job.persona = :persona', { persona });
+      queryBuilder.andWhere('job.personaId = :persona', { persona });
     }
 
     if (search) {
+      const searchLower = search.toLowerCase();
       queryBuilder.andWhere(
-        '(job.title LIKE :search OR job.companyName LIKE :search OR job.keySkills LIKE :search OR job.tags LIKE :search)',
-        { search: `%${search}%` }
+        '(LOWER(job.title) LIKE :search OR LOWER(job.companyName) LIKE :search OR LOWER(job.keySkills) LIKE :search OR LOWER(job.tags) LIKE :search)',
+        { search: `%${searchLower}%` }
       );
+    }
+
+    if (favorite !== undefined) {
+      queryBuilder.andWhere('job.favorite = :favorite', { favorite });
     }
 
     queryBuilder.orderBy(`job.${sortBy}`, sortOrder);

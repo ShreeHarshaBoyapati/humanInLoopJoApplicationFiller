@@ -34,7 +34,6 @@ function hideButton(): void {
 }
 
 function updateVisibility(): void {
-  console.log('======got added 0==========');
   try {
     const url = new URL(window.location.href);
     if (isProbablyJobPage(url)) {
@@ -43,12 +42,8 @@ function updateVisibility(): void {
       // Determine if a specific job matches to show the ripple
       if (wrapper) {
         if (isJobDetectedOnPage(document, url)) {
-          console.log('======got added==========');
-
           wrapper.classList.add('jfpReady');
         } else {
-          console.log('=========got removed=========');
-
           wrapper.classList.remove('jfpReady');
         }
       }

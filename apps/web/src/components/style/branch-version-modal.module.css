@@ -1,0 +1,23 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 6);
+  width: 100%;
+}
+
+.apiError {
+  background-color: var(--black-800);
+  border: 1px solid var(--red-600);
+  border-radius: var(--border-radius);
+  color: var(--red-600);
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+  margin-top: calc(var(--spacing) * 2);
+  padding: calc(var(--spacing) * 3);
+}
+
+.footerContainer {
+  display: flex;
+  gap: calc(var(--spacing) * 3);
+  justify-content: flex-end;
+}

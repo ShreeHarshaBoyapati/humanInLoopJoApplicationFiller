@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { EnhancedStepper, EnhancedButton } from '@repo/ui';
 import { Step1JobDetails } from './step1-job-details';
 import { Step2SelectResume } from './step2-select-resume';
 import { Step3Analysis } from './step3-analysis';
 import type { Job, AnalysisResult } from '@repo/shared-types';
+import { useStore } from '../store';
 import styles from '../routes/style/job.module.css';
 import scrollStyles from '@repo/ui/scroll-bar.module.css';
 
@@ -28,11 +29,25 @@ export const AutofillWizard = ({
 
   // Step 2 selections
   const [selectedPersonaId, setSelectedPersonaId] = useState<string | null>(null);
-  const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null);
+  const [selectedVersionId, setSelectedVersionId] = useState<string | null>(null);
 
   // Step 3 analysis
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const analysisRequestIdRef = useRef<string | null>(null);
+
+  // Snackbar
+  const showSnackbar = useStore((state) => state.showSnackbar);
+
+  const cancelAnalysis = useCallback(() => {
+    if (analysisRequestIdRef.current) {
+      chrome.runtime.sendMessage({
+        action: 'CANCEL_ANALYZE_RESUME',
+        payload: { requestId: analysisRequestIdRef.current },
+      });
+      analysisRequestIdRef.current = null;
+    }
+  }, []);
 
   const handleSaveSuccess = (jobId: string) => {
     setSavedJobId(jobId);
@@ -65,8 +80,8 @@ export const AutofillWizard = ({
         setGlobalError(null);
       }
     } else if (activeStep === 1) {
-      if (!selectedPersonaId || !selectedResumeId) {
-        setGlobalError('Please select a persona and a resume to proceed.');
+      if (!selectedPersonaId || !selectedVersionId) {
+        setGlobalError('Please select a persona and a resume version to proceed.');
         return;
       }
 
@@ -74,13 +89,34 @@ export const AutofillWizard = ({
       setIsAnalyzing(true);
       setGlobalError(null);
       setActiveStep((prev) => prev + 1);
+      analysisRequestIdRef.current = `${savedJobId}-${selectedVersionId}-${Date.now()}`;
 
       chrome.runtime.sendMessage(
-        { action: 'ANALYZE_RESUME', payload: { jobId: savedJobId, resumeId: selectedResumeId } },
-        (response: { success: boolean; data?: AnalysisResult; error?: string }) => {
+        {
+          action: 'ANALYZE_RESUME',
+          payload: {
+            jobId: savedJobId,
+            resumeVersionId: selectedVersionId,
+            requestId: analysisRequestIdRef.current,
+          },
+        },
+        (response: {
+          success: boolean;
+          cancelled?: boolean;
+          data?: AnalysisResult;
+          message?: string;
+          error?: string;
+        }) => {
+          if (response?.cancelled) {
+            return;
+          }
           setIsAnalyzing(false);
+          analysisRequestIdRef.current = null;
           if (response?.success && response.data) {
             setAnalysisResult(response.data);
+            if (response.message) {
+              showSnackbar(response.message, { severity: 'success' });
+            }
           } else {
             setGlobalError(response?.error ?? 'Analysis failed. Please try again.');
           }
@@ -93,14 +129,22 @@ export const AutofillWizard = ({
     <Step2SelectResume
       savedJobId={savedJobId}
       selectedPersonaId={selectedPersonaId}
-      selectedResumeId={selectedResumeId}
-      onChange={(personaId, resumeId) => {
+      selectedVersionId={selectedVersionId}
+      onChange={(personaId, versionId) => {
         setSelectedPersonaId(personaId);
-        setSelectedResumeId(resumeId);
+        setSelectedVersionId(versionId);
         setGlobalError(null);
       }}
     />
   );
+
+  useEffect(() => {
+    return () => {
+      if (isAnalyzing && analysisRequestIdRef.current) {
+        cancelAnalysis();
+      }
+    };
+  }, [isAnalyzing, cancelAnalysis]);
 
   const renderStep3Content = () => (
     <Step3Analysis result={analysisResult} isLoading={isAnalyzing} />
@@ -137,7 +181,7 @@ export const AutofillWizard = ({
                 colorTheme="primary"
                 onClick={handleSaveAndProceed}
                 disabled={
-                  activeStep === 0 ? step1.loading : !selectedPersonaId || !selectedResumeId
+                  activeStep === 0 ? step1.loading : !selectedPersonaId || !selectedVersionId
                 }
                 customProps={{ props: { sx: { width: 'fit-content', maxWidth: 'fit-content' } } }}
               />

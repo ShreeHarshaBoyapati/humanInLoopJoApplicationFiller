@@ -1,0 +1,161 @@
+.card {
+  align-items: stretch;
+  background-color: var(--black-700);
+  border: 1px solid var(--grey-700);
+  border-radius: var(--border-radius);
+  display: flex;
+  flex-direction: row;
+  gap: calc(var(--spacing) * 3);
+  padding: calc(var(--spacing) * 3);
+  position: relative;
+  transition: border-color 0.2s ease;
+}
+
+.cardCompleted {
+  background-color: var(--black-800);
+  box-shadow: inset 3px 0 0 0 var(--green-400);
+}
+
+.card:hover {
+  border-color: var(--blue-500);
+}
+
+.cardCompleted:hover {
+  border-color: var(--green-450);
+}
+
+.radioSection {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  justify-content: center;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 1);
+  min-width: 0;
+}
+
+.titleRow {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--spacing) * 2);
+}
+
+.titleText {
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.titleTextCompleted {
+  color: var(--white-700);
+  text-decoration: line-through;
+}
+
+.tagChip {
+  background-color: var(--blue-700);
+  border-radius: calc(var(--spacing) * 1);
+  color: var(--white-900);
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  padding: calc(var(--spacing) * 0.5) calc(var(--spacing) * 2);
+}
+
+.tagChipCompleted {
+  background-color: var(--grey-700);
+  color: var(--white-700);
+}
+
+.metaLine {
+  color: var(--white-700);
+  font-family: var(--secondary-font);
+  font-size: 0.75rem;
+}
+
+.metaLineCompleted {
+  color: var(--white-700);
+  opacity: 0.6;
+}
+
+.jobLine {
+  color: var(--blue-400);
+  font-family: var(--secondary-font);
+  font-size: 0.75rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.descriptionWrapper {
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  font-size: 0.75rem;
+  margin-top: calc(var(--spacing) * 1);
+  max-height: 4.5em;
+  overflow: hidden;
+  position: relative;
+}
+
+.descriptionWrapperCompleted {
+  color: var(--white-700);
+  opacity: 0.6;
+}
+
+.descriptionWrapper:hover {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.actions {
+  align-items: center;
+  bottom: calc(var(--spacing) * 2);
+  display: flex;
+  gap: calc(var(--spacing) * 1);
+  justify-content: flex-end;
+  opacity: 0;
+  position: absolute;
+  right: calc(var(--spacing) * 3);
+  transition: opacity 0.15s ease;
+}
+
+.card:hover .actions,
+.card:focus-within .actions {
+  opacity: 1;
+}
+
+.actionButton {
+  align-items: center;
+  background-color: var(--black-800);
+  border: 1px solid var(--grey-700);
+  border-radius: var(--border-radius);
+  color: var(--white-700);
+  cursor: pointer;
+  display: flex;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
+}
+
+.actionButton:hover {
+  background-color: var(--grey-700);
+  color: var(--white-900);
+}
+
+.actionButton.delete:hover {
+  border-color: var(--red-600);
+  color: var(--red-600);
+}
+
+.actionButton:focus-visible,
+.actionButton:focus {
+  outline: none;
+}

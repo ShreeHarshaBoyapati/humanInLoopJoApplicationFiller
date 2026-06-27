@@ -1,13 +1,12 @@
 import { GetJobParams, Job, JobPublic } from './job';
+import { GetResumeParams } from './resume';
 import {
-  GetResumeParams,
-  CreateResumeParams,
-  UpdateResumeParams,
-  DeleteResumeParams,
-  GetResumeByIdParams,
-  SetActiveResumeParams,
-  FileDataPayload,
-} from './resume';
+  GetResumeVersionsParams,
+  SetActiveVersionParams,
+  GetVersionParsedDataParams,
+} from './resume-version';
+import type { StoredAuth } from './auth-types';
+import type { ResourceChangedEvent } from './realtime';
 
 /**
  * Chrome extension message contracts.
@@ -18,12 +17,16 @@ import {
  */
 export type ExtensionMessage =
   | { action: 'CHECK_AUTH' }
+  | { action: 'CHECK_AUTH_WITH_TIMESTAMP' }
+  | { action: 'SEND_CODE'; payload: { email: string } }
+  | { action: 'VERIFY_CODE'; payload: { email: string; code: string } }
   | { action: 'LOGIN'; payload: { email: string; password: string } }
-  | { action: 'NewUser'; payload: { email: string; password: string } }
+  | { action: 'GOOGLE_LOGIN_INTERACTIVE' }
   | { action: 'LOGOUT' }
   | { action: 'CREATE_JOB'; payload: Omit<Job, 'id'> }
   | { action: 'UPDATE_JOB'; payload: Job }
-  | { action: 'DELETE_JOB'; payload: JobPublic }
+  | { action: 'DELETE_JOB'; payload: JobPublic & { requestId?: string } }
+  | { action: 'CANCEL_DELETE_JOB'; payload: { requestId: string } }
   | { action: 'GET_JOBS'; payload: GetJobParams }
   | { action: 'OPEN_SIDE_PANEL' }
   | { action: 'LOGOUT_TRIGGERED'; payload?: { message?: string } }
@@ -40,24 +43,36 @@ export type ExtensionMessage =
         model: string;
       };
     }
-  | { action: 'GET_CONFIGURED_PROVIDERS' }
+  | {
+      action: 'GET_CONFIGURED_PROVIDERS';
+      payload?: { page?: number; limit?: number; search?: string };
+    }
   | { action: 'DELETE_PROVIDER'; payload: { id: string } }
   | { action: 'DECRYPT_API_KEY'; payload: { encryptedKey: string } }
   | { action: 'SELECT_PROVIDER'; payload: { id: string } }
-  | { action: 'CREATE_PERSONA'; payload: { title: string; keywords?: string[] } }
-  | { action: 'UPDATE_PERSONA'; payload: { id: string; title?: string; keywords?: string[] } }
-  | { action: 'DELETE_PERSONA'; payload: { id: string } }
-  | { action: 'GET_ACTIVE_PERSONA' }
-  | { action: 'GET_PERSONAS' }
-  | { action: 'SELECT_PERSONA'; payload: { id: string } }
+  | {
+      action: 'GET_PERSONAS';
+      payload?: { page?: number; limit?: number; search?: string };
+    }
   | { action: 'GET_CURRENT_USER' }
-  | { action: 'GET_RESUMES'; payload?: GetResumeParams }
-  | { action: 'GET_ACTIVE_RESUME'; payload?: { personaId: string } }
-  | { action: 'CREATE_RESUME'; payload: CreateResumeParams }
-  | { action: 'UPDATE_RESUME'; payload: UpdateResumeParams }
-  | { action: 'DELETE_RESUME'; payload: DeleteResumeParams }
-  | { action: 'GET_RESUME_BY_ID'; payload: GetResumeByIdParams }
-  | { action: 'PARSE_FILE_RESUME'; payload: { file: FileDataPayload } }
-  | { action: 'ANALYZE_RESUME'; payload: { jobId: string; resumeId: string } }
-  | { action: 'SET_ACTIVE_RESUME'; payload: SetActiveResumeParams }
-  | { action: 'GET_PARSED_RESUME' };
+  | {
+      action: 'GET_RESUMES';
+      payload?: GetResumeParams & { page?: number; limit?: number; search?: string };
+    }
+  | {
+      action: 'ANALYZE_RESUME';
+      payload: { jobId: string; resumeVersionId: string; requestId?: string };
+    }
+  | { action: 'CANCEL_ANALYZE_RESUME'; payload: { requestId: string } }
+  | { action: 'GET_RESUME_VERSIONS'; payload?: GetResumeVersionsParams }
+  | { action: 'SET_ACTIVE_VERSION'; payload: SetActiveVersionParams }
+  | { action: 'GET_VERSION_PARSED_DATA'; payload: GetVersionParsedDataParams }
+  | { action: 'GET_ACTIVE_SELECTION' }
+  | { action: 'SYNC_AUTH_FROM_WEB'; payload: StoredAuth }
+  | { action: 'AUTH_STATE_CHANGED'; payload: StoredAuth | null }
+  | { action: 'AUTH_STORAGE_SET'; payload: StoredAuth }
+  | { action: 'AUTH_STORAGE_GET' }
+  | { action: 'AUTH_STORAGE_REMOVE' }
+  | { action: 'DASHBOARD_FETCH_ONBOARDING' }
+  | { action: 'DASHBOARD_FETCH_SUMMARY'; payload?: { range?: 'month' | 'threeMonths' | 'all' } }
+  | { action: 'RESOURCE_CHANGED'; payload: ResourceChangedEvent };

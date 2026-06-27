@@ -1,0 +1,121 @@
+@import url('@repo/ui/scroll-bar.module.css');
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 4);
+  height: 100%;
+}
+
+.buttonGroupContainer {
+  display: flex;
+  gap: calc(var(--spacing) * 3);
+  justify-content: flex-end;
+  margin-top: calc(var(--spacing) * 4);
+  padding-right: 5px;
+}
+
+.viewContainer {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 4);
+  overflow-y: auto;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: calc(var(--spacing) * 2);
+}
+
+.fieldLabel {
+  color: var(--white-700);
+  font-family: var(--secondary-font);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.fieldValue {
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  font-size: var(--font-size-base);
+}
+
+.statusBadge {
+  background-color: var(--blue-700);
+  border-radius: var(--border-radius);
+  color: var(--white-900);
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: calc(var(--spacing) * 1) calc(var(--spacing) * 3);
+  text-transform: capitalize;
+}
+
+.chipsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--spacing) * 2);
+}
+
+.textContent {
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  overflow-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.editContainer {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 4);
+}
+
+.row {
+  display: flex;
+  gap: calc(var(--spacing) * 3);
+  width: 100%;
+}
+
+.field {
+  flex: 1;
+  min-width: 0;
+}
+
+.field2 {
+  flex: 0.3;
+  min-width: 0;
+}
+
+.field3 {
+  flex: 0.7;
+  min-width: 0;
+}
+
+.addButtonContainer {
+  margin-top: 1.75rem;
+}
+
+.emptyState {
+  color: var(--white-700);
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+  font-style: italic;
+}
+
+.linkValue {
+  color: var(--blue-400);
+  font-family: var(--secondary-font);
+  font-size: var(--font-size-base);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.linkValue:hover {
+  color: var(--blue-500);
+  text-decoration: underline;
+}

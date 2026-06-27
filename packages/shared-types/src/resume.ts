@@ -64,15 +64,64 @@ export interface ResumeData {
 export interface ResumeMetadata {
   id: string;
   fileName: string;
-  fileSize: number;
-  keywords: string[];
   active: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+  personaId?: string;
+}
+
+export interface ResumeWithVersions extends ResumeMetadata {
+  versions: ResumeVersionMetadata[];
+  activeVersion?: ResumeVersionMetadata;
+}
+
+export interface ResumeVersionMetadata {
+  id: string;
+  fileName: string;
+  fileSize: number;
+  active: boolean;
+  versionName: string;
+  comment: string | null;
+  keywords: string[];
+  dataUpdatedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  resumeId?: string;
+  personaId?: string;
+}
+
+export interface ResumeVersionWithFile {
+  id: string;
+  fileName: string;
+  fileSize: number;
+  active: boolean;
+  versionName: string;
+  comment: string | null;
+  keywords: string[];
+  dataUpdatedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface ResumeList {
   resumes: ResumeMetadata[];
+}
+
+export interface PaginatedResumeListItem {
+  id: string;
+  fileName: string;
+  active: boolean;
+  versionsCount: number;
+  activeVersionFileSize: number | null;
+  updatedAt: Date;
+}
+
+export interface PaginatedResumeResponse {
+  items: PaginatedResumeListItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }
 
 export interface GetResumeParams {
@@ -89,34 +138,118 @@ export interface FileDataPayload {
 export interface CreateResumeParams {
   personaId: string;
   file: FileDataPayload;
+  fileName?: string;
   keywords?: string[];
   parsedData?: ResumeData;
+  comment?: string;
 }
 
 export interface UpdateResumeParams {
   id: string;
-  file?: FileDataPayload;
-  keywords?: string[];
+  fileName: string;
 }
 
 export interface DeleteResumeParams {
   id: string;
+  personaId: string;
 }
 
 export interface GetResumeByIdParams {
   id: string;
 }
 
-export interface SetActiveResumeParams {
-  id: string;
-}
-
 export interface ResumeFull {
   id: string;
   fileName: string;
-  fileSize: number;
-  file: Blob;
-  keywords: string[];
+  active: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface CreateResumeVersionParams {
+  resumeId: string;
+  file: FileDataPayload;
+  keywords?: string[];
+  parsedData?: ResumeData;
+  comment?: string;
+}
+
+export interface UpdateResumeVersionParams {
+  resumeId: string;
+  versionId: string;
+  keywords?: string[];
+  parsedData?: ResumeData;
+  comment?: string;
+}
+
+export interface DeleteResumeVersionParams {
+  resumeId: string;
+  versionId: string;
+}
+
+export interface GetResumeVersionByIdParams {
+  resumeId: string;
+  versionId: string;
+}
+
+export interface SetActiveResumeVersionParams {
+  resumeId: string;
+  versionId: string;
+}
+
+export interface BranchResumeParams {
+  resumeId: string;
+  versionId: string;
+  newFileName: string;
+}
+
+export interface CompareVersionsParams {
+  resumeId: string;
+  versionA: string;
+  versionB: string;
+}
+
+// Paginated version list response
+export interface PaginatedVersionListItem {
+  id: string;
+  fileName: string;
+  fileSize: number;
+  active: boolean;
+  versionName: string;
+  comment: string | null;
+  keywords: string[];
+  dataUpdatedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface PaginatedVersionResponse {
+  items: PaginatedVersionListItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
+// Compare versions response
+export interface CompareVersionData {
+  fileName: string;
+  fileSize: number;
+  comment: string | null;
+  updatedAt: Date;
+  parsedData: ResumeData | null;
+}
+
+export interface CompareVersionsResponse {
+  versionA: CompareVersionData;
+  versionB: CompareVersionData;
+}
+
+// View document response (for opening files in new tab)
+export interface ViewDocumentResponse {
+  file?: string | number[]; // base64 encoded string OR number array (Buffer)
+  text?: string; // for txt files
+  fileName: string;
+  fileSize: number;
+  contentType: string;
 }

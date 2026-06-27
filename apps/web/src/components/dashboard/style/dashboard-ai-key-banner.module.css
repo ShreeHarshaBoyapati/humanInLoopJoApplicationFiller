@@ -1,0 +1,34 @@
+.banner {
+  align-items: center;
+  background-color: var(--blue-700);
+  border: 1px solid var(--blue-500);
+  border-radius: var(--border-radius);
+  display: flex;
+  justify-content: space-between;
+  padding: calc(var(--spacing) * 4);
+}
+
+.message {
+  align-items: center;
+  color: var(--white-900);
+  display: flex;
+  font-size: 0.875rem;
+  gap: calc(var(--spacing) * 2);
+}
+
+.link {
+  background: transparent;
+  border: none;
+  color: var(--blue-500);
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: 0;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.icon {
+  font-size: 1.25rem;
+}

@@ -7,15 +7,14 @@ import { ApiResponse } from '@repo/shared-types';
 const CreateJobSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   tags: z.array(z.string()).default([]),
-  persona: z.string().default('default'),
-  status: z.enum(['draft', 'active', 'archived']).default('draft'),
+  personaId: z.string().nullable().optional(),
+  status: z.enum(['draft', 'applied', 'interview', 'offer', 'rejected']).default('draft'),
   acceptanceLevel: z.number().int().min(0).max(100).default(0),
   companyName: z.string().default(''),
   notes: z.string().default(''),
   requirements: z.string().default(''),
   metaData: z.record(z.string(), z.unknown()).default({}),
   description: z.string().default(''),
-  highlights: z.record(z.string(), z.unknown()).default({}),
   keySkills: z.array(z.string()).default([]),
 });
 
@@ -24,16 +23,17 @@ const UpdateJobSchema = z.object({
   id: z.uuidv4('Invalid job ID'),
   title: z.string().min(1, 'Title is required').optional(),
   tags: z.array(z.string()).optional(),
-  persona: z.string().optional(),
-  status: z.enum(['draft', 'active', 'archived']).optional(),
+  personaId: z.string().nullable().optional(),
+  status: z.enum(['draft', 'applied', 'interview', 'offer', 'rejected']).optional(),
   acceptanceLevel: z.number().int().min(0).max(100).optional(),
   companyName: z.string().optional(),
   notes: z.string().optional(),
   requirements: z.string().optional(),
   metaData: z.record(z.string(), z.unknown()).optional(),
   description: z.string().optional(),
-  highlights: z.record(z.string(), z.unknown()).optional(),
   keySkills: z.array(z.string()).optional(),
+  favorite: z.boolean().optional(),
+  primaryResultId: z.string().nullable().optional(),
 });
 
 // Schema for deleting a job
@@ -46,7 +46,7 @@ const validJobFields = [
   'id',
   'title',
   'tags',
-  'persona',
+  'personaId',
   'status',
   'acceptanceLevel',
   'companyName',
@@ -54,8 +54,11 @@ const validJobFields = [
   'requirements',
   'metaData',
   'description',
-  'highlights',
   'keySkills',
+  'favorite',
+  'primaryResultId',
+  'dataUpdatedAt',
+  'statusUpdatedAt',
   'createdAt',
   'updatedAt',
 ] as const;
@@ -68,8 +71,11 @@ const GetJobsSchema = z.object({
 
   // Filtering
   id: z.uuid('Invalid job ID').optional(),
-  status: z.enum(['draft', 'active', 'archived']).optional(),
+  status: z
+    .enum(['draft', 'applied', 'interview', 'offer', 'rejected', 'active', 'archived'])
+    .optional(),
   persona: z.string().optional(),
+  favorite: z.coerce.boolean().optional(),
 
   // Searching
   search: z.string().optional(),

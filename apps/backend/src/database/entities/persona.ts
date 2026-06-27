@@ -15,7 +15,7 @@ export default class Persona {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column('varchar', { unique: true })
+  @Column('varchar')
   title!: string;
 
   @Column('simple-array', { default: [] })
@@ -23,6 +23,9 @@ export default class Persona {
 
   @Column('boolean', { default: false })
   active!: boolean;
+
+  @Column('boolean', { default: false })
+  isDeleted!: boolean;
 
   @ManyToOne(() => User, (user) => user.personas, { onDelete: 'CASCADE' })
   user!: User;

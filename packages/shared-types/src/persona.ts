@@ -7,6 +7,7 @@ export interface Persona {
   title: string;
   keywords: string[];
   active: boolean;
+  resumesCount?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -18,6 +19,14 @@ export interface PersonaPublic {
 export interface PersonaList {
   personas: Persona[];
   total: number;
+}
+
+export interface PaginatedPersonasResponse {
+  items: Persona[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }
 
 export interface CreatePersonaInput {

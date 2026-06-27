@@ -4,26 +4,40 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port 3000",
+    "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint . --max-warnings 0",
     "check-types": "tsc --noEmit",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "@mui/icons-material": "^7.3.8",
+    "@mui/material": "^7.3.8",
     "@repo/assets": "workspace:^",
     "@repo/ui": "workspace:*",
+    "@repo/utils": "workspace:*",
+    "@tanstack/react-query": "^5.62.0",
+    "@tanstack/react-query-devtools": "^5.99.2",
+    "@tanstack/react-router": "^1.159.14",
+    "axios": "^1.7.9",
+    "dayjs": "^1.11.13",
     "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "react-calendar": "6.0.1",
+    "react-dom": "^19.2.0",
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@repo/eslint-config": "workspace:*",
+    "@repo/shared-types": "workspace:^",
     "@repo/typescript-config": "workspace:*",
+    "@tanstack/router-plugin": "^1.159.14",
     "@types/node": "^22.15.3",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
     "eslint": "^9.39.1",
+    "monaco-editor": "^0.55.1",
     "typescript": "5.9.2",
     "vite": "^7.2.4"
   }

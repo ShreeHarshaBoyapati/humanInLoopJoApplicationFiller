@@ -1,0 +1,20 @@
+.header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  max-width: 1000px;
+  width: 80%;
+}
+
+.title {
+  color: var(--white-900);
+  font-family: var(--heading-font);
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+@media (width <=1024px) {
+  .header {
+    width: 100%;
+  }
+}

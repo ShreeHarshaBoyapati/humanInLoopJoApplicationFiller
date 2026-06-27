@@ -1,38 +1,38 @@
 import type { Request, Response, NextFunction, AuthenticatedTypedRequest } from '../types/index.js';
 import { verifyToken } from '../utils/auth.js';
 import { getUserRepository } from '../database/repositories/index.js';
+import { trackClientAbort } from './abort-detection.js';
 import * as z from 'zod';
-import { ApiResponse } from '@repo/shared-types';
+import { ApiResponse, TOKEN_COOKIE_NAME } from '@repo/shared-types';
 import { flattenZodErrorToString } from '../utils/validations.js';
+import logger from '../utils/logger.js';
 
-const UserObj = z.object({
+const SendCodeObj = z.object({
   email: z.email(),
-  password: z
-    .string()
-    .min(8, 'Password must be at least 8 characters long')
-    .regex(/\d/, 'Password must contain at least 1 number')
-    .regex(
-      /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/,
-      'Password must contain at least 1 special character'
-    ),
 });
 
-const UpdateUserObj = z
-  .object({
-    email: z.email().optional(),
-    password: z
-      .string()
-      .min(8, 'Password must be at least 8 characters long')
-      .regex(/\d/, 'Password must contain at least 1 number')
-      .regex(
-        /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/,
-        'Password must contain at least 1 special character'
-      )
-      .optional(),
-  })
-  .refine((data) => data.email || data.password, {
-    message: 'At least one of email or password must be provided',
-  });
+const VerifyCodeObj = z.object({
+  email: z.email(),
+  code: z
+    .string()
+    .length(6, 'Code must be 6 digits')
+    .regex(/^\d+$/, 'Code must contain only numbers'),
+});
+
+const OAuthCallbackObj = z.object({
+  code: z.string().min(1, 'Authorization code is required').optional(),
+  state: z.string().optional(),
+  error: z.string().optional(),
+});
+
+const ExtensionOAuthCallbackObj = z.object({
+  accessToken: z.string().min(1, 'Access token is required').optional(),
+  error: z.string().optional(),
+});
+
+const UpdateUserObj = z.object({
+  email: z.email().optional(),
+});
 
 export async function authMiddleware(
   req: Request,
@@ -40,11 +40,12 @@ export async function authMiddleware(
   next: NextFunction
 ): Promise<void> {
   try {
-    let token = req.cookies?.token;
+    let token: string | undefined;
 
-    // Fallback to Authorization header if no cookie (used by Extension)
-    if (!token && req.headers.authorization?.startsWith('Bearer ')) {
+    if (req.headers.authorization?.startsWith('Bearer ')) {
       token = req.headers.authorization.split(' ')[1];
+    } else {
+      token = req.cookies?.[TOKEN_COOKIE_NAME] || req.cookies?.token;
     }
 
     if (!token) {
@@ -62,16 +63,21 @@ export async function authMiddleware(
       where: { id: decoded.userId },
     });
 
-    if (!user || user.sessionId !== decoded.sessionId) {
+    if (!user) {
       res.status(401).json({
         success: false,
         message: 'Session expired or invalid',
       });
       return;
     }
-
     (req as AuthenticatedTypedRequest<unknown>).userId = decoded.userId;
     (req as AuthenticatedTypedRequest<unknown>).sessionId = decoded.sessionId;
+    (req as AuthenticatedTypedRequest<unknown>).realtimeClientId =
+      typeof req.headers['x-realtime-client-id'] === 'string'
+        ? req.headers['x-realtime-client-id']
+        : undefined;
+
+    trackClientAbort(req, res);
 
     next();
   } catch (error) {
@@ -91,10 +97,10 @@ export async function authMiddleware(
     res.status(401).json(data);
   }
 }
-export type RegisterInputType = z.infer<typeof UserObj>;
-export function registerInputValidation(req: Request, res: Response, next: NextFunction) {
+export type SendCodeInputType = z.infer<typeof SendCodeObj>;
+export function sendCodeValidation(req: Request, res: Response, next: NextFunction) {
   try {
-    req.body = UserObj.parse(req.body);
+    req.body = SendCodeObj.parse(req.body);
     next();
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -114,15 +120,67 @@ export function registerInputValidation(req: Request, res: Response, next: NextF
   }
 }
 
-export type LoginInputType = z.infer<typeof UserObj>;
-export function loginInputValidation(req: Request, res: Response, next: NextFunction) {
+export type VerifyCodeInputType = z.infer<typeof VerifyCodeObj>;
+export function verifyCodeValidation(req: Request, res: Response, next: NextFunction) {
   try {
-    req.body = UserObj.parse(req.body);
+    req.body = VerifyCodeObj.parse(req.body);
     next();
-  } catch {
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const data: ApiResponse = {
+        success: false,
+        message: flattenZodErrorToString(error),
+      };
+      res.status(400).json(data);
+      return;
+    }
     const data: ApiResponse = {
       success: false,
-      message: 'Invalid email or password',
+      message: 'Invalid code',
+    };
+    res.status(400).json(data);
+    return;
+  }
+}
+
+export type OAuthCallbackInputType = z.infer<typeof OAuthCallbackObj>;
+export function oauthCallbackValidation(req: Request, res: Response, next: NextFunction) {
+  try {
+    // Google sends OAuth callback as GET with query params, not POST with body
+    const data = req.method === 'GET' ? req.query : req.body;
+    req.body = OAuthCallbackObj.parse(data);
+    next();
+  } catch (error) {
+    logger.error({ err: error }, 'Invalid OAuth callback data');
+    try {
+      const { state } = req.body;
+      if (state) {
+        const callbackUrl = new URL(decodeURIComponent(state));
+        callbackUrl.searchParams.set('error', 'oauth_failed');
+        res.redirect(callbackUrl.toString());
+        return;
+      }
+    } catch {
+      const data: ApiResponse = {
+        success: false,
+        message: 'Invalid OAuth callback',
+      };
+      res.status(400).json(data);
+      return;
+    }
+  }
+}
+
+export type ExtensionOAuthCallbackInputType = z.infer<typeof ExtensionOAuthCallbackObj>;
+export function extensionOAuthCallbackValidation(req: Request, res: Response, next: NextFunction) {
+  try {
+    req.body = ExtensionOAuthCallbackObj.parse(req.body);
+    next();
+  } catch (error) {
+    logger.error({ err: error }, 'Invalid extension OAuth callback data');
+    const data: ApiResponse = {
+      success: false,
+      message: 'Invalid extension OAuth callback',
     };
     res.status(400).json(data);
     return;

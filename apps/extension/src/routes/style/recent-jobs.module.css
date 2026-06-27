@@ -139,3 +139,10 @@
   font-size: 0.875rem;
   text-align: center;
 }
+
+.loading {
+  color: var(--white-900);
+  font-size: 0.875rem;
+  padding: 1rem;
+  text-align: center;
+}

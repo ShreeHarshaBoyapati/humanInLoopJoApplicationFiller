@@ -1,17 +1,18 @@
-import { createFileRoute, useNavigate, ErrorComponent } from '@tanstack/react-router';
+import { createFileRoute, useNavigate, useRouter, ErrorComponent } from '@tanstack/react-router';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import type { Job, JobList } from '@repo/shared-types';
 import styleConstants from '@repo/ui/constants/style-constants.js';
 import Step1JobDetails from '../components/step1-job-details';
 import styles from '../routes/style/job.module.css';
 import scrollStyles from '@repo/ui/scroll-bar.module.css';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { EnhancedButton } from '@repo/ui';
 
 export interface JobSearch {
   jobId?: string;
   mode?: 'autofill' | 'update';
   step?: number;
+  from?: '/' | '/recent-jobs';
 }
 
 type JobFetchList =
@@ -27,8 +28,12 @@ type JobFetchList =
 export const Route = createFileRoute('/job')({
   shouldReload: true,
   validateSearch: (search: Record<string, unknown>): JobSearch => {
+    const rawFrom = search.from;
+    const from: JobSearch['from'] =
+      rawFrom === '/' || rawFrom === '/recent-jobs' ? rawFrom : undefined;
     return {
       jobId: search.jobId as string | undefined,
+      from,
     };
   },
   loaderDeps: ({ search: { jobId } }) => ({ jobId }),
@@ -70,19 +75,44 @@ export const Route = createFileRoute('/job')({
 
 function JobComponent() {
   const navigate = useNavigate();
+  const router = useRouter();
   const { jobData, isEditing, error: loaderError } = Route.useLoaderData();
+  const { from } = Route.useSearch();
   const [savedJobId, setSavedJobId] = useState<string | null>(jobData?.id || null);
+
+  useEffect(() => {
+    if (typeof chrome === 'undefined' || !chrome.runtime?.onMessage) return;
+
+    const jobId = jobData?.id;
+    if (!jobId) return;
+
+    const handle = (message: {
+      action?: string;
+      payload?: { resource?: string; action?: string; id?: string };
+    }) => {
+      if (message.action !== 'RESOURCE_CHANGED') return;
+      const payload = message.payload;
+      if (!payload || payload.resource !== 'job' || payload.id !== jobId) return;
+      void router.invalidate();
+    };
+
+    chrome.runtime.onMessage.addListener(handle);
+    return () => {
+      chrome.runtime.onMessage.removeListener(handle);
+    };
+  }, [jobData?.id, router]);
 
   const handleUpdate = async () => {
     const result = await step1.submit();
     if (result.success && result.jobId) {
       setSavedJobId(result.jobId);
+      await router.invalidate();
       navigate({ to: '/recent-jobs' });
     }
   };
 
   const onCancel = () => {
-    navigate({ to: '/recent-jobs' });
+    navigate({ to: from ?? '/recent-jobs' });
   };
 
   if (loaderError) {

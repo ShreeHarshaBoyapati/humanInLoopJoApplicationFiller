@@ -1,0 +1,13 @@
+@import url('./big-calendar-panel.module.css');
+
+.calendarWrapper {
+  flex: 0 0 auto;
+}
+
+.eventsSection {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 2);
+  min-height: 0;
+}

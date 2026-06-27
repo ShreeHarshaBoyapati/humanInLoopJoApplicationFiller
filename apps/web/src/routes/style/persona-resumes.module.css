@@ -1,0 +1,304 @@
+.container {
+  align-items: center;
+  background-color: var(--black-700);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 6);
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  padding: calc(var(--spacing) * 8);
+  width: 100%;
+}
+
+.header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  max-width: 1000px;
+  width: 80%;
+}
+
+.title {
+  color: var(--white-900);
+  font-family: var(--heading-font);
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.navigation {
+  align-items: center;
+  display: flex;
+  gap: calc(var(--spacing) * 2);
+  max-width: 1000px;
+  width: 80%;
+}
+
+.navText {
+  color: var(--white-700);
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+}
+
+.searchBox {
+  display: flex;
+  justify-content: flex-start;
+  max-width: 1000px;
+  width: 80%;
+}
+
+.searchContainer {
+  max-width: 300px;
+  width: 100%;
+}
+
+.scrollContainer {
+  align-items: stretch;
+  box-sizing: border-box;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  max-width: 1000px;
+  min-height: 0;
+  overflow: hidden auto;
+  padding-bottom: calc(var(--spacing) * 4);
+  width: 80%;
+}
+
+.personaList {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 4);
+  width: 100%;
+}
+
+.personaCard {
+  align-items: stretch;
+  background-color: var(--black-700);
+  border: 1px solid var(--grey-700);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  display: flex;
+  flex-direction: row;
+  gap: calc(var(--spacing) * 4);
+  min-height: 80px;
+  padding: calc(var(--spacing) * 4);
+  transition: border-color 0.2s ease;
+  width: 100%;
+}
+
+.personaCard:hover {
+  border-color: var(--blue-500);
+}
+
+.personaCard.selected {
+  border-color: var(--blue-500);
+}
+
+/* Section 1: Radio button (full height) */
+.radioSection {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  justify-content: center;
+}
+
+/* Section 2: Data with icon, title, resumes, keywords */
+.dataSection {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  gap: calc(var(--spacing) * 3);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.personaIcon {
+  align-items: center;
+  background-color: var(--blue-500);
+  border-radius: 50%;
+  color: var(--white-900);
+  display: flex;
+  flex-shrink: 0;
+  font-family: var(--heading-font);
+  font-size: 1rem;
+  font-weight: 600;
+  height: 40px;
+  justify-content: center;
+  width: 40px;
+}
+
+.personaInfo {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 1);
+  min-width: 0;
+}
+
+.personaNameRow {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--spacing) * 2);
+}
+
+.personaName {
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  font-size: 1rem;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.personaResumesCount {
+  color: var(--white-700);
+  flex-shrink: 0;
+  font-family: var(--secondary-font);
+  font-size: 0.75rem;
+}
+
+.personaSummary {
+  color: var(--white-700);
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Section 3: Action buttons */
+.actionsSection {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  gap: calc(var(--spacing) * 2);
+}
+
+/* Tablet and smaller screens - full width */
+@media (width <=1024px) {
+  .header {
+    width: 100%;
+  }
+
+  .navigation {
+    width: 100%;
+  }
+
+  .searchBox {
+    width: 100%;
+  }
+
+  .scrollContainer {
+    width: 100%;
+  }
+}
+
+/* Mobile responsive styles */
+@media (width <=768px) {
+  .personaCard {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: calc(var(--spacing) * 3);
+  }
+
+  .radioSection {
+    display: none;
+  }
+
+  .dataSection {
+    width: 100%;
+  }
+
+  .actionsSection {
+    border-top: 1px solid var(--grey-700);
+    justify-content: flex-end;
+    padding-top: calc(var(--spacing) * 2);
+    width: 100%;
+  }
+
+  .personaNameRow {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: calc(var(--spacing) * 1);
+  }
+
+  .personaSummary {
+    -webkit-box-orient: vertical;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    white-space: normal;
+  }
+}
+
+/* Desktop hover styles - action buttons show on hover */
+@media (width >=769px) {
+  .actionsSection {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .personaCard:hover .actionsSection {
+    opacity: 1;
+  }
+}
+
+.loadingText {
+  color: var(--white-700);
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+  padding: calc(var(--spacing) * 8);
+  text-align: center;
+}
+
+.emptyText {
+  color: var(--white-700);
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+  grid-column: 1 / -1;
+  padding: calc(var(--spacing) * 8);
+  text-align: center;
+}
+
+.sentinel {
+  height: 1px;
+  width: 100%;
+}
+
+.actionButton {
+  align-items: center;
+  background-color: var(--black-700);
+  border: 1px solid var(--grey-700);
+  border-radius: var(--border-radius);
+  color: var(--white-700);
+  cursor: pointer;
+  display: flex;
+  height: 36px;
+  justify-content: center;
+  transition: all 0.2s ease;
+  width: 36px;
+}
+
+.actionButton:hover {
+  background-color: var(--grey-700);
+  color: var(--white-900);
+}
+
+.actionButton.delete:hover {
+  border-color: var(--red-600);
+  color: var(--red-600);
+}
+
+.actionButton.arrow {
+  border-color: var(--blue-500);
+  color: var(--blue-500);
+}
+
+.actionButton.arrow:hover {
+  background-color: var(--blue-500);
+  color: var(--white-900);
+}

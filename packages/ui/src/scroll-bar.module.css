@@ -17,6 +17,10 @@
   border-radius: 8px;
 }
 
+.scrollbarVerticalContainer:global(::-webkit-scrollbar-corner) {
+  background-color: transparent;
+}
+
 .scrollbarVerticalContainer:hover {
   scrollbar-width: auto;
 }
@@ -52,6 +56,10 @@
 .scrollbarHorizontalContainer:global(::-webkit-scrollbar-thumb) {
   background-color: transparent !important;
   border-radius: 8px;
+}
+
+.scrollbarHorizontalContainer:global(::-webkit-scrollbar-corner) {
+  background-color: transparent;
 }
 
 .scrollbarHorizontalContainer:hover {
@@ -91,6 +99,10 @@
   border-radius: 8px;
 }
 
+.scrollbarVerticalThinContainer:global(::-webkit-scrollbar-corner) {
+  background-color: transparent;
+}
+
 .scrollbarVerticalThinContainer:hover {
   scrollbar-width: auto;
 }
@@ -126,6 +138,10 @@
 .scrollbarHorizontalThinContainer:global(::-webkit-scrollbar-thumb) {
   background-color: transparent !important;
   border-radius: 8px;
+}
+
+.scrollbarHorizontalThinContainer:global(::-webkit-scrollbar-corner) {
+  background-color: transparent;
 }
 
 .scrollbarHorizontalThinContainer:hover {

@@ -10,19 +10,29 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as ResumeVersionRouteImport } from './routes/resume-version'
 import { Route as ResumeRouteImport } from './routes/resume'
 import { Route as RecentJobsRouteImport } from './routes/recent-jobs'
 import { Route as ProfileRouteImport } from './routes/profile'
-import { Route as NewUserRouteImport } from './routes/new-user'
+import { Route as PersonasRouteImport } from './routes/personas'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as JobRouteImport } from './routes/job'
 import { Route as AutofillRouteImport } from './routes/autofill'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AutofillIndexRouteImport } from './routes/autofill/index'
+import { Route as AutofillSelectVersionRouteImport } from './routes/autofill/select-version'
+import { Route as AutofillSelectResumeRouteImport } from './routes/autofill/select-resume'
+import { Route as AutofillSelectPersonaRouteImport } from './routes/autofill/select-persona'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResumeVersionRoute = ResumeVersionRouteImport.update({
+  id: '/resume-version',
+  path: '/resume-version',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResumeRoute = ResumeRouteImport.update({
@@ -40,9 +50,9 @@ const ProfileRoute = ProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
-const NewUserRoute = NewUserRouteImport.update({
-  id: '/new-user',
-  path: '/new-user',
+const PersonasRoute = PersonasRouteImport.update({
+  id: '/personas',
+  path: '/personas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -70,43 +80,77 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AutofillIndexRoute = AutofillIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AutofillRoute,
+} as any)
+const AutofillSelectVersionRoute = AutofillSelectVersionRouteImport.update({
+  id: '/select-version',
+  path: '/select-version',
+  getParentRoute: () => AutofillRoute,
+} as any)
+const AutofillSelectResumeRoute = AutofillSelectResumeRouteImport.update({
+  id: '/select-resume',
+  path: '/select-resume',
+  getParentRoute: () => AutofillRoute,
+} as any)
+const AutofillSelectPersonaRoute = AutofillSelectPersonaRouteImport.update({
+  id: '/select-persona',
+  path: '/select-persona',
+  getParentRoute: () => AutofillRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/autofill': typeof AutofillRoute
+  '/autofill': typeof AutofillRouteWithChildren
   '/job': typeof JobRoute
   '/login': typeof LoginRoute
-  '/new-user': typeof NewUserRoute
+  '/personas': typeof PersonasRoute
   '/profile': typeof ProfileRoute
   '/recent-jobs': typeof RecentJobsRoute
   '/resume': typeof ResumeRoute
+  '/resume-version': typeof ResumeVersionRoute
   '/settings': typeof SettingsRoute
+  '/autofill/select-persona': typeof AutofillSelectPersonaRoute
+  '/autofill/select-resume': typeof AutofillSelectResumeRoute
+  '/autofill/select-version': typeof AutofillSelectVersionRoute
+  '/autofill/': typeof AutofillIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/autofill': typeof AutofillRoute
   '/job': typeof JobRoute
   '/login': typeof LoginRoute
-  '/new-user': typeof NewUserRoute
+  '/personas': typeof PersonasRoute
   '/profile': typeof ProfileRoute
   '/recent-jobs': typeof RecentJobsRoute
   '/resume': typeof ResumeRoute
+  '/resume-version': typeof ResumeVersionRoute
   '/settings': typeof SettingsRoute
+  '/autofill/select-persona': typeof AutofillSelectPersonaRoute
+  '/autofill/select-resume': typeof AutofillSelectResumeRoute
+  '/autofill/select-version': typeof AutofillSelectVersionRoute
+  '/autofill': typeof AutofillIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
-  '/autofill': typeof AutofillRoute
+  '/autofill': typeof AutofillRouteWithChildren
   '/job': typeof JobRoute
   '/login': typeof LoginRoute
-  '/new-user': typeof NewUserRoute
+  '/personas': typeof PersonasRoute
   '/profile': typeof ProfileRoute
   '/recent-jobs': typeof RecentJobsRoute
   '/resume': typeof ResumeRoute
+  '/resume-version': typeof ResumeVersionRoute
   '/settings': typeof SettingsRoute
+  '/autofill/select-persona': typeof AutofillSelectPersonaRoute
+  '/autofill/select-resume': typeof AutofillSelectResumeRoute
+  '/autofill/select-version': typeof AutofillSelectVersionRoute
+  '/autofill/': typeof AutofillIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -116,23 +160,32 @@ export interface FileRouteTypes {
     | '/autofill'
     | '/job'
     | '/login'
-    | '/new-user'
+    | '/personas'
     | '/profile'
     | '/recent-jobs'
     | '/resume'
+    | '/resume-version'
     | '/settings'
+    | '/autofill/select-persona'
+    | '/autofill/select-resume'
+    | '/autofill/select-version'
+    | '/autofill/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/about'
-    | '/autofill'
     | '/job'
     | '/login'
-    | '/new-user'
+    | '/personas'
     | '/profile'
     | '/recent-jobs'
     | '/resume'
+    | '/resume-version'
     | '/settings'
+    | '/autofill/select-persona'
+    | '/autofill/select-resume'
+    | '/autofill/select-version'
+    | '/autofill'
   id:
     | '__root__'
     | '/'
@@ -140,23 +193,29 @@ export interface FileRouteTypes {
     | '/autofill'
     | '/job'
     | '/login'
-    | '/new-user'
+    | '/personas'
     | '/profile'
     | '/recent-jobs'
     | '/resume'
+    | '/resume-version'
     | '/settings'
+    | '/autofill/select-persona'
+    | '/autofill/select-resume'
+    | '/autofill/select-version'
+    | '/autofill/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
-  AutofillRoute: typeof AutofillRoute
+  AutofillRoute: typeof AutofillRouteWithChildren
   JobRoute: typeof JobRoute
   LoginRoute: typeof LoginRoute
-  NewUserRoute: typeof NewUserRoute
+  PersonasRoute: typeof PersonasRoute
   ProfileRoute: typeof ProfileRoute
   RecentJobsRoute: typeof RecentJobsRoute
   ResumeRoute: typeof ResumeRoute
+  ResumeVersionRoute: typeof ResumeVersionRoute
   SettingsRoute: typeof SettingsRoute
 }
 
@@ -167,6 +226,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/resume-version': {
+      id: '/resume-version'
+      path: '/resume-version'
+      fullPath: '/resume-version'
+      preLoaderRoute: typeof ResumeVersionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/resume': {
@@ -190,11 +256,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/new-user': {
-      id: '/new-user'
-      path: '/new-user'
-      fullPath: '/new-user'
-      preLoaderRoute: typeof NewUserRouteImport
+    '/personas': {
+      id: '/personas'
+      path: '/personas'
+      fullPath: '/personas'
+      preLoaderRoute: typeof PersonasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -232,19 +298,66 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/autofill/': {
+      id: '/autofill/'
+      path: '/'
+      fullPath: '/autofill/'
+      preLoaderRoute: typeof AutofillIndexRouteImport
+      parentRoute: typeof AutofillRoute
+    }
+    '/autofill/select-version': {
+      id: '/autofill/select-version'
+      path: '/select-version'
+      fullPath: '/autofill/select-version'
+      preLoaderRoute: typeof AutofillSelectVersionRouteImport
+      parentRoute: typeof AutofillRoute
+    }
+    '/autofill/select-resume': {
+      id: '/autofill/select-resume'
+      path: '/select-resume'
+      fullPath: '/autofill/select-resume'
+      preLoaderRoute: typeof AutofillSelectResumeRouteImport
+      parentRoute: typeof AutofillRoute
+    }
+    '/autofill/select-persona': {
+      id: '/autofill/select-persona'
+      path: '/select-persona'
+      fullPath: '/autofill/select-persona'
+      preLoaderRoute: typeof AutofillSelectPersonaRouteImport
+      parentRoute: typeof AutofillRoute
+    }
   }
 }
+
+interface AutofillRouteChildren {
+  AutofillSelectPersonaRoute: typeof AutofillSelectPersonaRoute
+  AutofillSelectResumeRoute: typeof AutofillSelectResumeRoute
+  AutofillSelectVersionRoute: typeof AutofillSelectVersionRoute
+  AutofillIndexRoute: typeof AutofillIndexRoute
+}
+
+const AutofillRouteChildren: AutofillRouteChildren = {
+  AutofillSelectPersonaRoute: AutofillSelectPersonaRoute,
+  AutofillSelectResumeRoute: AutofillSelectResumeRoute,
+  AutofillSelectVersionRoute: AutofillSelectVersionRoute,
+  AutofillIndexRoute: AutofillIndexRoute,
+}
+
+const AutofillRouteWithChildren = AutofillRoute._addFileChildren(
+  AutofillRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
-  AutofillRoute: AutofillRoute,
+  AutofillRoute: AutofillRouteWithChildren,
   JobRoute: JobRoute,
   LoginRoute: LoginRoute,
-  NewUserRoute: NewUserRoute,
+  PersonasRoute: PersonasRoute,
   ProfileRoute: ProfileRoute,
   RecentJobsRoute: RecentJobsRoute,
   ResumeRoute: ResumeRoute,
+  ResumeVersionRoute: ResumeVersionRoute,
   SettingsRoute: SettingsRoute,
 }
 export const routeTree = rootRouteImport

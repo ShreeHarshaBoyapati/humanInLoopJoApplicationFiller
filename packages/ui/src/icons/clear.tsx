@@ -1,4 +1,4 @@
-import { SVGProps } from 'react';
+import type { SVGProps } from 'react';
 import styleConstants from '../constants/style-constants';
 
 const ClearIcon = ({

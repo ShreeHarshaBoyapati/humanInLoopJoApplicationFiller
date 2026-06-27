@@ -10,9 +10,14 @@ import { useEffect } from 'react';
 import HomeRoundedIcon from '@mui/icons-material/HomeRounded';
 import WorkOutlineIcon from '@mui/icons-material/WorkOutline';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
 import PersonOutlineIcon from '@mui/icons-material/PersonOutline';
 import scrollStyles from '@repo/ui/scroll-bar.module.css';
 import styles from './style/__root.module.css';
+import { AUTH_STORAGE_KEY, type StoredAuth } from '@repo/shared-types';
+import { clearAllCache } from '../db/personas-cache';
+import { EnhancedSnackbar } from '@repo/ui';
+import { useSnackbar } from '../hooks/use-snackbar';
 
 interface AuthCheckResponse {
   isAuthenticated: boolean;
@@ -24,7 +29,7 @@ export const Route = createRootRoute({
     // Check if chrome runtime is available (for dev/preview safety)
     if (typeof chrome === 'undefined' || !chrome.runtime) {
       console.warn('Chrome runtime not detected, treating as unauthenticated');
-      if (location.pathname !== '/login' && location.pathname !== '/new-user') {
+      if (location.pathname !== '/login') {
         throw redirect({ to: '/login' });
       }
       return;
@@ -45,11 +50,7 @@ export const Route = createRootRoute({
     const { isAuthenticated } = response;
 
     if (isAuthenticated) {
-      if (
-        location.pathname === '/login' ||
-        location.pathname === '/new-user' ||
-        location.pathname === '/'
-      ) {
+      if (location.pathname === '/login' || location.pathname === '/') {
         const storage = await new Promise<{ quickSaveActive?: boolean }>((resolve) => {
           chrome.storage.local.get(['quickSaveActive'], (res) => resolve(res));
         });
@@ -58,11 +59,11 @@ export const Route = createRootRoute({
         }
       }
 
-      if (location.pathname === '/login' || location.pathname === '/new-user') {
+      if (location.pathname === '/login') {
         throw redirect({ to: '/' });
       }
     } else {
-      if (location.pathname !== '/login' && location.pathname !== '/new-user') {
+      if (location.pathname !== '/login') {
         throw redirect({ to: '/login' });
       }
     }
@@ -72,6 +73,7 @@ export const Route = createRootRoute({
 function RootComponent() {
   const routerState = useRouterState();
   const navigate = useNavigate();
+  const { snackbar, hideSnackbar } = useSnackbar();
 
   useEffect(() => {
     if (typeof chrome !== 'undefined' && chrome.runtime) {
@@ -91,8 +93,32 @@ function RootComponent() {
       };
     }
   }, [navigate]);
-  const isLoginPage =
-    routerState.location.pathname === '/login' || routerState.location.pathname === '/new-user';
+
+  // Clear IndexedDB cache when token changes (user login/logout)
+  useEffect(() => {
+    if (typeof chrome === 'undefined' || !chrome.storage) return;
+
+    const handleStorageChange = (changes: Record<string, chrome.storage.StorageChange>) => {
+      if (changes[AUTH_STORAGE_KEY]) {
+        const newAuth = changes[AUTH_STORAGE_KEY].newValue as StoredAuth | undefined;
+        const oldAuth = changes[AUTH_STORAGE_KEY].oldValue as StoredAuth | undefined;
+
+        const newToken = newAuth?.token;
+        const oldToken = oldAuth?.token;
+
+        if (newToken !== oldToken) {
+          // Token changed - clear IndexedDB cache
+          clearAllCache();
+        }
+      }
+    };
+
+    chrome.storage.onChanged.addListener(handleStorageChange);
+    return () => {
+      chrome.storage.onChanged.removeListener(handleStorageChange);
+    };
+  }, []);
+  const isLoginPage = routerState.location.pathname === '/login';
 
   if (isLoginPage) {
     return (
@@ -100,6 +126,19 @@ function RootComponent() {
         <main className={styles.mainContent}>
           <Outlet />
         </main>
+        <EnhancedSnackbar
+          open={snackbar.open}
+          message={snackbar.message}
+          header={snackbar.header}
+          severity={snackbar.severity}
+          autoHideDuration={snackbar.autoHideDuration}
+          onClose={hideSnackbar}
+          customProps={{
+            styledAlertProps: {
+              actionStyle: { position: 'relative' },
+            },
+          }}
+        />
       </div>
     );
   }
@@ -109,7 +148,6 @@ function RootComponent() {
       <main className={`${styles.mainContent} ${scrollStyles.scrollbarVerticalContainer}`}>
         <Outlet />
       </main>
-
       <nav className={styles.bottomNav}>
         <Link
           to="/"
@@ -137,6 +175,14 @@ function RootComponent() {
           <span>Autofill</span>
         </Link>
         <Link
+          to="/personas"
+          className={styles.navItem}
+          activeProps={{ className: `${styles.navItem} ${styles.navItemActive}` }}
+        >
+          <ArticleOutlinedIcon />
+          <span>Personas</span>
+        </Link>
+        <Link
           to="/profile"
           className={styles.navItem}
           activeProps={{ className: `${styles.navItem} ${styles.navItemActive}` }}
@@ -145,6 +191,19 @@ function RootComponent() {
           <span>Profile</span>
         </Link>
       </nav>
+      <EnhancedSnackbar
+        open={snackbar.open}
+        message={snackbar.message}
+        header={snackbar.header}
+        severity={snackbar.severity}
+        autoHideDuration={snackbar.autoHideDuration}
+        onClose={hideSnackbar}
+        customProps={{
+          styledAlertProps: {
+            actionStyle: { position: 'relative' },
+          },
+        }}
+      />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import axios, { AxiosError } from 'axios';
 import type { ExtensionMessage, ApiResponse } from '@repo/shared-types';
+import { AUTH_STORAGE_KEY, type StoredAuth } from '@repo/shared-types';
 import { handleUserMessage } from './handlers/user-handler.js';
 import { handleJobMessage } from './handlers/job-handler.js';
 import { handleContentMessages } from './handlers/content-handler.js';
@@ -7,8 +8,14 @@ import { handleApiKeyMessage } from './handlers/api-key-handler.js';
 import { handlePersonaMessage } from './handlers/persona-handler.js';
 import { handleResumeMessage } from './handlers/resume-handler.js';
 import { handleAiMessage } from './handlers/ai-handler.js';
+import { handleDashboardMessage } from './handlers/dashboard-handler.js';
+import { RealtimeOwner } from '../realtime/realtime-owner.js';
+import { getRealtimeClientId } from '../realtime/realtime-client';
 
 console.log('Background service worker started');
+
+const realtimeOwner = new RealtimeOwner();
+realtimeOwner.start();
 
 // Listen for installation
 chrome.runtime.onInstalled.addListener(() => {
@@ -18,21 +25,34 @@ chrome.runtime.onInstalled.addListener(() => {
     .catch((error) => console.error(error));
 });
 
-const API_URL = import.meta.env.VITE_EXT_BACKENDAPI || 'http://localhost:8000/api';
+chrome.runtime.onSuspend?.addListener(() => {
+  realtimeOwner.stop();
+});
+
+const API_URL = import.meta.env.VITE_EXT_BACKENDAPI || '';
 
 const api = axios.create({
   baseURL: API_URL,
   adapter: 'fetch',
+  withCredentials: true,
+  fetchOptions: { keepalive: true },
 });
 
-// Add a request interceptor to inject the token
+// Add a request interceptor to inject the token from session storage
 api.interceptors.request.use(async (config) => {
   const result = await new Promise<{ token?: string }>((resolve) => {
-    chrome.storage.local.get(['token'], (res) => resolve(res as { token?: string }));
+    chrome.storage.session.get([AUTH_STORAGE_KEY], (res) => {
+      const authData = res[AUTH_STORAGE_KEY] as StoredAuth | undefined;
+      resolve({ token: authData?.token });
+    });
   });
 
   if (result.token) {
     config.headers.Authorization = `Bearer ${result.token}`;
+  }
+  const clientId = getRealtimeClientId();
+  if (clientId) {
+    config.headers['X-Realtime-Client-Id'] = clientId;
   }
   return config;
 });
@@ -42,7 +62,7 @@ api.interceptors.response.use(
   (error: AxiosError<ApiResponse>) => {
     if (error.response && error.response.status === 401) {
       const message = error.response.data?.message || 'Session expired. Please log in again.';
-      chrome.storage.local.remove('token', () => {
+      chrome.storage.session.remove(AUTH_STORAGE_KEY, () => {
         chrome.runtime
           .sendMessage({
             action: 'LOGOUT_TRIGGERED',
@@ -61,6 +81,7 @@ api.interceptors.response.use(
 chrome.runtime.onMessage.addListener((message: ExtensionMessage, sender, sendResponse) => {
   const contentHandled = handleContentMessages(message, sender, sendResponse);
   if (contentHandled) return true;
+
   // User-related actions
   const handled = handleUserMessage(message, sendResponse, api);
   if (handled) return true;
@@ -84,4 +105,8 @@ chrome.runtime.onMessage.addListener((message: ExtensionMessage, sender, sendRes
   // AI-related actions
   const aiHandled = handleAiMessage(message, sendResponse, api);
   if (aiHandled) return true;
+
+  // Dashboard-related actions
+  const dashboardHandled = handleDashboardMessage(message, sendResponse, api);
+  if (dashboardHandled) return true;
 });

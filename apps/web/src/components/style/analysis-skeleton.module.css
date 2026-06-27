@@ -1,0 +1,49 @@
+/* Analysis Skeleton Component */
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 5);
+  padding: calc(var(--spacing) * 2) 0;
+  width: 100%;
+}
+
+/* Skeleton styles */
+
+.skeleton {
+  animation: pulse 1.5s ease-in-out infinite;
+  background: var(--grey-300);
+  border-radius: var(--border-radius);
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.skeletonScore {
+  height: 96px;
+  width: 100%;
+}
+
+.skeletonLine {
+  height: 16px;
+  width: 100%;
+}
+
+.skeletonShort {
+  height: 16px;
+  width: 60%;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 3);
+}

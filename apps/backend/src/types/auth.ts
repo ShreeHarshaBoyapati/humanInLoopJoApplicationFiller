@@ -35,4 +35,6 @@ export interface DecodedToken extends JwtPayload {
 export type AuthenticatedTypedRequest<TBody> = Request<ParamsDictionary, never, TBody> & {
   userId: string;
   sessionId: string;
+  clientAborted?: boolean;
+  realtimeClientId?: string;
 };

@@ -3,5 +3,23 @@ import Job from './job.js';
 import ApiKey from './api-key.js';
 import Persona from './persona.js';
 import Resume from './resume.js';
+import ResumeVersion from './resume-version.js';
+import VerificationCode from './verification-code.js';
+import Result from './result.js';
+import Tag from './tag.js';
+import Event from './event.js';
+import WeeklyGoal from './weekly-goal.js';
 
-export default [User, Job, ApiKey, Persona, Resume];
+export default [
+  User,
+  Job,
+  ApiKey,
+  Persona,
+  Resume,
+  ResumeVersion,
+  VerificationCode,
+  Result,
+  Tag,
+  Event,
+  WeeklyGoal,
+];

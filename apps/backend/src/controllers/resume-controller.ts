@@ -1,43 +1,49 @@
 import type { Response, AuthenticatedTypedRequest, Request } from '../types/index.js';
-import { getResumeRepository, getPersonaRepository } from '../database/repositories/index.js';
+import {
+  getResumeRepository,
+  getPersonaRepository,
+  getResumeVersionRepository,
+} from '../database/repositories/index.js';
 import type {
   DeleteResumeInput,
   UpdateResumeInput,
   GetResumeByIdInput,
   CreateResumeInput,
 } from '../middlewares/resume.js';
+import { ILike } from 'typeorm';
 import { ApiResponse } from '@repo/shared-types';
-import type { ResumeData, ResumeMetadata } from '@repo/shared-types';
-import { parseFile } from '../utils/file-parser.js';
-import { parseResume as parseResumeWithAI } from '../services/resume-parser.js';
-
-interface ResumeFullResponse {
-  id: string;
-  fileName: string;
-  fileSize: number;
-  file: Buffer;
-  keywords: string[];
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { logger } from '../utils/index.js';
+import * as wsHub from '../realtime/ws-hub.js';
+import { resumeToMetadata, versionToMetadata } from '../realtime/payload-mappers.js';
+import type {
+  ResumeMetadata,
+  ResumeWithVersions,
+  ResumeVersionMetadata,
+  PaginatedResumeResponse,
+  PaginatedResumeListItem,
+} from '@repo/shared-types';
 
 interface ValidatedParamsRequest extends Request {
   validatedParams: GetResumeByIdInput;
   userId: string;
 }
 
+interface PaginationQuery {
+  page?: string;
+  limit?: string;
+  personaId?: string;
+  search?: string;
+}
+
 class ResumeController {
-  async create(
-    req: AuthenticatedTypedRequest<CreateResumeInput> & { file?: Express.Multer.File },
-    res: Response
-  ) {
+  async create(req: AuthenticatedTypedRequest<CreateResumeInput>, res: Response) {
     const resumeRepository = getResumeRepository();
     const personaRepository = getPersonaRepository();
+    const versionRepository = getResumeVersionRepository();
 
     const userId = req.userId;
-    const { personaId } = req.body;
+    const { personaId, fileName, file, keywords, parsedData, comment } = req.body;
 
-    // Verify persona belongs to user
     const persona = await personaRepository.findOne({
       where: { id: personaId },
       relations: ['user'],
@@ -48,67 +54,101 @@ class ResumeController {
         success: false,
         message: 'Persona not found or not authorized',
       };
-      res.status(404).json(data);
+      res.status(403).json(data);
       return;
     }
 
-    if (!req.file) {
+    const duplicateResume = await resumeRepository.findOne({
+      where: { fileName, persona: { id: personaId }, isDeleted: false },
+    });
+
+    if (duplicateResume) {
       const data: ApiResponse = {
         success: false,
-        message: 'File is required',
+        message: 'A resume with this file name already exists for this persona',
       };
       res.status(400).json(data);
       return;
     }
 
-    // Get keywords from body (already parsed by middleware)
-    const keywords = req.body.keywords || [];
-    const parsedData = req.body.parsedData || null;
-
-    // Check if this is the first resume for this persona
-    const existingResumesCount = await resumeRepository.count({
-      where: { persona: { id: personaId } },
+    const activeResumesCount = await resumeRepository.count({
+      where: {
+        persona: { user: { id: userId } },
+        active: true,
+        isDeleted: false,
+      },
     });
 
+    const isActive = activeResumesCount === 0;
+
     const resume = resumeRepository.create({
-      file: req.file.buffer,
-      fileName: req.file.originalname,
-      fileSize: req.file.size,
-      keywords,
-      parsedData,
+      fileName,
+      active: isActive,
       persona,
-      active: existingResumesCount === 0,
     });
 
     await resumeRepository.save(resume);
 
-    const data: ApiResponse<ResumeMetadata> = {
+    // Create the resume version with the file data
+    const version = versionRepository.create({
+      file: Buffer.from(file.base64, 'base64'),
+      fileSize: file.size,
+      keywords: keywords || [],
+      active: isActive,
+      versionName: 'v1',
+      parsedData: parsedData || null,
+      comment: comment || null,
+      resume,
+    });
+
+    await versionRepository.save(version);
+
+    const personaResumesCount = await resumeRepository.count({
+      where: { persona: { id: personaId }, isDeleted: false },
+    });
+
+    wsHub.emit(
+      userId,
+      'resume',
+      'create',
+      resume.id,
+      undefined,
+      [{ personaId }, { id: personaId, resumesCount: personaResumesCount }],
+      req.realtimeClientId
+    );
+    wsHub.emit(
+      userId,
+      'resume-version',
+      'create',
+      version.id,
+      versionToMetadata(version, resume.fileName, resume.id, personaId),
+      undefined,
+      req.realtimeClientId
+    );
+
+    const data: ApiResponse<ResumeMetadata & { fileSize: number }> = {
       success: true,
       message: 'Resume created successfully',
       data: {
         id: resume.id,
         fileName: resume.fileName,
-        fileSize: resume.fileSize,
-        keywords: resume.keywords,
         active: resume.active,
         createdAt: resume.createdAt,
         updatedAt: resume.updatedAt,
+        fileSize: file.size,
       },
     };
     res.status(201).json(data);
   }
 
-  async update(
-    req: AuthenticatedTypedRequest<UpdateResumeInput> & { file?: Express.Multer.File },
-    res: Response
-  ) {
+  async update(req: AuthenticatedTypedRequest<UpdateResumeInput>, res: Response) {
     const resumeRepository = getResumeRepository();
 
     const userId = req.userId;
-    const { id, keywords } = req.body;
+    const { id, fileName } = req.body;
 
     const resume = await resumeRepository.findOne({
-      where: { id },
+      where: { id, isDeleted: false },
       relations: ['persona', 'persona.user'],
     });
 
@@ -124,25 +164,40 @@ class ResumeController {
     if (resume.persona.user.id !== userId) {
       const data: ApiResponse = {
         success: false,
-        message: 'You are not authorized to update this resume',
+        message: 'Resume not found or not authorized',
       };
       res.status(403).json(data);
       return;
     }
 
-    // Update file if provided
-    if (req.file) {
-      resume.file = req.file.buffer;
-      resume.fileName = req.file.originalname;
-      resume.fileSize = req.file.size;
-    }
+    if (fileName) {
+      const duplicateResume = await resumeRepository.findOne({
+        where: { fileName, persona: { id: resume.persona.id }, isDeleted: false },
+      });
 
-    // Update keywords if provided
-    if (keywords) {
-      resume.keywords = keywords;
+      if (duplicateResume && duplicateResume.id !== id) {
+        const data: ApiResponse = {
+          success: false,
+          message: 'A resume with this file name already exists for this persona',
+        };
+        res.status(400).json(data);
+        return;
+      }
+
+      resume.fileName = fileName;
     }
 
     await resumeRepository.save(resume);
+
+    wsHub.emit(
+      userId,
+      'resume',
+      'update',
+      resume.id,
+      resumeToMetadata(resume),
+      undefined,
+      req.realtimeClientId
+    );
 
     const data: ApiResponse<ResumeMetadata> = {
       success: true,
@@ -150,18 +205,17 @@ class ResumeController {
       data: {
         id: resume.id,
         fileName: resume.fileName,
-        fileSize: resume.fileSize,
         active: resume.active,
-        keywords: resume.keywords,
         createdAt: resume.createdAt,
         updatedAt: resume.updatedAt,
-      },
+      } as ResumeMetadata,
     };
     res.status(200).json(data);
   }
 
   async delete(req: AuthenticatedTypedRequest<DeleteResumeInput>, res: Response) {
     const resumeRepository = getResumeRepository();
+    const versionRepository = getResumeVersionRepository();
 
     const userId = req.userId;
     const { id } = req.body;
@@ -183,13 +237,48 @@ class ResumeController {
     if (resume.persona.user.id !== userId) {
       const data: ApiResponse = {
         success: false,
-        message: 'You are not authorized to delete this resume',
+        message: 'Resume not found or not authorized',
       };
       res.status(403).json(data);
       return;
     }
 
-    await resumeRepository.remove(resume);
+    if (req.clientAborted) {
+      logger.info({ id: resume.id }, 'Delete resume aborted by client; skipping DB write');
+      return;
+    }
+
+    const remainingResumesCount = await resumeRepository.count({
+      where: { persona: { id: resume.persona.id }, isDeleted: false },
+    });
+
+    resume.isDeleted = true;
+    await resumeRepository.save(resume);
+
+    // Soft delete all resume versions for this resume
+    const versions = await versionRepository.find({
+      where: { resume: { id: resume.id } },
+    });
+
+    await Promise.all(
+      versions.map((version) => {
+        version.isDeleted = true;
+        return versionRepository.save(version);
+      })
+    );
+
+    wsHub.emit(
+      userId,
+      'resume',
+      'delete',
+      resume.id,
+      undefined,
+      [
+        { id: resume.persona.id, resumesCount: Math.max(0, remainingResumesCount - 1) },
+        { personaId: resume.persona.id, resumeId: resume.id },
+      ],
+      req.realtimeClientId
+    );
 
     const data: ApiResponse = {
       success: true,
@@ -199,46 +288,232 @@ class ResumeController {
     res.status(200).json(data);
   }
 
-  async getAll(req: AuthenticatedTypedRequest<null>, res: Response) {
+  async getPaginated(
+    req: AuthenticatedTypedRequest<null> & { query: PaginationQuery },
+    res: Response
+  ) {
     const resumeRepository = getResumeRepository();
+    const versionRepository = getResumeVersionRepository();
 
     const userId = req.userId;
-    const personaId = req.query.personaId as string | undefined;
+    const { page: pageParam, limit: limitParam, personaId, search } = req.query;
 
-    const queryBuilder = resumeRepository
-      .createQueryBuilder('resume')
-      .leftJoin('resume.persona', 'persona')
-      .leftJoin('persona.user', 'user')
-      .where('user.id = :userId', { userId })
-      .select([
-        'resume.id',
-        'resume.fileName',
-        'resume.fileSize',
-        'resume.keywords',
-        'resume.active',
-        'resume.createdAt',
-        'resume.updatedAt',
+    const pageNum = parseInt(pageParam as string, 10) || 1;
+    const limitNum = parseInt(limitParam as string, 10) || 10;
+    const searchQuery = search ? (search as string).trim() : '';
+
+    // Batch helpers to avoid O(N) sequential queries when building the list.
+    const getVersionsCountByResumeIds = async (
+      resumeIds: string[]
+    ): Promise<Map<string, number>> => {
+      const counts = new Map<string, number>();
+      if (resumeIds.length === 0) return counts;
+
+      for (const id of resumeIds) {
+        counts.set(id, 0);
+      }
+
+      const batches: string[][] = [];
+      for (let i = 0; i < resumeIds.length; i += 25) {
+        batches.push(resumeIds.slice(i, i + 25));
+      }
+
+      const batchResults = await Promise.all(
+        batches.map(async (batch) => {
+          const rows = (await versionRepository
+            .createQueryBuilder('version')
+            .select('version.resumeId', 'resumeId')
+            .addSelect('COUNT(version.id)', 'count')
+            .where('version.resumeId IN (:...batch)', { batch })
+            .andWhere('version.isDeleted = :isDeleted', { isDeleted: false })
+            .groupBy('version.resumeId')
+            .getRawMany()) as Array<{ resumeId: string; count: string }>;
+          return rows;
+        })
+      );
+
+      for (const rows of batchResults) {
+        for (const row of rows) {
+          counts.set(row.resumeId, parseInt(row.count, 10));
+        }
+      }
+
+      return counts;
+    };
+
+    const getActiveVersionFileSizesByResumeIds = async (
+      resumeIds: string[]
+    ): Promise<Map<string, number | null>> => {
+      const fileSizes = new Map<string, number | null>();
+      if (resumeIds.length === 0) return fileSizes;
+
+      for (const id of resumeIds) {
+        fileSizes.set(id, null);
+      }
+
+      const batches: string[][] = [];
+      for (let i = 0; i < resumeIds.length; i += 25) {
+        batches.push(resumeIds.slice(i, i + 25));
+      }
+
+      const batchResults = await Promise.all(
+        batches.map(async (batch) => {
+          const rows = (await versionRepository
+            .createQueryBuilder('version')
+            .select('version.resumeId', 'resumeId')
+            .addSelect('version.fileSize', 'fileSize')
+            .where('version.resumeId IN (:...batch)', { batch })
+            .andWhere('version.active = :active', { active: true })
+            .andWhere('version.isDeleted = :isDeleted', { isDeleted: false })
+            .getRawMany()) as Array<{ resumeId: string; fileSize: number }>;
+          return rows;
+        })
+      );
+
+      for (const rows of batchResults) {
+        for (const row of rows) {
+          fileSizes.set(row.resumeId, row.fileSize);
+        }
+      }
+
+      return fileSizes;
+    };
+
+    const buildResumeListItems = async (
+      resumes: Array<{ id: string; fileName: string; active: boolean; updatedAt: Date }>
+    ): Promise<PaginatedResumeListItem[]> => {
+      const ids = resumes.map((r) => r.id);
+      const [versionsCounts, activeVersionFileSizes] = await Promise.all([
+        getVersionsCountByResumeIds(ids),
+        getActiveVersionFileSizesByResumeIds(ids),
       ]);
 
-    if (personaId) {
-      queryBuilder.andWhere('persona.id = :personaId', { personaId });
+      return resumes.map((resume) => ({
+        id: resume.id,
+        fileName: resume.fileName,
+        active: resume.active,
+        versionsCount: versionsCounts.get(resume.id) ?? 0,
+        activeVersionFileSize: activeVersionFileSizes.get(resume.id) ?? null,
+        updatedAt: resume.updatedAt,
+      }));
+    };
+
+    const buildBaseWhereClause = (includeSearch: boolean = true) => {
+      const where: Record<string, unknown> = {
+        persona: { user: { id: userId } },
+        isDeleted: false,
+      };
+      if (personaId) {
+        where.persona = { id: personaId, user: { id: userId } };
+      }
+      if (includeSearch && searchQuery) {
+        where.fileName = ILike(`%${searchQuery}%`);
+      }
+      return where;
+    };
+
+    // When searching, return all matching resumes in normal order
+    if (searchQuery) {
+      const whereClause = buildBaseWhereClause(true);
+      const total = await resumeRepository.count({ where: whereClause });
+
+      const resumes = await resumeRepository.find({
+        where: whereClause,
+        order: { createdAt: 'DESC' },
+        skip: (pageNum - 1) * limitNum,
+        take: limitNum,
+      });
+
+      const items = await buildResumeListItems(resumes);
+
+      const paginatedResponse: PaginatedResumeResponse = {
+        items,
+        total,
+        page: pageNum,
+        limit: limitNum,
+        totalPages: Math.ceil(total / limitNum) || 1,
+      };
+
+      const data: ApiResponse<PaginatedResumeResponse> = {
+        success: true,
+        data: paginatedResponse,
+      };
+      res.status(200).json(data);
+      return;
     }
 
-    const resumes = await queryBuilder.getMany();
+    // No search - existing behavior with active resume first
+    const totalWhere = buildBaseWhereClause(false);
+    const total = await resumeRepository.count({
+      where: totalWhere,
+    });
 
-    const resumeResponses: ResumeMetadata[] = resumes.map((r) => ({
-      id: r.id,
-      fileName: r.fileName,
-      fileSize: r.fileSize,
-      keywords: r.keywords,
-      active: r.active,
-      createdAt: r.createdAt,
-      updatedAt: r.updatedAt,
-    }));
+    const items: PaginatedResumeListItem[] = [];
 
-    const data: ApiResponse<ResumeMetadata[]> = {
+    if (pageNum === 1) {
+      // Page 1: get active resume first, then non-active (exclude soft-deleted)
+      const activeResumeWhere: Record<string, unknown> = {
+        persona: { user: { id: userId } },
+        active: true,
+        isDeleted: false,
+      };
+      if (personaId) {
+        activeResumeWhere.persona = { id: personaId, user: { id: userId } };
+      }
+
+      const activeResume = await resumeRepository.findOne({
+        where: activeResumeWhere,
+      });
+
+      // Get non-active resumes
+      const whereClause = { ...buildBaseWhereClause(false), active: false };
+      const nonActiveResumes = await resumeRepository.find({
+        where: whereClause,
+        order: { createdAt: 'DESC' },
+        take: activeResume ? limitNum - 1 : limitNum,
+      });
+
+      const pageResumes = activeResume ? [activeResume, ...nonActiveResumes] : nonActiveResumes;
+      items.push(...(await buildResumeListItems(pageResumes)));
+    } else {
+      // For pages after 1, check if there's an active resume to adjust skip (exclude soft-deleted)
+      const activeResumeWhere: Record<string, unknown> = {
+        persona: { user: { id: userId } },
+        active: true,
+        isDeleted: false,
+      };
+      if (personaId) {
+        activeResumeWhere.persona = { id: personaId, user: { id: userId } };
+      }
+
+      const hasActiveResume = await resumeRepository.count({
+        where: activeResumeWhere,
+      });
+
+      const skip = hasActiveResume > 0 ? (pageNum - 1) * limitNum - 1 : (pageNum - 1) * limitNum;
+
+      const whereClause = { ...buildBaseWhereClause(false), active: false };
+      const nonActiveResumes = await resumeRepository.find({
+        where: whereClause,
+        order: { createdAt: 'DESC' },
+        skip: Math.max(0, skip),
+        take: limitNum,
+      });
+
+      items.push(...(await buildResumeListItems(nonActiveResumes)));
+    }
+
+    const paginatedResponse: PaginatedResumeResponse = {
+      items,
+      total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum) || 1,
+    };
+
+    const data: ApiResponse<PaginatedResumeResponse> = {
       success: true,
-      data: resumeResponses,
+      data: paginatedResponse,
     };
     res.status(200).json(data);
   }
@@ -250,8 +525,9 @@ class ResumeController {
     const { id } = req.validatedParams;
 
     const resume = await resumeRepository.findOne({
-      where: { id },
+      where: { id, isDeleted: false },
       relations: ['persona', 'persona.user'],
+      select: ['id', 'fileName', 'active', 'createdAt', 'updatedAt'],
     });
 
     if (!resume) {
@@ -266,150 +542,28 @@ class ResumeController {
     if (resume.persona.user.id !== userId) {
       const data: ApiResponse = {
         success: false,
-        message: 'You are not authorized to access this resume',
+        message: 'Resume not found or not authorized',
       };
       res.status(403).json(data);
       return;
     }
-
-    // Determine file extension
-    const fileName = resume.fileName.toLowerCase();
-    const extension = fileName.split('.').pop();
-
-    // For TXT files, return text content for browser viewing
-    if (extension === 'txt') {
-      const textContent = resume.file.toString('utf-8');
-      const data: ApiResponse<{ text: string; fileName: string; contentType: string }> = {
-        success: true,
-        data: {
-          text: textContent,
-          fileName: resume.fileName,
-          contentType: 'text/plain',
-        },
-      };
-      res.status(200).json(data);
-      return;
-    }
-
-    // For PDF, DOCX, and other binary files, return raw file data
-    const data: ApiResponse<ResumeFullResponse> = {
-      success: true,
-      data: {
-        id: resume.id,
-        fileName: resume.fileName,
-        fileSize: resume.fileSize,
-        file: resume.file,
-        keywords: resume.keywords,
-        createdAt: resume.createdAt,
-        updatedAt: resume.updatedAt,
-      },
-    };
-    res.status(200).json(data);
-  }
-
-  async parseFile(
-    req: AuthenticatedTypedRequest<null> & { file?: Express.Multer.File },
-    res: Response
-  ) {
-    const userId = req.userId;
-
-    if (!req.file) {
-      const data: ApiResponse = {
-        success: false,
-        message: 'File is required',
-      };
-      res.status(400).json(data);
-      return;
-    }
-
-    // Extract text from file
-    let extractedText = '';
-    try {
-      extractedText = await parseFile(req.file.buffer, req.file.originalname);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to parse file';
-      const data: ApiResponse = {
-        success: false,
-        message: errorMessage,
-      };
-      res.status(400).json(data);
-      return;
-    }
-
-    // Parse resume using AI (uses user's active API key)
-    const parseResult = await parseResumeWithAI(extractedText, userId);
-
-    if (!parseResult.success) {
-      const data: ApiResponse = {
-        success: false,
-        message: parseResult.message,
-      };
-      res.status(500).json(data);
-      return;
-    }
-
-    const data: ApiResponse<ResumeData> = {
-      success: true,
-      message: 'File parsed successfully',
-      data: parseResult.data as ResumeData,
-    };
-    res.status(200).json(data);
-  }
-
-  async setActive(req: AuthenticatedTypedRequest<{ id: string }>, res: Response) {
-    const resumeRepository = getResumeRepository();
-
-    const userId = req.userId;
-    const { id } = req.body;
-
-    const resume = await resumeRepository.findOne({
-      where: { id },
-      relations: ['persona', 'persona.user'],
-    });
-
-    if (!resume) {
-      const data: ApiResponse = {
-        success: false,
-        message: 'Resume not found',
-      };
-      res.status(404).json(data);
-      return;
-    }
-
-    if (resume.persona.user.id !== userId) {
-      const data: ApiResponse = {
-        success: false,
-        message: 'You are not authorized to update this resume',
-      };
-      res.status(403).json(data);
-      return;
-    }
-
-    // Set all resumes of this persona to inactive
-    await resumeRepository.update({ persona: { id: resume.persona.id } }, { active: false });
-
-    // Set the selected resume to active
-    resume.active = true;
-    await resumeRepository.save(resume);
 
     const data: ApiResponse<ResumeMetadata> = {
       success: true,
-      message: 'Resume set as active successfully',
       data: {
         id: resume.id,
         fileName: resume.fileName,
-        fileSize: resume.fileSize,
-        keywords: resume.keywords,
         active: resume.active,
         createdAt: resume.createdAt,
         updatedAt: resume.updatedAt,
-      },
+      } as ResumeMetadata,
     };
     res.status(200).json(data);
   }
 
   async getActive(req: AuthenticatedTypedRequest<null>, res: Response) {
     const resumeRepository = getResumeRepository();
+    const versionRepository = getResumeVersionRepository();
 
     const userId = req.userId;
     const personaId = req.query.personaId as string | undefined;
@@ -419,7 +573,9 @@ class ResumeController {
       .leftJoin('resume.persona', 'persona')
       .leftJoin('persona.user', 'user')
       .where('user.id = :userId', { userId })
-      .andWhere('resume.active = :active', { active: true });
+      .andWhere('resume.active = :active', { active: true })
+      .andWhere('resume.isDeleted = :isDeleted', { isDeleted: false })
+      .andWhere('persona.isDeleted = :personaIsDeleted', { personaIsDeleted: false });
 
     if (personaId) {
       queryBuilder.andWhere('persona.id = :personaId', { personaId });
@@ -430,8 +586,6 @@ class ResumeController {
       .select([
         'resume.id',
         'resume.fileName',
-        'resume.fileSize',
-        'resume.keywords',
         'resume.active',
         'resume.createdAt',
         'resume.updatedAt',
@@ -447,50 +601,50 @@ class ResumeController {
       return;
     }
 
-    const resumeResponse: ResumeMetadata = {
+    const activeVersion = await versionRepository.findOne({
+      where: { resume: { id: resume.id }, active: true, isDeleted: false },
+      select: [
+        'id',
+        'fileSize',
+        'active',
+        'versionName',
+        'comment',
+        'keywords',
+        'parsedData',
+        'dataUpdatedAt',
+        'createdAt',
+        'updatedAt',
+      ],
+    });
+
+    const activeVersionResponse: ResumeVersionMetadata | undefined = activeVersion
+      ? {
+          id: activeVersion.id,
+          fileName: resume.fileName,
+          fileSize: activeVersion.fileSize,
+          active: activeVersion.active,
+          versionName: activeVersion.versionName,
+          comment: activeVersion.comment,
+          keywords: activeVersion.keywords || [],
+          dataUpdatedAt: activeVersion.dataUpdatedAt,
+          createdAt: activeVersion.createdAt,
+          updatedAt: activeVersion.updatedAt,
+        }
+      : undefined;
+
+    const resumeResponse: ResumeWithVersions = {
       id: resume.id,
       fileName: resume.fileName,
-      fileSize: resume.fileSize,
-      keywords: resume.keywords,
       active: resume.active,
       createdAt: resume.createdAt,
       updatedAt: resume.updatedAt,
+      versions: activeVersionResponse ? [activeVersionResponse] : [],
+      activeVersion: activeVersionResponse,
     };
 
-    const data: ApiResponse<ResumeMetadata> = {
+    const data: ApiResponse<ResumeWithVersions> = {
       success: true,
       data: resumeResponse,
-    };
-    res.status(200).json(data);
-  }
-
-  async getActiveParsed(req: AuthenticatedTypedRequest<null>, res: Response) {
-    const resumeRepository = getResumeRepository();
-
-    const userId = req.userId;
-
-    // Find the active resume for the user
-    const resume = await resumeRepository
-      .createQueryBuilder('resume')
-      .leftJoin('resume.persona', 'persona')
-      .leftJoin('persona.user', 'user')
-      .where('user.id = :userId', { userId })
-      .andWhere('resume.active = :active', { active: true })
-      .select(['resume.id', 'resume.parsedData'])
-      .getOne();
-
-    if (!resume) {
-      const data: ApiResponse = {
-        success: false,
-        message: 'No active resume found',
-      };
-      res.status(404).json(data);
-      return;
-    }
-
-    const data: ApiResponse<ResumeData> = {
-      success: true,
-      data: resume.parsedData as unknown as ResumeData,
     };
     res.status(200).json(data);
   }

@@ -1,0 +1,240 @@
+.versionCard {
+  align-items: stretch;
+  background-color: var(--black-700);
+  border: 1px solid var(--grey-700);
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  display: flex;
+  flex-flow: row wrap;
+  gap: calc(var(--spacing) * 4);
+  min-height: 80px;
+  padding: calc(var(--spacing) * 4);
+  transition: border-color 0.2s ease;
+  width: 100%;
+}
+
+.versionCard:hover {
+  border-color: var(--blue-500);
+}
+
+.versionCard.selected {
+  border-color: var(--blue-500);
+}
+
+/* Section 1: Radio button (full height) */
+.radioSection {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  justify-content: center;
+}
+
+/* Section 2: Data with version name, date/comment, diff */
+.dataSection {
+  align-items: center;
+  display: flex;
+  flex: 1;
+  gap: calc(var(--spacing) * 3);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.versionInfo {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 1);
+  min-width: 0;
+}
+
+.versionNameRow {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(var(--spacing) * 2);
+}
+
+.versionName {
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  font-size: 1rem;
+  font-weight: 500;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dateAndFileSize {
+  align-items: center;
+  color: var(--white-700);
+  display: flex;
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+  gap: calc(var(--spacing) * 1);
+}
+
+.commentRow {
+  color: var(--white-700);
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  word-wrap: break-word;
+}
+
+.dotSeparator {
+  color: var(--grey-500);
+}
+
+.comment {
+  word-wrap: break-word;
+}
+
+.diffInfo {
+  color: var(--white-700);
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+
+.added {
+  color: var(--green-400);
+}
+
+.removed {
+  color: var(--red-600);
+}
+
+.neutral {
+  color: var(--white-700);
+}
+
+/* Section 3: Action buttons */
+.actionsSection {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: calc(var(--spacing) * 2);
+  justify-content: flex-end;
+  width: 141px;
+}
+
+.actionButton {
+  align-items: center;
+  background-color: var(--black-700);
+  border: 1px solid var(--grey-700);
+  border-radius: var(--border-radius);
+  color: var(--white-700);
+  cursor: pointer;
+  display: flex;
+  height: 36px;
+  justify-content: center;
+  transition: all 0.2s ease;
+  width: 36px;
+}
+
+.loaderContainer {
+  align-items: center;
+  color: var(--white-700);
+  display: flex;
+  justify-content: center;
+}
+
+.actionButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.actionButton:hover:not(:disabled) {
+  background-color: var(--grey-700);
+  border-color: var(--grey-700);
+  color: var(--white-900);
+}
+
+.actionButton.delete:hover:not(:disabled) {
+  border-color: var(--red-600);
+  color: var(--red-600);
+}
+
+/* Expanded section (drops to new line via flex-wrap) */
+.expandedSection {
+  border-top: 1px solid var(--black-500);
+  margin-top: 0;
+  padding-top: var(--spacing-3);
+  width: 100%;
+}
+
+.parsedDataSection {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 2);
+}
+
+.label {
+  color: var(--white-900);
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.loadingText {
+  color: var(--grey-500);
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+}
+
+.noDataText {
+  color: var(--grey-500);
+  font-family: var(--secondary-font);
+  font-size: 0.875rem;
+}
+
+.jsonViewerContainer {
+  background-color: var(--black-800);
+  border-radius: var(--border-radius-md);
+  max-height: 300px;
+  padding: var(--spacing-2);
+}
+
+/* Mobile responsive styles */
+@media (width <=768px) {
+  .versionCard {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: calc(var(--spacing) * 3);
+  }
+
+  .radioSection {
+    display: none;
+  }
+
+  .dataSection {
+    width: 100%;
+  }
+
+  .actionsSection {
+    border-top: 1px solid var(--grey-700);
+    justify-content: flex-end;
+    padding-top: calc(var(--spacing) * 2);
+    width: 100%;
+  }
+
+  .versionNameRow {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: calc(var(--spacing) * 1);
+  }
+}
+
+/* Desktop hover styles - action buttons show on hover */
+@media (width >=769px) {
+  .actionsSection {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+
+  .versionCard:hover .actionsSection {
+    opacity: 1;
+  }
+}

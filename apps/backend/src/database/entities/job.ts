@@ -5,8 +5,17 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
+  JoinColumn,
 } from 'typeorm';
 import type User from './user.js';
+import Event from './event.js';
+import Persona from './persona.js';
+import type { JobStatus } from '@repo/shared-types';
+
+export type StatusUpdatedAtKey = JobStatus;
+
+export type StatusUpdatedAtMap = Record<StatusUpdatedAtKey, Date | null>;
 
 @Entity()
 export default class Job {
@@ -19,8 +28,12 @@ export default class Job {
   @Column('simple-array', { default: [] })
   tags!: string[];
 
-  @Column('varchar', { default: 'default' })
-  persona!: string;
+  @Column({ type: 'uuid', nullable: true })
+  personaId!: string | null;
+
+  @ManyToOne(() => Persona, { nullable: true })
+  @JoinColumn({ name: 'personaId' })
+  persona!: Persona | null;
 
   @Column('varchar', { default: 'draft' })
   status!: string; //need to create enum
@@ -43,14 +56,26 @@ export default class Job {
   @Column('text', { default: '' })
   description!: string;
 
-  @Column('simple-json', { default: {} })
-  highlights!: Record<string, unknown>;
-
   @Column('simple-array', { default: [] })
   keySkills!: string[];
 
+  @Column('boolean', { default: false })
+  favorite!: boolean;
+
+  @Column('timestamp', { nullable: true })
+  dataUpdatedAt!: Date | null;
+
+  @Column('simple-json', { default: () => `'{}'::jsonb` })
+  statusUpdatedAt!: StatusUpdatedAtMap;
+
   @ManyToOne('User', 'jobs', { onDelete: 'CASCADE' })
   user!: User;
+
+  @Column({ type: 'uuid', nullable: true })
+  primaryResultId!: string | null;
+
+  @OneToMany(() => Event, (event) => event.job)
+  events!: Event[];
 
   @CreateDateColumn()
   createdAt!: Date;

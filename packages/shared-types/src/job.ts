@@ -6,16 +6,18 @@ export interface Job {
   id: string;
   title: string;
   tags: string[];
-  persona: string;
+  personaId: string | null;
   status: string;
   acceptanceLevel: number;
   companyName: string;
   metaData: Record<string, unknown>;
   description: string;
   requirements: string;
-  highlights: Record<string, unknown>;
   keySkills: string[];
   notes: string;
+  favorite: boolean;
+  primaryResultId: string | null;
+  dataUpdatedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -52,13 +54,79 @@ export interface JobList {
   };
 }
 
+export type JobStatus = 'draft' | 'applied' | 'interview' | 'offer' | 'rejected';
+
+export type JobFilterStatus = JobStatus | 'active' | 'archived';
+
 export interface GetJobParams {
   page?: number;
   limit?: number;
-  status?: 'draft' | 'active' | 'archived';
+  status?: JobFilterStatus;
   persona?: string;
   search?: string;
   sortBy?: 'createdAt' | 'updatedAt' | 'acceptanceLevel';
   sortOrder?: 'ASC' | 'DESC';
   select?: string;
+  favorite?: boolean;
+}
+
+// Paginated Jobs Response for frontend hooks
+export interface PaginatedJobsResponse {
+  items: Job[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
+
+// Hook params for fetching jobs
+export interface UseJobsParams {
+  limit?: number;
+  searchQuery?: string;
+  status?: JobFilterStatus;
+  persona?: string;
+  favorite?: boolean;
+  sortBy?: 'createdAt' | 'updatedAt' | 'acceptanceLevel';
+  sortOrder?: 'ASC' | 'DESC';
+  id?: string;
+}
+
+// Create Job Input
+export interface CreateJobInput {
+  title: string;
+  companyName: string;
+  description?: string;
+  requirements?: string;
+  tags?: string[];
+  keySkills?: string[];
+  persona?: string;
+  status?: string;
+  notes?: string;
+  metaData?: Record<string, unknown>;
+}
+
+// Update Job Input
+export interface UpdateJobInput {
+  id: string;
+  title?: string;
+  companyName?: string;
+  description?: string;
+  requirements?: string;
+  tags?: string[];
+  keySkills?: string[];
+  persona?: string;
+  status?: string;
+  previousStatus?: string;
+  notes?: string;
+  favorite?: boolean;
+  primaryResultId?: string | null;
+  invalidateQueries?: boolean;
+  metaData?: Record<string, unknown>;
+}
+
+// Delete Job Input
+export interface DeleteJobInput {
+  id: string;
 }
