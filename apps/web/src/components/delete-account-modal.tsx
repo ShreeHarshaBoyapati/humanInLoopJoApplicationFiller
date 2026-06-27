@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Modal, EnhancedButton, EnhancedTextField } from '@repo/ui';
 import { useDeleteAccount } from '../hooks/use-delete-account';
 import { useStore } from '../store';
@@ -26,6 +26,11 @@ export function DeleteAccountModal({ isOpen, onClose, email }: DeleteAccountModa
   const canDelete =
     email.trim().length > 0 && confirmEmail.trim().toLowerCase() === email.trim().toLowerCase();
 
+  const handleClose = useCallback(() => {
+    setConfirmEmail('');
+    onClose();
+  }, [onClose]);
+
   const handleConfirm = () => {
     if (!canDelete) return;
 
@@ -52,7 +57,7 @@ export function DeleteAccountModal({ isOpen, onClose, email }: DeleteAccountModa
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={handleClose}
       headerTitle="Delete Account"
       customProps={{
         childProps: {
@@ -61,7 +66,7 @@ export function DeleteAccountModal({ isOpen, onClose, email }: DeleteAccountModa
       }}
       footer={
         <>
-          <EnhancedButton label="Cancel" colorTheme="secondary" onClick={onClose} />
+          <EnhancedButton label="Cancel" colorTheme="secondary" onClick={handleClose} />
           <EnhancedButton
             label="Delete Account"
             colorTheme="negativeSecondary"
