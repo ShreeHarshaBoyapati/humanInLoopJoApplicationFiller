@@ -43,7 +43,10 @@ export type ExtensionMessage =
         model: string;
       };
     }
-  | { action: 'GET_CONFIGURED_PROVIDERS' }
+  | {
+      action: 'GET_CONFIGURED_PROVIDERS';
+      payload?: { page?: number; limit?: number; search?: string };
+    }
   | { action: 'DELETE_PROVIDER'; payload: { id: string } }
   | { action: 'DECRYPT_API_KEY'; payload: { encryptedKey: string } }
   | { action: 'SELECT_PROVIDER'; payload: { id: string } }

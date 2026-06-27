@@ -71,6 +71,10 @@
   font-weight: 600;
 }
 
+.emailValue {
+  overflow-wrap: break-word;
+}
+
 .section {
   display: flex;
   flex-direction: column;
@@ -175,150 +179,6 @@
 .buttonContainer {
   display: flex;
   justify-content: center;
-}
-
-.addProviderForm {
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--spacing) * 4);
-  padding: calc(var(--spacing) * 4);
-}
-
-.formField {
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--spacing) * 2);
-}
-
-.formActions {
-  display: flex;
-  flex-direction: row;
-  gap: calc(var(--spacing) * 3);
-  justify-content: end;
-}
-
-.providerList {
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--spacing) * 3);
-  margin-top: calc(var(--spacing) * 4);
-}
-
-.providerItem {
-  align-items: center;
-  background-color: var(--black-800);
-  border: 1px solid var(--grey-700);
-  border-radius: var(--border-radius);
-  display: flex;
-  justify-content: space-between;
-  padding: calc(var(--spacing) * 4);
-}
-
-.providerItem:hover {
-  background-color: var(--grey-300);
-  cursor: pointer;
-}
-
-.selectedProviderItem {
-  border-color: var(--blue-500);
-}
-
-.providerItemDisabled {
-  background-color: var(--black-800);
-  cursor: auto;
-}
-
-.providerInfo {
-  align-items: center;
-  display: flex;
-  flex: 1;
-  gap: calc(var(--spacing) * 4);
-  min-width: 0;
-}
-
-.providerIcon {
-  align-items: center;
-  background-color: var(--black-700);
-  border-radius: var(--border-radius);
-  color: var(--blue-500);
-  display: flex;
-  height: 40px;
-  justify-content: center;
-  width: 40px;
-}
-
-.providerIconInactive {
-  color: var(--white-700);
-}
-
-.providerDetails {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  gap: calc(var(--spacing) * 1);
-  min-width: 0;
-}
-
-.providerNameRow {
-  align-items: center;
-  display: flex;
-  flex-wrap: nowrap;
-  gap: calc(var(--spacing) * 2);
-  min-width: 0;
-  overflow: hidden;
-  width: 100%;
-}
-
-.providerNameWrapper {
-  display: block;
-  flex: 1;
-  min-width: 0;
-  overflow: visible;
-}
-
-.providerName {
-  color: var(--white-900);
-  display: block;
-  font-size: 0.9rem;
-  font-weight: 700;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  width: 100%;
-}
-
-.activeTag {
-  background: color-mix(in srgb, var(--green-400) 15%, transparent);
-  border: 1px solid color-mix(in srgb, var(--green-400) 35%, transparent);
-  border-radius: 4px;
-  color: var(--green-400);
-  flex-shrink: 0;
-  font-size: 0.6rem;
-  font-weight: 700;
-  padding: 2px 6px;
-}
-
-.usageText {
-  color: var(--white-700);
-  font-size: 0.75rem;
-}
-
-.settingsBtn {
-  align-items: center;
-  background: none;
-  border: none;
-  color: var(--white-700);
-  cursor: pointer;
-  display: flex;
-  justify-content: center;
-  padding: calc(var(--spacing) * 1);
-  transition: color 0.2s;
-}
-
-.settingsBtn:hover {
-  background-color: var(--black-700);
-  border-radius: 50%;
 }
 
 /* Resume List Styles */
@@ -510,50 +370,6 @@
   margin-left: calc(var(--spacing) * 2);
   margin-right: calc(var(--spacing) * 4);
   padding: calc(var(--spacing) * 3);
-}
-
-/* Step 3 — test connection layout: button on left, result on right */
-.testConnectionRow {
-  align-items: center;
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--spacing) * 3);
-  width: 100%;
-}
-
-.connectionResult {
-  align-items: center;
-  border-radius: var(--border-radius);
-  display: flex;
-  flex: 1;
-  font-size: 0.75rem;
-  font-weight: 600;
-  gap: calc(var(--spacing) * 2);
-  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3);
-  width: 100%;
-}
-
-.connectionSuccess {
-  background-color: var(--green-500);
-  color: var(--green-600);
-}
-
-.connectionError {
-  background-color: var(--red-600);
-  color: var(--red-700);
-}
-
-.rowDivider {
-  border-top: 1px solid var(--grey-700);
-  width: 100%;
-}
-
-.footer {
-  border-top: 1px solid var(--grey-700);
-  display: flex;
-  flex-direction: column;
-  gap: calc(var(--spacing) * 4);
-  padding: calc(var(--spacing) * 4);
 }
 
 .resumeItemWrapper {

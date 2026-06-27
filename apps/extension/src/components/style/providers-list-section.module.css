@@ -1,0 +1,126 @@
+/* Providers list section styles */
+
+/* Info banner — tells users to manage providers in the web app */
+.infoBanner {
+  background-color: var(--black-800);
+  border: 1px solid var(--grey-700);
+  border-radius: var(--border-radius);
+  padding: calc(var(--spacing) * 3) calc(var(--spacing) * 4);
+}
+
+.infoText {
+  color: var(--white-700);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.infoLink {
+  color: var(--blue-500);
+  text-decoration: none;
+}
+
+.infoLink:hover {
+  text-decoration: underline;
+}
+
+/* Section chrome */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 3);
+  height: 100%;
+  max-height: 100vh;
+  min-height: 0;
+}
+
+.sectionHeader {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.sectionTitle {
+  color: var(--white-700);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin-bottom: calc(var(--spacing) * 2);
+  margin-top: 0;
+  text-transform: uppercase;
+}
+
+.sectionHeading {
+  color: var(--white-700);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin-bottom: calc(var(--spacing) * 2);
+  margin-top: 0;
+  text-transform: uppercase;
+}
+
+/* Search bar */
+.searchBar {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scrollable list */
+.scrollContainer {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  scrollbar-width: auto;
+}
+
+.sentinel {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  min-height: 10px;
+}
+
+/* Loading, error, and empty states */
+.loadingContainer {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  padding: calc(var(--spacing) * 8);
+}
+
+.errorContainer {
+  align-items: center;
+  background-color: var(--black-700);
+  border: 1px solid var(--red-600);
+  border-radius: var(--border-radius);
+  display: flex;
+  flex-direction: row;
+  gap: calc(var(--spacing) * 4);
+  justify-content: center;
+  padding: calc(var(--spacing) * 4);
+}
+
+.errorText {
+  color: var(--red-700);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.errorRetryBtn {
+  flex-shrink: 0;
+}
+
+.emptyState {
+  color: var(--white-700);
+  font-size: 0.875rem;
+  padding: calc(var(--spacing) * 4);
+  text-align: center;
+}
+
+/* Provider list layout */
+.providerList {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 3);
+}

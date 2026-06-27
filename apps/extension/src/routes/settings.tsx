@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 
-import { AiProvidersSection } from '../components/ai-providers-section';
+import { ProvidersListSection } from '../components/providers-list-section';
 import styles from './style/settings.module.css';
 import type { UserPublic } from '@repo/shared-types';
 
@@ -75,7 +75,7 @@ function SettingsComponent() {
           <AccountCircleIcon fontSize="large" />
           <div className={styles.aiStatusLabels}>
             {user ? (
-              <span className={styles.aiStatusValue}>{user.email}</span>
+              <span className={`${styles.aiStatusValue} ${styles.emailValue}`}>{user.email}</span>
             ) : (
               <span className={styles.aiStatusValue}>Not signed in</span>
             )}
@@ -84,7 +84,7 @@ function SettingsComponent() {
       </div>
 
       {/* AI Providers Section */}
-      <AiProvidersSection />
+      <ProvidersListSection />
     </div>
   );
 }

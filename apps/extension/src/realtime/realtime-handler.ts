@@ -1,4 +1,5 @@
 import type {
+  ApiKeyData,
   Job,
   PaginatedResultListItem,
   Persona,
@@ -29,6 +30,8 @@ export interface CacheInvalidationDeps {
   invalidateVersions: () => Promise<void>;
   invalidateJobs: () => Promise<void>;
   invalidateResults: () => Promise<void>;
+  patchApiKeysPage?: (patch: { id: string } & Partial<ApiKeyData>) => Promise<void>;
+  invalidateApiKeys?: () => Promise<void>;
 }
 
 interface PersonaScopeUpdate {
@@ -293,6 +296,47 @@ export async function applyRealtimeEventToCache(
         ops.push(deps.patchResumeCount(count.id, count.versionsCount));
       }
       await Promise.all(ops);
+      return;
+    }
+  }
+
+  if (event.resource === 'apiKey') {
+    const patchApiKeysPage = deps.patchApiKeysPage;
+    const invalidateApiKeys = deps.invalidateApiKeys;
+
+    if (event.action === 'setActive') {
+      const newId = event.data && isFullRow(event.data) ? event.data.id : event.id;
+      const previousIds = fullRows.map((r) => r.id);
+      const apiKeyIds = Array.from(new Set([newId, ...previousIds]));
+      const ops: Promise<void>[] = [];
+      if (invalidateApiKeys) {
+        ops.push(invalidateApiKeys());
+      }
+      if (patchApiKeysPage) {
+        for (const id of apiKeyIds) {
+          ops.push(patchApiKeysPage({ id, active: id === newId }));
+        }
+      }
+      await Promise.all(ops);
+      return;
+    }
+    if (event.action === 'update') {
+      const patches: Array<{ id: string } & Partial<ApiKeyData>> = [];
+      if (event.data && isFullRow(event.data)) {
+        patches.push(event.data as { id: string } & Partial<ApiKeyData>);
+      }
+      for (const row of fullRows) {
+        patches.push(row as { id: string } & Partial<ApiKeyData>);
+      }
+      if (patchApiKeysPage) {
+        await Promise.all(patches.map((p) => patchApiKeysPage(p)));
+      }
+      return;
+    }
+    if (event.action === 'create' || event.action === 'delete') {
+      if (invalidateApiKeys) {
+        await invalidateApiKeys();
+      }
       return;
     }
   }

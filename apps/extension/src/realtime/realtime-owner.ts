@@ -23,6 +23,7 @@ import {
   patchJobPrimaryAndAcceptanceInCache,
   clearAllJobsCache,
 } from '../db/jobs-cache';
+import { patchApiKeyInPages, clearAllApiKeysCache } from '../db/api-keys-cache';
 
 const noop = async () => {
   // Extension side panel does not cache results today.
@@ -46,6 +47,8 @@ const DEPS: CacheInvalidationDeps = {
   invalidateVersions: clearAllVersionsCache,
   invalidateJobs: clearAllJobsCache,
   invalidateResults: noop,
+  patchApiKeysPage: patchApiKeyInPages,
+  invalidateApiKeys: clearAllApiKeysCache,
 };
 
 function readToken(): Promise<string | null> {

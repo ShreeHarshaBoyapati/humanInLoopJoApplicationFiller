@@ -1,16 +1,14 @@
 import { openDB, type DBSchema, type IDBPDatabase } from 'idb';
 import type {
+  ApiKeyData,
   Job,
   Persona,
   PaginatedResumeListItem,
   PaginatedVersionListItem,
 } from '@repo/shared-types';
 
-/**
- * Cached page data structure for personas
- */
 export interface CachedPage {
-  id: string; // `${token}:${search}:${page}`
+  id: string;
   items: Persona[];
   total: number;
   page: number;
@@ -18,11 +16,8 @@ export interface CachedPage {
   totalPages: number;
 }
 
-/**
- * Cached page data structure for resumes
- */
 export interface CachedResumePage {
-  id: string; // `${token}:${personaId}:${page}`
+  id: string;
   items: PaginatedResumeListItem[];
   total: number;
   page: number;
@@ -30,11 +25,8 @@ export interface CachedResumePage {
   totalPages: number;
 }
 
-/**
- * Cached page data structure for resume versions
- */
 export interface CachedVersionPage {
-  id: string; // `${token}:${resumeId}:${page}`
+  id: string;
   items: PaginatedVersionListItem[];
   total: number;
   page: number;
@@ -43,7 +35,7 @@ export interface CachedVersionPage {
 }
 
 export interface CachedJobsPage {
-  id: string; // `${token}:${limit}:${sortBy}:${sortOrder}`
+  id: string;
   jobs: Job[];
   limit: number;
   sortBy: string;
@@ -51,9 +43,15 @@ export interface CachedJobsPage {
   cachedAt: number;
 }
 
-/**
- * IndexedDB schema with separate object stores for each cache type
- */
+export interface CachedApiKeysPage {
+  id: string;
+  items: ApiKeyData[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}
+
 interface JFPCacheDB extends DBSchema {
   personas: {
     key: string;
@@ -71,6 +69,10 @@ interface JFPCacheDB extends DBSchema {
     key: string;
     value: CachedJobsPage;
   };
+  apiKeys: {
+    key: string;
+    value: CachedApiKeysPage;
+  };
   metadata: {
     key: string;
     value: string;
@@ -78,28 +80,22 @@ interface JFPCacheDB extends DBSchema {
 }
 
 const DB_NAME = 'jfp-cache';
-const DB_VERSION = 6;
+const DB_VERSION = 7;
 
 let dbPromise: Promise<IDBPDatabase<JFPCacheDB>> | null = null;
 
-/**
- * Get or create IndexedDB connection (shared across all cache modules)
- */
 export function getDB(): Promise<IDBPDatabase<JFPCacheDB>> {
   if (!dbPromise) {
     dbPromise = openDB<JFPCacheDB>(DB_NAME, DB_VERSION, {
       upgrade(db) {
-        // Create personas store
         if (!db.objectStoreNames.contains('personas')) {
           db.createObjectStore('personas', { keyPath: 'id' });
         }
 
-        // Create resumes store
         if (!db.objectStoreNames.contains('resumes')) {
           db.createObjectStore('resumes', { keyPath: 'id' });
         }
 
-        // Create versions store
         if (!db.objectStoreNames.contains('versions')) {
           db.createObjectStore('versions', { keyPath: 'id' });
         }
@@ -108,7 +104,10 @@ export function getDB(): Promise<IDBPDatabase<JFPCacheDB>> {
           db.createObjectStore('jobs', { keyPath: 'id' });
         }
 
-        // Create metadata store for token and other metadata
+        if (!db.objectStoreNames.contains('apiKeys')) {
+          db.createObjectStore('apiKeys', { keyPath: 'id' });
+        }
+
         if (!db.objectStoreNames.contains('metadata')) {
           db.createObjectStore('metadata');
         }
