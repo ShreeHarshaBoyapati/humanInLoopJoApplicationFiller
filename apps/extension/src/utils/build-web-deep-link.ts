@@ -27,7 +27,11 @@ export function buildWebDeepLink(params: LegacyDeepLink | GenericDeepLink): stri
     }
   }
   const query = search.toString();
-  const normalizedPath = params.path.startsWith('/') ? params.path : `/${params.path}`;
+  const normalizedPath = params.path
+    ? params.path.startsWith('/')
+      ? params.path
+      : `/${params.path}`
+    : '';
   return query ? `${fullBaseUrl}${normalizedPath}?${query}` : `${fullBaseUrl}${normalizedPath}`;
 }
 

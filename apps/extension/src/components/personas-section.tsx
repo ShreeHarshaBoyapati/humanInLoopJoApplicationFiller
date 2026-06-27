@@ -429,7 +429,7 @@ export function PersonasSection({ onSelectPersona, isFromAutofill = false }: Per
         <p className={styles.infoText}>
           To create, edit, or delete personas, please use the{' '}
           <a
-            href={buildWebDeepLink({})}
+            href={buildWebDeepLink({ path: '/persona-resumes' })}
             target="_blank"
             rel="noopener noreferrer"
             className={styles.infoLink}
