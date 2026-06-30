@@ -1,0 +1,66 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: jfp-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-jfp}
+      POSTGRES_USER: ${POSTGRES_USER:-jfp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - jfp-net
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-jfp} -d ${POSTGRES_DB:-jfp}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+      args:
+        VITE_WEB_BACKENDAPI: ${VITE_WEB_BACKENDAPI}
+        VITE_APP_NAME: ${VITE_APP_NAME:-JFP App}
+        VITE_WS_URL: ${VITE_WS_URL}
+        VITE_WEB_APP_URL: ${VITE_WEB_APP_URL}
+        VITE_WEB_APP_PORT: ${VITE_WEB_APP_PORT}
+        VITE_TRANSIT_SECRET: ${VITE_TRANSIT_SECRET:-jfp-default-transit-secret-change-in-prod}
+        VITE_EXT_CLIENT_ID: ${VITE_EXT_CLIENT_ID}
+        VITE_EXT_BACKENDAPI: ${VITE_EXT_BACKENDAPI}
+        VITE_EXT_WS_URL: ${VITE_EXT_WS_URL}
+    container_name: jfp-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      NODE_PORT: 8000
+      NODE_DATABASE_CONFIG: ${NODE_DATABASE_CONFIG}
+      NODE_CORS_ORIGIN: ${NODE_CORS_ORIGIN}
+      NODE_JWT_SECRET: ${NODE_JWT_SECRET:?NODE_JWT_SECRET is required}
+      NODE_JWT_EXPIRES_IN: ${NODE_JWT_EXPIRES_IN:-7d}
+      NODE_RATE_LIMIT_MAX: ${NODE_RATE_LIMIT_MAX:-100}
+      NODE_GOOGLE_CLIENT_ID: ${NODE_GOOGLE_CLIENT_ID}
+      NODE_GOOGLE_CLIENT_SECRET: ${NODE_GOOGLE_CLIENT_SECRET}
+      NODE_GOOGLE_REDIRECT_URI: ${NODE_GOOGLE_REDIRECT_URI}
+      NODE_GMAIL_USER: ${NODE_GMAIL_USER}
+      NODE_GMAIL_APP_PASSWORD: ${NODE_GMAIL_APP_PASSWORD}
+      TRANSIT_SECRET: ${TRANSIT_SECRET:-${VITE_TRANSIT_SECRET:-jfp-default-transit-secret-change-in-prod}}
+    ports:
+      - '${BACKEND_HOST_PORT:-8000}:8000'
+    networks:
+      - jfp-net
+
+networks:
+  jfp-net:
+    name: jfp-net
+    driver: bridge
+
+volumes:
+  postgres_data:
+    name: jfp_postgres_data
