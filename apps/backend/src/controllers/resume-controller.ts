@@ -341,59 +341,17 @@ class ResumeController {
       return counts;
     };
 
-    const getActiveVersionFileSizesByResumeIds = async (
-      resumeIds: string[]
-    ): Promise<Map<string, number | null>> => {
-      const fileSizes = new Map<string, number | null>();
-      if (resumeIds.length === 0) return fileSizes;
-
-      for (const id of resumeIds) {
-        fileSizes.set(id, null);
-      }
-
-      const batches: string[][] = [];
-      for (let i = 0; i < resumeIds.length; i += 25) {
-        batches.push(resumeIds.slice(i, i + 25));
-      }
-
-      const batchResults = await Promise.all(
-        batches.map(async (batch) => {
-          const rows = (await versionRepository
-            .createQueryBuilder('version')
-            .select('version.resumeId', 'resumeId')
-            .addSelect('version.fileSize', 'fileSize')
-            .where('version.resumeId IN (:...batch)', { batch })
-            .andWhere('version.active = :active', { active: true })
-            .andWhere('version.isDeleted = :isDeleted', { isDeleted: false })
-            .getRawMany()) as Array<{ resumeId: string; fileSize: number }>;
-          return rows;
-        })
-      );
-
-      for (const rows of batchResults) {
-        for (const row of rows) {
-          fileSizes.set(row.resumeId, row.fileSize);
-        }
-      }
-
-      return fileSizes;
-    };
-
     const buildResumeListItems = async (
       resumes: Array<{ id: string; fileName: string; active: boolean; updatedAt: Date }>
     ): Promise<PaginatedResumeListItem[]> => {
       const ids = resumes.map((r) => r.id);
-      const [versionsCounts, activeVersionFileSizes] = await Promise.all([
-        getVersionsCountByResumeIds(ids),
-        getActiveVersionFileSizesByResumeIds(ids),
-      ]);
+      const [versionsCounts] = await Promise.all([getVersionsCountByResumeIds(ids)]);
 
       return resumes.map((resume) => ({
         id: resume.id,
         fileName: resume.fileName,
         active: resume.active,
         versionsCount: versionsCounts.get(resume.id) ?? 0,
-        activeVersionFileSize: activeVersionFileSizes.get(resume.id) ?? null,
         updatedAt: resume.updatedAt,
       }));
     };

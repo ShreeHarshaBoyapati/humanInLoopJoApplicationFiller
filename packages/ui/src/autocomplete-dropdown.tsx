@@ -358,25 +358,33 @@ export const EnhancedAutocompleteDropdown = forwardRef<
             } as HTMLAttributes<HTMLUListElement> & { footer?: ReactNode },
           }}
           renderInput={(params) => {
+            // `params.InputProps.ref` is typed as `Ref<any>` by MUI's Autocomplete,
+            // which is incompatible with the stricter `Ref<unknown>` expected by
+            // `TextField slotProps.input.ref` / `InputProps.ref`. Strip it out and
+            // pass the remaining props through `slotProps` instead of spreading
+            // `params.InputProps` onto the legacy `InputProps` prop.
+            const { InputProps, inputProps, ...textFieldProps } = params;
+            const { ref: _inputRef, ...inputPropsWithoutRef } = InputProps;
+            void _inputRef;
             return (
               <StyledTextField
-                {...params}
+                {...textFieldProps}
                 placeholder={placeholder}
                 error={error}
                 disabled={disabled}
                 slotProps={{
                   input: {
-                    ...params.InputProps,
+                    ...inputPropsWithoutRef,
                     endAdornment: (
                       <>
                         {loading ? (
                           <CircularProgress size={16} sx={{ color: styleConstants.white700 }} />
                         ) : null}
-                        {params.InputProps.endAdornment}
+                        {inputPropsWithoutRef.endAdornment}
                       </>
                     ),
                   },
-                  htmlInput: params.inputProps,
+                  htmlInput: inputProps,
                 }}
               />
             );

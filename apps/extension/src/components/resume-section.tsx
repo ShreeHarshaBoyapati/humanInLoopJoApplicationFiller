@@ -562,9 +562,6 @@ export function ResumeSection({
                         >
                           <p className={styles.resumeName}>{resume.fileName}</p>
                         </EnhancedTooltipWithText>
-                        <span className={styles.resumeMeta}>
-                          {formatFileSize(resume.activeVersionFileSize)}
-                        </span>
                       </div>
                       <div className={styles.resumeDetails}>
                         <span className={styles.resumeVersions}>

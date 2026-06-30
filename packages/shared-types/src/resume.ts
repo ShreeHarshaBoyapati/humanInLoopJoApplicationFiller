@@ -112,7 +112,6 @@ export interface PaginatedResumeListItem {
   fileName: string;
   active: boolean;
   versionsCount: number;
-  activeVersionFileSize: number | null;
   updatedAt: Date;
 }
 
