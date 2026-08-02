@@ -36,3 +36,17 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
+
+# Docker
+.env
+.env.*
+!.env.example
+.env.docker.example
+
+# Build artefacts produced by the Docker build (in case anything leaks out)
+apps/backend/dist
+apps/web/dist
+apps/extension/dist
+
+# Postgres volume root, in case anyone bind-mounts by mistake
+.postgres-data

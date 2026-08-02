@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { DataSource } from 'typeorm';
-import initializeDataSource from '../src/database/data-source.js';
+import { initializeDataSource } from '../src/database/data-source.js';
 import User from '../src/database/entities/user.js';
 import ApiKey from '../src/database/entities/api-key.js';
 import { encryptText } from '../src/utils/encryption.js';

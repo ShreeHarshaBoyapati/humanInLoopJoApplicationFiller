@@ -4,7 +4,8 @@
     "outDir": "dist",
     "rootDir": "src",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": ["multer"]
+    "types": ["multer"],
+    "emitDecoratorMetadata": false
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

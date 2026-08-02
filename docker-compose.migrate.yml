@@ -1,0 +1,20 @@
+services:
+  migrate:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+      target: build
+    container_name: jfp-migrate
+    command: >
+      sh -c '
+        echo "Running TypeORM migrations..." &&
+        NODE_ENV=production node apps/backend/dist/database/run-migrations.js
+      '
+    environment:
+      NODE_ENV: production
+      NODE_DATABASE_CONFIG: ${NODE_DATABASE_CONFIG}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - jfp-net

@@ -1,5 +1,5 @@
 import Event from '../entities/event.js';
-import initializeDataSource from '../data-source.js';
+import { initializeDataSource } from '../data-source.js';
 import { Repository } from 'typeorm';
 
 export default function getEventRepository(): Repository<Event> {

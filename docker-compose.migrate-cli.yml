@@ -1,0 +1,34 @@
+# Local-Phase 1 helper: run the TypeORM CLI (db:generate / db:migrate / db:revert)
+# inside a container on the same `jfp-net` network as Postgres, so we don't need
+# to publish port 5432 to the host. This is the production-like path.
+#
+# Usage from the repo root:
+#   docker compose --env-file .env -f docker-compose.yml -f docker-compose.migrate-cli.yml \
+#     run --rm migrate-cli \
+#     pnpm --filter backend db:generate src/database/migrations/InitialSchema
+#   docker compose --env-file .env -f docker-compose.yml -f docker-compose.migrate-cli.yml \
+#     run --rm migrate-cli \
+#     pnpm --filter backend db:migrate
+
+services:
+  migrate-cli:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+      target: build
+    container_name: jfp-migrate-cli
+    working_dir: /repo/apps/backend
+    command: []
+    environment:
+      NODE_ENV: development
+      NODE_DATABASE_CONFIG: '{"host":"postgres","port":5432,"username":"${POSTGRES_USER:-jfp}","password":"${POSTGRES_PASSWORD}","database":"${POSTGRES_DB:-jfp}"}'
+    volumes:
+      # Bind-mount only the backend tree so generated files appear on the host.
+      - ./apps/backend/src/database:/repo/apps/backend/src/database
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - jfp-net
+    stdin_open: true
+    tty: true

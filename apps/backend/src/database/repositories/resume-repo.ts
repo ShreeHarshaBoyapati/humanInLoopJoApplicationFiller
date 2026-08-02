@@ -1,5 +1,5 @@
 import Resume from '../entities/resume.js';
-import initializeDataSource from '../data-source.js';
+import { initializeDataSource } from '../data-source.js';
 import { Repository } from 'typeorm';
 
 export default function getResumeRepository(): Repository<Resume> {

@@ -1,4 +1,4 @@
-import initializeDataSource from '../data-source.js';
+import { initializeDataSource } from '../data-source.js';
 import ApiKey from '../entities/api-key.js';
 
 const getApiKeyRepository = () => {

@@ -14,8 +14,10 @@
     "skipLibCheck": true,
     "strict": true,
     "target": "ES2022",
-    "noEmit": true
+    "rootDir": "src",
+    "outDir": "dist",
+    "noEmit": false
   },
   "include": ["src"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "dist"]
 }
