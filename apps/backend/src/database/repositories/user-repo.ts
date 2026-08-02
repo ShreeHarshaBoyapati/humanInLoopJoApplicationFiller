@@ -1,5 +1,5 @@
 import User from '../entities/user.js';
-import initializeDataSource from '../data-source.js';
+import { initializeDataSource } from '../data-source.js';
 import { Repository } from 'typeorm';
 
 export default function getUserRepository(): Repository<User> {

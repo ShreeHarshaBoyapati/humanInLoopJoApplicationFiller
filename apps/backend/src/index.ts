@@ -13,7 +13,7 @@ import cookieParser from 'cookie-parser';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { LessThan } from 'typeorm';
-import initializeDataSource from './database/data-source.js';
+import { initializeDataSource } from './database/data-source.js';
 import routes from './routes/index.js';
 import { getVerificationCodeRepository } from './database/repositories/index.js';
 import { logger, httpLogger, staticConfig } from './utils/index.js';
@@ -21,6 +21,43 @@ import { attachWebSocketServer } from './realtime/ws-server.js';
 
 const PORT = parseInt(process.env.NODE_PORT || '8000');
 const isProduction = process.env.NODE_ENV === 'production';
+
+function configureTrustProxy(app: express.Application) {
+  const raw = process.env.NODE_TRUST_PROXY;
+
+  if (raw === undefined || raw === '') {
+    if (isProduction) {
+      app.set('trust proxy', true);
+      logger.info('Express trust proxy enabled (production default)');
+    }
+    return;
+  }
+
+  const lower = raw.toLowerCase();
+  if (lower === 'false' || lower === 'no' || lower === '0' || lower === 'off') {
+    logger.info('Express trust proxy disabled');
+    return;
+  }
+
+  if (lower === 'true' || lower === 'yes' || lower === 'on' || lower === '1') {
+    app.set('trust proxy', true);
+    logger.info('Express trust proxy enabled');
+    return;
+  }
+
+  const hops = parseInt(raw, 10);
+  if (!isNaN(hops)) {
+    app.set('trust proxy', hops);
+    logger.info({ hops }, 'Express trust proxy enabled (hops)');
+    return;
+  }
+
+  app.set(
+    'trust proxy',
+    raw.split(',').map((ip) => ip.trim())
+  );
+  logger.info({ ips: raw }, 'Express trust proxy enabled (IP list)');
+}
 
 function startVerificationCodeCleanupTimer() {
   const cleanupIntervalMs = staticConfig.auth.cleanupIntervalMinutes * 60 * 1000;
@@ -45,6 +82,7 @@ function startVerificationCodeCleanupTimer() {
 
 async function initializeApp() {
   const app = express();
+  configureTrustProxy(app);
 
   const __filename = fileURLToPath(import.meta.url);
   const __dirname = path.dirname(__filename);

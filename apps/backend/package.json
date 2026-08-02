@@ -12,7 +12,11 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint . --max-warnings 0",
-    "check-types": "tsc --noEmit"
+    "check-types": "tsc --noEmit",
+    "db:generate": "tsx node_modules/typeorm/cli.js migration:generate -d src/database/data-source.ts",
+    "db:migrate": "tsx node_modules/typeorm/cli.js migration:run -d src/database/data-source.ts",
+    "db:revert": "tsx node_modules/typeorm/cli.js migration:revert -d src/database/data-source.ts",
+    "db:create": "tsx node_modules/typeorm/cli.js migration:create -d src/database/data-source.ts"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.63",

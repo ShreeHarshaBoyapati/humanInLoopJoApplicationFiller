@@ -1,6 +1,6 @@
 import type { Response, AuthenticatedTypedRequest } from '../types/index.js';
 import { DataSource, In } from 'typeorm';
-import initializeDataSource from '../database/data-source.js';
+import { initializeDataSource } from '../database/data-source.js';
 import {
   getJobRepository,
   getUserRepository,

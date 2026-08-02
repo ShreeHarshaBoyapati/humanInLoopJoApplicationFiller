@@ -1,5 +1,5 @@
 import Job from '../entities/job.js';
-import initializeDataSource from '../data-source.js';
+import { initializeDataSource } from '../data-source.js';
 import { Repository } from 'typeorm';
 
 export default function getJobRepository(): Repository<Job> {

@@ -1,5 +1,5 @@
 import Result from '../entities/result.js';
-import initializeDataSource from '../data-source.js';
+import { initializeDataSource } from '../data-source.js';
 import { Repository } from 'typeorm';
 
 export default function getResultRepository(): Repository<Result> {

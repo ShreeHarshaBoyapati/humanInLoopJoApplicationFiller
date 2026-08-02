@@ -51,6 +51,7 @@ services:
       NODE_GMAIL_USER: ${NODE_GMAIL_USER}
       NODE_GMAIL_APP_PASSWORD: ${NODE_GMAIL_APP_PASSWORD}
       TRANSIT_SECRET: ${TRANSIT_SECRET:-${VITE_TRANSIT_SECRET:-jfp-default-transit-secret-change-in-prod}}
+      NODE_TRUST_PROXY: ${NODE_TRUST_PROXY:-}
     ports:
       - '${BACKEND_HOST_PORT:-8000}:8000'
     networks:

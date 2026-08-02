@@ -1,0 +1,19 @@
+# Production override for docker-compose.yml.
+# Uses the Hostinger AIC platform reverse proxy + TLS termination instead of a
+# local Nginx container. The backend container is exposed directly on a host
+# port that AIC forwards public HTTPS traffic to.
+# Use with:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+services:
+  backend:
+    # Pre-built image pushed from local machine or CI. The server does not build.
+    image: ${DOCKER_REGISTRY:-shreeharsha042}/jfp-backend:${IMAGE_TAG:-latest}
+    build: !reset null
+    # AIC forwards public HTTPS traffic to this host port. Default 443.
+    ports:
+      - '${BACKEND_HOST_PORT:-443}:8000'
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
